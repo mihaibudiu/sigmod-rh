@@ -1,46 +1,65 @@
 \documentclass{research4cacm}
 
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage[a-2b]{pdfx}
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage[utf8]{inputenc}
+%%% Note to copy editors: the following fixes are needed
+%%% in order to get decent output in the temporary version
+%%% for the submission
+\makeatletter
+\renewcommand{\secfnt}{\fontfamily{ptm}\fontsize{12}{14}\bfseries}
+\renewcommand{\subsecfnt}{\fontfamily{ptm}\fontsize{11}{13}\itshape}
+\def\section{%
+    \@startsection{section}{1}{\z@}{-10\p@ \@plus -4\p@ \@minus -2\p@}% GM
+    {14\p@}{\secfnt\@ucheadtrue}%
+}
+
+\def\subsection{%
+    \@startsection{subsection}{2}{\z@}{-8\p@ \@plus -2\p@ \@minus -\p@}
+    {14\p@}{\secfnt}%
+}
+\def\subsubsection{%
+    \@startsection{subsubsection}{3}{\z@}{-8\p@ \@plus -2\p@ \@minus -\p@}%
+    {14\p@}{\subsecfnt}%
+}
+\expandafter\def\expandafter\abstract\expandafter{\abstract\vspace{-\baselineskip}}
+\makeatother
+%%% end of fixes
+
+%\usepackage[T1]{fontenc}
+%\usepackage{lmodern}
+%\usepackage[a-2b]{pdfx}
+%\usepackage{amsmath}
+%\usepackage{amsfonts}
+%%\usepackage[utf8]{inputenc}
 \usepackage{array}
-\usepackage{stmaryrd}
+%\usepackage{stmaryrd}
 \usepackage{tikz}
 \usepackage{comment}
 \usepackage{xspace}
 \usepackage{listofitems}
-\usepackage{graphicx}
+%\usepackage{graphicx}
 \usepackage[final]{listings}
-\usepackage{enumitem}
-%\usepackage{amsthm}
+%\usepackage{enumitem}
+%%\usepackage{amsthm}
 \usepackage{ifthen}
+\usepackage{url}
 
 % space saving tricks
 \newif\ifstreamexamples
 \streamexamplestrue
 \newif\ifzsetexamples
 \zsetexamplestrue
-%\titlespacing{\paragraph}{0pt}{0pt}{1em}
-%\titlespacing{\section}{0pt}{*.9}{*.9}
-%\titlespacing{\subsection}{0pt}{*.9}{*.9}
-\widowpenalty=0
-\clubpenalty=0
-%\newtheoremstyle{note} % name
-%{2pt} % Space above
-%{2pt} % Space below
-%{}    % Body font
-%{}    % Indent amount
-%{\bfseries} % Theorem head font
-%{:}   % Punctuation after theorem head
-%{.5em}% ⟨Space after theorem head
-%{}    % Theorem head spec (can be left empty, meaning ‘normal’
-
-\numberwithin{equation}{section}
-
-\graphicspath{ {.} }
+%%\newtheoremstyle{note} % name
+%%{2pt} % Space above
+%%{2pt} % Space below
+%%{}    % Body font
+%%{}    % Indent amount
+%%{\bfseries} % Theorem head font
+%%{:}   % Punctuation after theorem head
+%%{.5em}% ⟨Space after theorem head
+%%{}    % Theorem head spec (can be left empty, meaning ‘normal’
+%
+%\numberwithin{equation}{section}
+%
+%\graphicspath{ {.} }
 \lstset{language=Java,
   commentstyle=\color{brown},
   keywordstyle=\color{blue},
@@ -54,14 +73,14 @@
     Aggregate, FlatMap},
   deletestring=[b]{'}
 }
-\hypersetup{
-  colorlinks   = true,    % Colours links instead of ugly boxes
-  urlcolor     = blue,    % Colour for external hyperlinks
-  linkcolor    = blue,    % Colour of internal links
-  citecolor    = red      % Colour of citations
-}
-\hypersetup{final}
-
+%\hypersetup{
+%  colorlinks   = true,    % Colours links instead of ugly boxes
+%  urlcolor     = blue,    % Colour for external hyperlinks
+%  linkcolor    = blue,    % Colour of internal links
+%  citecolor    = red      % Colour of citations
+%}
+%\hypersetup{final}
+%
 \usetikzlibrary{shapes, arrows.meta, positioning}
 \tikzstyle{block}=[draw,fill=white,rectangle]
 \tikzstyle{every node}=[font=\small]
@@ -74,9 +93,9 @@
 \newtheorem{proposition}[theorem]{Proposition}
 \newtheorem{example}[theorem]{Example}
 \newtheorem{algorithm}[theorem]{Algorithm}
-\newcommand{\dbsp}{DBSP\xspace}
 
-\newcommand{\anonymize}[1]{#1}
+\begin{document}
+
 % Used when a term is first defined.  Adds the term to the index.
 \newcommand{\defined}[1]{\textbf{#1}\index{}}
 \newcommand{\zr}{$\Z$-set\xspace}
@@ -128,8 +147,7 @@
 {]}
 }
 
-\title{\dbsp: Automatic Incremental View Maintenance for Rich Query Languages}
-
+\newcommand{\dbsp}{DBSP\xspace}
 \numberofauthors{5}
 \author{
   \alignauthor Mihai Budiu \\
@@ -137,10 +155,11 @@
   \email{mbudiu@feldera.com} \\
   \alignauthor Tej Chajed \\
   \affaddr{University of Wisconsin-Madison} \\
-  \email{tchajed@wisc.edu} \\
+  \email{chajed@wisc.edu} \\
   \alignauthor Frank McSherry \\
   \affaddr{Materialize Inc.} \\
   \email{mcsherry@materialize.com} \\
+  \and
   \alignauthor Leonid Ryzhyk \\
   \affaddr{Feldera} \\
   \email{ryzhyk@feldera.com} \\
@@ -149,7 +168,8 @@
   \email{val@seas.upenn.edu} \\
 }
 
-\begin{document}
+\title{\dbsp: Automatic Incremental View Maintenance for Rich Query Languages}
+\maketitle
 
 \begin{abstract}
 Incremental view maintenance (IVM) has long been a central problem in
@@ -171,9 +191,14 @@ obtain efficient incremental view maintenance algorithms for queries
 written in all these languages.
 \end{abstract}
 
-\maketitle
+\permission{}
+\copyrightetc{Copyright is held by the owner/author(s). Publication
+  rights licensed to the VLDB Endowment. This is a minor revision of
+  the paper entitled \dbsp: Automatic Incremental View Maintenance for
+  Rich Query Languages, published in PVLDB, Vol. 16, Issue 7, ISSN
+  2150-8097.  DOI: https://doi.org/10.14778/3587136.3587137}
 
-\input{intro2}
+\input{intro}
 \input{streams}
 \input{relational}
 \input{recursion}
@@ -185,8 +210,5 @@ written in all these languages.
 
 \bibliographystyle{abbrv}
 \bibliography{main}
-
-%\appendix
-%\input{appendix}
 
 \end{document}

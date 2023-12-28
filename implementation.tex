@@ -8,7 +8,7 @@ system to a future paper.
 
 We have built an implementation of \dbsp as part of an
 open-source project with an MIT license:
-\anonymize{\url{https://github.com/vmware/database-stream-processor}}.
+\url{https://github.com/feldera/feldera}.
 The implementation consists of a Rust library and a runtime.
 The library provides APIs for basic algebraic data types:
 such as groups, finite maps, \zr, indexed \zr.
@@ -41,7 +41,7 @@ We have also built a SQL to \dbsp compiler, which translates standard
 SQL queries into \dbsp circuits.  The compiler implements
 Algorithm~\ref{algorithm-inc}, to generate a streaming version of any
 SQL query.  The compiler is open-source
-\anonymize{\url{https://github.com/vmware/sql-to-dbsp-compiler}} with
+\url{https://github.com/feldera/feldera/tree/main/sql-to-dbsp-compiler} with
 an MIT license.  The compiler front-end parser and optimizer are based
 on the Apache Calcite~\cite{begoli-icmd18} infrastructure.  The
 project is mature enough to pass all 7 million SQL Logic
@@ -55,7 +55,7 @@ joins.
 
 We have formalized and verified all the definitions, lemmas,
 propositions, theorems, and examples in this paper using the Lean theorem prover; we make
-these proofs available at~\anonymize{\cite{dbsp-theory}}.
+these proofs available at~\cite{dbsp-theory}.
 % This amounted to roughly 5K lines of Lean code.
 The formalization builds on mathlib~\cite{mathlib2020}, which provides
 support for groups and functions with finite support (modeling

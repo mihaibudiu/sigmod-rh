@@ -125,7 +125,7 @@ input relations and $R$ is a relational (non-recursive) query.
 
 We describe the algorithm for
 the simpler case of a single-input, single-output query\footnote{The general case
-in the companion technical report~\anonymize{\cite{tr}} is only
+in the companion technical report~\cite{tr} is only
 slightly more involved.}.  The input of our algorithm is a Datalog query of the form
 $O = R(I, O)$, where $R$ is a relational, non-recursive query,
 producing a set as a result, but whose output $O$ is also an input.
@@ -137,7 +137,7 @@ of this circuit.
 
 \begin{algorithm}[recursive queries]\label{algorithm-rec}
 \noindent
-\begin{enumerate}[nosep, leftmargin=\parindent]
+\begin{enumerate}
 \item Implement the non-recursive relational query $R$ as described in
     \secref{sec:relational} and Table~\ref{tab:relational}; this produces
     an acyclic circuit whose inputs and outputs are a \zrs:

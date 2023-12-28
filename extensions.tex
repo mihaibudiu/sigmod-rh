@@ -311,20 +311,6 @@ bounded memory to compute a window of an unbounded stream.
 This circuit is a building block of a large family of window queries, including
 window joins and window aggregation (e.g., SQL \texttt{OVER} queries).
 
-\begin{comment}
-\item[Weakening assumptions]
-
-The theory as presented requires streams to be over group elements.  However,
-this is necessary only if we want to automatically compute incremental
-versions of the operators --- the addition and negation operations are
-required for building $\I$ and $\D$.  The streaming circuits model
-works very well on much simpler algebraic structures.  The $0$ element
-is still needed to define $\zm$ and time-invariance.  Circuits that
-mix streams over groups with arbitrary streams are well-defined.  However,
-the zero-preservation property is required even for such general computations,
-for the time-invariance of the resulting circuits.
-\end{comment}
-
 \subsection{Relational while queries}
 
 \dbsp can express programs that go beyond Datalog:

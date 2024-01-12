@@ -1,91 +1,82 @@
 \section{Recursive queries}\label{sec:recursion}
 
-Recursive queries are very useful in a many applications.
-For example, graph algorithms such as graph reachability
-or transitive closure are naturally expressed using recursive queries.
+Recursive queries are very useful in a many applications.  For
+example, graph algorithms such as graph reachability or transitive
+closure are naturally expressed using recursive queries.  We introduce
+two simple \dbsp stream operators that are used for expressing
+recursive query evaluation.  These operators allow us to build
+circuits implementing looping constructs, which are used to iterate
+computations until a fixed-point is reached.
 
-We introduce two simple \dbsp stream operators that are used for
-expressing recursive query evaluation.  These operators allow us
-to build circuits implementing looping constructs, which
-are used to iterate computations until a fixed-point is reached.
+\subsection{Creating and destroying streams}
 
-\begin{definition}\label{def:zae}
-We say that a stream $s \in \stream{A}$ is \defined{zero almost-everywhere} if it has a finite
-number of non-zero values, i.e., there exists a time $t_0 \in \N$
-s.t. $\forall t \geq t_0 . s[t] = 0$.
-\noindent Denote the set of streams that are zero almost everywhere
-by $\streamf{A} \subset \stream{A}$.
-\end{definition}
+%\begin{definition}\label{def:zae}
+%We say that a stream $s \in \stream{A}$ is \defined{zero almost-everywhere} if it has a finite
+%number of non-zero values, i.e., there exists a time $t_0 \in \N$
+%s.t. $\forall t \geq t_0 . s[t] = 0$.
+%\noindent Denote the set of streams that are zero almost everywhere
+%by $\streamf{A} \subset \stream{A}$.
+%\end{definition}
 
-\paragraph{Stream introduction}
+% \paragraph{Stream introduction}
 
-The delta function (named from the Dirac delta function) $\delta_0 : A \rightarrow \stream{A}$
-produces a stream from a scalar value:
-$$\delta_0(v)[t] \defn \left\{
-\begin{array}{ll}
-  v & \mbox{if } t = 0 \\
-  0_A & \mbox{ otherwise}
-\end{array}
-\right.
-$$
-\ifstreamexamples
-For example, $\delta_0(5)$ is the stream $\sv{5 0 0 0 0}$.
-\fi
+The \defined{delta function} (named from the Dirac delta function)
+$\delta_0 : A \rightarrow \stream{A}$ produces a stream from a scalar
+value.  Given an input value $x$ the output stream is $x$ followed by
+an infinite number of zeros.  Notice that the input is a single arrow,
+while the output is a double arrow.
 
-\begin{comment}
-Here is a diagram showing a $\delta_0$ operator; note that the input is a scalar value,
-while the output is a stream:
-
+%$$\delta_0(v)[t] \defn \left\{
+%\begin{array}{ll}
+%  v & \mbox{if } t = 0 \\
+%  0_A & \mbox{ otherwise}
+%\end{array}
+%\right.
+%$$
+%\ifstreamexamples
+%For example, $\delta_0(5)$ is the stream $\sv{5 0 0 0 0}$.
+%\fi
+\begin{center}
 \begin{tikzpicture}[auto,node distance=1cm,>=latex]
-    \node[] (input) {$i$};
+    \node[] (input) {\fbox{x}};
     \node[block, right of=input] (delta) {$\delta_0$};
-    \node[right of=delta] (output) {$o$};
+    \node[right of=delta, node distance=2.2cm] (output) {\sv{x 0 0 0 0}};
     \draw[->] (input) -- (delta);
-    \draw[->] (delta) -- (output);
+    \draw[->>] (delta) -- (output);
 \end{tikzpicture}
-\end{comment}
+\end{center}
 
-\paragraph{Stream elimination}
+% \paragraph{Stream elimination}
 
-We define the function $\int : \streamf{A} \rightarrow
-A$, over streams that are zero almost everywhere, as
-$\int(s) \defn \sum_{t \geq 0} s[t]$.
-$\int$ is closely related to $\I$; if $\I$ is the
-indefinite (discrete) integral, $\int$ is the definite (discrete) integral on the
-interval $0 - \infty$.  For example, $\int(\sv{1 2 3 0 0}) = 6$.
-
-For many classes of queries (including relational and Datalog queries
-given below) the $\int$ operator can be ``approximated'' without loss
-of precision by integrating until the first 0 value encountered.
-
-\begin{comment}
-Here is a diagram using the $\int$ operator; note that  the result it
-produces is a scalar, and not a stream:
+We define the function $\int : \stream{A} \rightarrow A$.  Its input
+stream is required to eventually reach the value 0 and never change
+afterwards.  This function just sums up all the values in the input
+stream and returns the result when it encounters the first 0 in the
+input stream.  For example, $\int(\sv{1 2 3 0 0}) = 6$.  Notice that
+the input is a double arrow, while the output is a single arrow.
 
 \begin{tikzpicture}[auto,node distance=1cm,>=latex]
     \node[] (input) {$i$};
     \node[block, right of=input] (S) {$\int$};
     \node[right of=S] (output) {$o$};
-    \draw[->] (input) -- (S);
+    \draw[->>] (input) -- (S);
     \draw[->] (S) -- (output);
 \end{tikzpicture}
-\end{comment}
 
 %$\delta_0$ is the left inverse of $\int$, i.e.: $\int \circ \; \delta_0 = \id_A$.
-\begin{proposition}
-$\delta_0$ and $\int$ are LTI.
-\end{proposition}
+%\begin{proposition}
+%$\delta_0$ and $\int$ are LTI.
+%\end{proposition}
 
-\paragraph{Nested time domains}
+% \paragraph{Nested time domains}
 
 So far we have used a tacit assumption that ``time'' is common for all
-streams in a program.  For example, when we add two streams,
-we assume that they use the same ``clock'' for the time dimension.
-However, the $\delta_0$ operator creates a stream with a ``new'', independent time
-dimension.  We require \emph{well-formed circuits}
-to ``insulate'' such
-nested time domains by ``bracketing'' them between a $\delta_0$
-and an $\int$ operator:
+streams in a program.  For example, when we add two streams, we assume
+that they use the same ``clock'' for the time dimension.  However, the
+$\delta_0$ operator creates a stream with a ``new'', independent time
+dimension.  We require \emph{well-formed circuits} to ``insulate''
+nested time domains by ``bracketing'' them between a $\delta_0$ and an
+$\int$ operator:
 
 \begin{center}
 \begin{tikzpicture}[auto,node distance=1cm,>=latex]
@@ -102,13 +93,9 @@ and an $\int$ operator:
 \end{tikzpicture}
 \end{center}
 
-In this circuit the arrows with double
-heads denote stream values, while the simple arrow denote scalar values\footnote{We only use this convention in this diagram;
-in general the type of an arrow can be inferred from the type
-of its source node.}.  $Q$ is a streaming operator, but the entire circuit is a scalar function.
+In this circuit $Q$ is a streaming operator, but the entire circuit
+implements a scalar function, as shown by the single arrowheads.
 
-Algorithm~\ref{algorithm-rec} below, which translates recursive queries to
-\dbsp circuits, always produces well-formed circuits.
 %\begin{proposition}
 %If $Q$ is time-invariant, the circuit above has the zero-preservation
 %property: $\zpp{\int \circ\; Q \circ \delta_o}$.
@@ -116,31 +103,27 @@ Algorithm~\ref{algorithm-rec} below, which translates recursive queries to
 
 \subsection{Implementing recursive queries}\label{sec:datalog}
 
-We describe the implementation of recursive queries in \dbsp for
-stratified Datalog.
-In general, a recursive Datalog program defines a set of
-mutually recursive relations $O_1,..,O_n$ as an equation
-$(O_1,..,O_n)=R(I_1,..,I_m, O_1,..,O_n)$, where $I_1,..,I_m$ are
-input relations and $R$ is a relational (non-recursive) query.
+We describe the implementation of recursive queries in \dbsp.  SQL can
+only express very limited recursive queries, so here we model Datalog
+queries.  In general, a Datalog program defines a set of mutually
+recursive relations.
 
-We describe the algorithm for
-the simpler case of a single-input, single-output query\footnote{The general case
-in the companion technical report~\cite{tr} is only
-slightly more involved.}.  The input of our algorithm is a Datalog query of the form
-$O = R(I, O)$, where $R$ is a relational, non-recursive query,
-producing a set as a result, but whose output $O$ is also an input.
-The output of the algorithm is a \dbsp circuit which evaluates this
-recursive query producing output $O$ when given the input $I$.  Here we build
-a non-incremental circuit, which evaluates the Datalog query;
-in \refsec{sec:nested} we derive the incremental version
-of this circuit.
+We describe here the algorithm for the simple case of a single-input,
+single-output query.  The input of our algorithm is a Datalog query of
+the form $O = R(I, O)$, where $R$ is a \emph{relational},
+non-recursive query, producing a set as a result, but whose output $O$
+is also an input.  The output of the algorithm is a \dbsp circuit
+which evaluates this recursive query producing output $O$ when given
+the input $I$.  In this section we build a non-incremental circuit,
+which evaluates the Datalog query; in \refsec{sec:nested} we derive
+the incremental version of this circuit.
 
 \begin{algorithm}[recursive queries]\label{algorithm-rec}
 \noindent
 \begin{enumerate}
 \item Implement the non-recursive relational query $R$ as described in
     \secref{sec:relational} and Table~\ref{tab:relational}; this produces
-    an acyclic circuit whose inputs and outputs are a \zrs:
+    an acyclic circuit whose inputs and outputs are \zrs:
     \begin{center}
     \begin{tikzpicture}[auto,>=latex]
       \node[] (I) {\code{I}};
@@ -157,16 +140,15 @@ of this circuit.
     \begin{center}
     \begin{tikzpicture}[auto,>=latex]
       \node[] (I) {\code{I}};
-      \node[below of=I, node distance=.5cm] (O) {\code{O}};
+      \node[below of=I, node distance=.7cm] (O) {\code{O}};
       \node[block, right of=I] (R) {$\lift R$};
       \node[right of=R] (o) {\code{O}};
-      \draw[->] (I) -- (R);
-      \draw[->] (O) -| (R);
-      \draw[->] (R) -- (o);
+      \draw[->>] (I) -- (R);
+      \draw[->>] (O) -| (R);
+      \draw[->>] (R) -- (o);
     \end{tikzpicture}
     \end{center}
-  We construct $\lift{R}$ by lifting each operator of the circuit individually
-  according to Proposition~\ref{prop:distributivity}.
+  Construct $\lift{R}$ by lifting each operator individually.
 
 \item Build a cycle, connecting the output to the corresponding
 recursive input via a delay:
@@ -176,48 +158,50 @@ recursive input via a delay:
   \node[] (I) {\code{I}};
   \node[block, right of=I] (R) {$\lift R$};
   \node[right of=R, node distance=1.5cm] (O) {\code{O}};
-  \node[block, below of=R, node distance=.7cm] (z) {$\zm$};
-  \draw[->] (I) -- (R);
-  \draw[->] (R) -- node(o) {} (O);
-  \draw[->] (o) |- (z);
-  \draw[->] (z) -- (R);
+  \node[block, below of=R, node distance=.8cm] (z) {$\zm$};
+  \draw[->>] (I) -- (R);
+  \draw[->>] (R) -- node(o) {} (O);
+  \draw[->>] (o) |- (z);
+  \draw[->>] (z) -- (R);
  \end{tikzpicture}
  \end{center}
-\item ``Bracket'' the circuit in $\I$ and $\D$ nodes, and then in $\delta_0$ and $\int$:
+\item ``Bracket'' the circuit as follows:
 
 \begin{center}
 \begin{tikzpicture}[auto,>=latex, node distance=.8cm]
   \node[] (Iinput) {\code{I}};
   \node[block, right of=Iinput] (ID) {$\delta_0$};
   \node[block, right of=ID] (II) {$\I$};
-  \node[block, right of=II] (f) {$\lift{R}$};
+  \node[block, right of=II, node distance=1cm] (f) {$\lift{R}$};
   \node[block, right of=f, node distance=1.5cm] (D) {$\D$};
   \node[block, right of=D] (S) {$\int$};
   \node[right of=S] (output)  {\code{O}};
   \draw[->] (Iinput) -- (ID);
-  \draw[->] (ID) -- (II);
-  \draw[->] (II) -- (f);
-  \draw[->] (f) -- node (o) {} (D);
-  \draw[->] (D) -- (S);
+  \draw[->>] (ID) -- (II);
+  \draw[->>] (II) -- (f);
+  \draw[->>] (f) -- node (o) {} (D);
+  \draw[->>] (D) -- (S);
   \draw[->] (S) -- (output);
-  \node[block, below of=f, node distance=.7cm] (z) {$\zm$};
-  \draw[->] (o) |- (z);
-  \draw[->] (z) -- (f);
+  \node[block, below of=f, node distance=.8cm] (z) {$\zm$};
+  \draw[->>] (o) |- (z);
+  \draw[->>] (z) -- (f);
 \end{tikzpicture}
 \end{center}
 \end{enumerate}
 \end{algorithm}
 
-We argue that the cycle inside this circuit computes iteratively the fixed point of $R$.
-The $\D$ operator yields the set of new Datalog facts (changes) computed by each iteration of the loop.
-When the set of new facts becomes empty, the fixed point has been reached:
+Think of the feedback cycle in this circuit as a \texttt{while} loop
+that iterates until no changes are observed (in technical terms, a
+fixed-point of $R$ is reached).  The $\D$ operator yields the set of
+\emph{new changes} computed by each iteration of the loop.  When the
+set of new changes becomes empty, the fixed point has been reached.
 
-\begin{theorem}[Recursion correctness]\label{theorem:recursion}
-If $\isset(\code{I})$, the output of the circuit above is
-the relation $\code{O}$ as defined by the Datalog semantics of given program
-$R$ as a function of the input relation \code{I}.
-\end{theorem}
-\label{proof-recursion}
+%\begin{theorem}[Recursion correctness]\label{theorem:recursion}
+%If $\isset(\code{I})$, the output of the circuit above is
+%the relation $\code{O}$ as defined by the Datalog semantics of given program
+%$R$ as a function of the input relation \code{I}.
+%\end{theorem}
+%\label{proof-recursion}
 %\begin{proof}
 %Let us compute the contents of the $o$ stream, produced at the output
 %of $R$.  We will show that this stream is composed
@@ -245,36 +229,32 @@ $R$ as a function of the input relation \code{I}.
 %$\code{O} = \fix{x}{R(\code{I}, x)}$.
 %\end{proof}
 
-Note that if the query $R$ computes over unbounded data domains (e.g.,
-using integers with arithmetic), this construction does not guarantee
-that at runtime a fixed point is reached.  But if a program does converge, the
-above construction will find the least fixed point.
+Note that this loop is not guaranteed to terminate.  But if a program
+does converge, the above construction will find the least fixed point.
 
-In fact, this circuit implements the standard \defined{na\"{\i}ve evaluation}
-algorithm (e.g., see Algorithm~1 in \cite{greco-sldm15}).
-Notice that the inner part of the circuit is the incremental
-form of another circuit, since it is sandwiched between $\I$ and $\D$ operators.
-Using the cycle rule of Proposition~\ref{prop-inc-properties} we can rewrite this circuit as:
-%
-\begin{equation}
-\begin{aligned}
-\label{eq:seminaive}
+In fact, this circuit implements the standard Datalog
+\defined{na\"{\i}ve evaluation} algorithm (e.g., see Algorithm~1 in
+\cite{greco-sldm15}).  Notice that the inner part of the circuit is
+the incremental form of another circuit, since it is sandwiched
+between $\I$ and $\D$ operators.  Using the cycle rule of we can
+rewrite this circuit:
+
+\begin{center}
 \begin{tikzpicture}[auto,>=latex]
   \node[] (Iinput) {\code{I}};
   \node[block, right of=Iinput] (Idelta) {$\delta_0$};
-  \node[block, right of=Idelta] (f) {$\inc{(\lift{R})}$};
+  \node[block, right of=Idelta, node distance=1.3cm] (f) {$\inc{(\lift{R})}$};
   \node[block, right of=f, node distance=1.5cm] (S) {$\int$};
   \node[right of=S] (output)  {\code{O}};
-  \node[block, below of=f, node distance=.7cm] (z) {$\zm$};
+  \node[block, below of=f, node distance=.9cm] (z) {$\zm$};
   \draw[->] (Iinput) -- (Idelta);
   \draw[->] (f) -- node (o) {} (S);
-  \draw[->] (S) -- (output);
-  \draw[->] (o) |- (z);
-  \draw[->] (z) -- (f);
-  \draw[->] (Idelta) -- (f);
+  \draw[->>] (S) -- (output);
+  \draw[->>] (o) |- (z);
+  \draw[->>] (z) -- (f);
+  \draw[->>] (Idelta) -- (f);
 \end{tikzpicture}
-\end{aligned}
-\end{equation}
+\end{center}
 
 This circuit implements \defined{semi-na\"{\i}ve evaluation}
 (Algorithm~2 from~\cite{greco-sldm15}).  We have just proven the

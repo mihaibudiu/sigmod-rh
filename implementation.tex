@@ -4,8 +4,8 @@
 
 While \dbsp is a theoretical construct, we want to emphasize that the
 assumptions of the model do not detract from its practicality.  In
-fact, we have built an open-source implementation of \dbsp as a
-runtime in Rust~\cite{dbsp-crate}; we have also built a compiler from
+fact, we have built an open-source implementation of \dbsp as a query
+engine in Rust~\cite{dbsp-crate}; we have also built a compiler from
 SQL to \dbsp~\cite{sql-to-dbsp-compiler}.  This compiler handles
 essentially the entire SQL language\footnote{The only construct which
 is not handled efficiently is ORDER BY without LIMIT.}.  The compiler
@@ -21,16 +21,20 @@ joins, ``distinct'', and aggregates can be implemented efficiently
 only using additional storage in the form of \emph{indexes}.  The size
 of these indexes is proportional to the size of the total data in the
 database (and not just to the size of the changes) --- and since some
-indexes are over intermediate data structures, they can even exceed
-the size of the original database.
+indexes are over intermediate relations, they can even exceed the size
+of the original database.  In \dbsp the indexes are represented by
+delay operators $\zm$.  In fact, the delay operator (and its lifted
+variant $\lift{\zm}$ are the only operators that maintains state.
+This is also the only state that needs to be persisted, checkpointed,
+or migrated to make \dbsp computations fault-tolerant.
 
 Another limitation of incremental computation is the startup cost.
 When a new view is installed, the IVM system must compute the first
 change, which is the same as the initial contents of the view.  This
 computation is in general proportional to the size of the whole
-database.  This is known as the ``backfill'' problem.  \dbsp also does
-not allow changes the definition of the views or to the schema of the
-data.
+database.  This is known as the ``backfill'' problem.  Likewise,
+changes to the definition of a view or the data schema require
+recomputing the affected queries from scratch.
 
 \dbsp is an ``eager'' or ``top-down'' execution model: it constantly
 maintains the entire contents of any number of views, even if no one
@@ -41,13 +45,13 @@ Eager models can be converted into lazy ones if something is known
 about the class of operations that will be executed against the views.
 But this is in essence just another time-space trade-off.
 
-\dbsp should ideally be integrated in a traditional database and
-offered by the database as a service.  The ``right'' interface for
-this service is the following: users register to receive notifications
-for changes in one or more views.  Then for any transaction committed,
-every user is notified with all the changes for the views they are
-monitoring.  Unfortunately several obstacles prevent such an
-integration from being done naturally:
+An IVM system like \dbsp can in principle be integrated as a service
+in a traditional database.  The ``right'' interface for this service
+is the following: users register to receive notifications for changes
+in one or more views.  Then for any transaction committed, every user
+is notified with all the changes for the views they are monitoring.
+Unfortunately several obstacles prevent such an integration from being
+done naturally:
 \begin{itemize}
   \item The core data structure in incremental plans is the
     ``change''.  Changes can be both positive (insertions) and

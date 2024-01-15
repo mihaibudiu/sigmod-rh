@@ -25,7 +25,7 @@ produces streams.
 In general we use ``operator'' for streams, and ``function'' for
 computations on ``scalar'' values.
 
-In this paper we mostly use circuit diagrams to depict \dbsp
+In this paper we use circuit diagrams to depict \dbsp
 programs\footnote{Circuits hide the \emph{order} of the inputs of an
 operator.}.  In a circuit a rectangle represents an operator (and is
 labeled with the operator name, e.g., $T$), while an arrow with a
@@ -672,8 +672,8 @@ $\cong$ &
 %\end{theorem}
 
 What is the intuition behind this diagram?  Let us consider the case
-of Cartesian product $a \times b$.  The incremental has inputs $\Delta
-a = \D(a)$ and $\Delta b = \D(b)$.
+of Cartesian product $a \times b$.  The incremental product has inputs
+$\Delta a = \D(a)$ and $\Delta b = \D(b)$.
 
 What happens when we add a row $x$ to relation $a$ (i.e., $\Delta a =
 x$)?  How does the output change?  The new row $x$ will appear
@@ -683,9 +683,9 @@ computes relation $b$ from the stream $\Delta b$ of changes, and $\zm$
 applied to this value gives us its previous version.  So the bottom
 $\times$ operator computes $x \times \zm(b) = \Delta a \times
 \zm(\I(\Delta b))$, the change produced by the new row $x$.  The top
-$\times$ operator does the symmetric operation for the changes of the
-$b$ relation.  And the middle $\times$ operator produces results when
-changes happen to both relations.
+$\times$ operator performs the symmetric operation for the changes of
+the $b$ relation.  And the middle $\times$ operator produces results
+when changes happen to both relations.
 
 %Rewriting this statement using $\Delta a$ for the stream of changes to
 %$a$ we get the familiar formula for incremental equi-joins:

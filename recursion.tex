@@ -20,13 +20,12 @@ computations until a fixed-point is reached.
 
 % \paragraph{Stream introduction}
 
-The \defined{delta function} (named from the Dirac delta function)
-$\delta_0 : A \rightarrow \stream{A}$ produces a stream from a scalar
-value.  Given an input value $x$ the output stream is $x$ followed by
-an infinite number of zeros.  Notice that the input is a single arrow,
-while the output is a double arrow.
+The \defined{delta function} $\delta : A \rightarrow \stream{A}$
+produces a stream from a scalar value.  Given an input value $x$ the
+output stream is $x$ followed by an infinite number of zeros.  Notice
+that the input is a single arrow, while the output is a double arrow.
 
-%$$\delta_0(v)[t] \defn \left\{
+%$$\delta(v)[t] \defn \left\{
 %\begin{array}{ll}
 %  v & \mbox{if } t = 0 \\
 %  0_A & \mbox{ otherwise}
@@ -34,12 +33,12 @@ while the output is a double arrow.
 %\right.
 %$$
 %\ifstreamexamples
-%For example, $\delta_0(5)$ is the stream $\sv{5 0 0 0 0}$.
+%For example, $\delta(5)$ is the stream $\sv{5 0 0 0 0}$.
 %\fi
 \begin{center}
 \begin{tikzpicture}[auto,node distance=1cm,>=latex]
     \node[] (input) {\fbox{x}};
-    \node[block, right of=input] (delta) {$\delta_0$};
+    \node[block, right of=input] (delta) {$\delta$};
     \node[right of=delta, node distance=2.2cm] (output) {\sv{x 0 0 0 0}};
     \draw[->] (input) -- (delta);
     \draw[->>] (delta) -- (output);
@@ -63,9 +62,9 @@ the input is a double arrow, while the output is a single arrow.
     \draw[->] (S) -- (output);
 \end{tikzpicture}
 
-%$\delta_0$ is the left inverse of $\int$, i.e.: $\int \circ \; \delta_0 = \id_A$.
+%$\delta$ is the left inverse of $\int$, i.e.: $\int \circ \; \delta = \id_A$.
 %\begin{proposition}
-%$\delta_0$ and $\int$ are LTI.
+%$\delta$ and $\int$ are LTI.
 %\end{proposition}
 
 % \paragraph{Nested time domains}
@@ -73,15 +72,15 @@ the input is a double arrow, while the output is a single arrow.
 So far we have used a tacit assumption that ``time'' is common for all
 streams in a program.  For example, when we add two streams, we assume
 that they use the same ``clock'' for the time dimension.  However, the
-$\delta_0$ operator creates a stream with a ``new'', independent time
+$\delta$ operator creates a stream with a ``new'', independent time
 dimension.  We require \emph{well-formed circuits} to ``insulate''
-nested time domains by ``bracketing'' them between a $\delta_0$ and an
+nested time domains by ``bracketing'' them between a $\delta$ and an
 $\int$ operator:
 
 \begin{center}
 \begin{tikzpicture}[auto,node distance=1cm,>=latex]
     \node[] (input) {$i$};
-    \node[block, right of=input] (delta) {$\delta_0$};
+    \node[block, right of=input] (delta) {$\delta$};
     \node[block, right of=delta] (f) {$Q$};
     \draw[->] (input) -- (delta);
     \draw[->>] (delta) -- (f);
@@ -98,7 +97,7 @@ implements a scalar function, as shown by the single arrowheads.
 
 %\begin{proposition}
 %If $Q$ is time-invariant, the circuit above has the zero-preservation
-%property: $\zpp{\int \circ\; Q \circ \delta_o}$.
+%property: $\zpp{\int \circ\; Q \circ \delta}$.
 %\end{proposition}
 
 \subsection{Implementing recursive queries}\label{sec:datalog}
@@ -108,7 +107,7 @@ only express very limited recursive queries, so here we model Datalog
 queries.  In general, a Datalog program defines a set of mutually
 recursive relations.
 
-We describe here the algorithm for the simple case of a single-input,
+We describe the algorithm for the simple case of a single-input,
 single-output query.  The input of our algorithm is a Datalog query of
 the form $O = R(I, O)$, where $R$ is a \emph{relational},
 non-recursive query, producing a set as a result, but whose output $O$
@@ -170,7 +169,7 @@ recursive input via a delay:
 \begin{center}
 \begin{tikzpicture}[auto,>=latex, node distance=.8cm]
   \node[] (Iinput) {\code{I}};
-  \node[block, right of=Iinput] (ID) {$\delta_0$};
+  \node[block, right of=Iinput] (ID) {$\delta$};
   \node[block, right of=ID] (II) {$\I$};
   \node[block, right of=II, node distance=1cm] (f) {$\lift{R}$};
   \node[block, right of=f, node distance=1.5cm] (D) {$\D$};
@@ -191,10 +190,10 @@ recursive input via a delay:
 \end{algorithm}
 
 Think of the feedback cycle in this circuit as a \texttt{while} loop
-that iterates until no changes are observed (in technical terms, a
-fixed-point of $R$ is reached).  The $\D$ operator yields the set of
-\emph{new changes} computed by each iteration of the loop.  When the
-set of new changes becomes empty, the fixed point has been reached.
+that iterates until no changes are observed (i.e., a fixed-point of
+$R$ is reached).  The $\D$ operator yields the set of \emph{new
+changes} computed by each iteration of the loop.  When the set of new
+changes becomes empty, the fixed point has been reached.
 
 %\begin{theorem}[Recursion correctness]\label{theorem:recursion}
 %If $\isset(\code{I})$, the output of the circuit above is
@@ -242,7 +241,7 @@ rewrite this circuit:
 \begin{center}
 \begin{tikzpicture}[auto,>=latex]
   \node[] (Iinput) {\code{I}};
-  \node[block, right of=Iinput] (Idelta) {$\delta_0$};
+  \node[block, right of=Iinput] (Idelta) {$\delta$};
   \node[block, right of=Idelta, node distance=1.3cm] (f) {$\inc{(\lift{R})}$};
   \node[block, right of=f, node distance=1.5cm] (S) {$\int$};
   \node[right of=S] (output)  {\code{O}};

@@ -180,7 +180,7 @@
 
 \begin{abstract}
   We describe \dbsp, a framework for incremental computation.
-  Incremental computations repeatedly evaluate a function on a
+  Incremental computations repeatedly evaluate a function on
   some input values that are ``changing''.  The goal of an efficient
   implementation is to ``reuse'' previously computed results.
   Ideally, when presented with a new change to the input, an
@@ -196,8 +196,8 @@
 
   As a first step of our solution, we define incremental computations
   as computations on data streams, i.e., sequences of data values.  We
-  borrow ideas from the theory of Digital Signal Processing, developed
-  for stream processing.
+  borrow ideas from the theory of Digital Signal Processing, which is
+  a form of computation over streams.
 
   Using these tools, we give a general solution to the incremental
   computation problem in 4 steps: (1) we describe a simple but

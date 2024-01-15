@@ -17,7 +17,7 @@ to represent sets.
 
 \zrs generalize database tables: think of a \zr as a table where each
 row has an associated integer weight, possibly negative.  This weight
-tells us \emph{how many times} the row belongs to the table.
+indicates \emph{how many times} the row belongs to the table.
 
 %Given a set $A$, we define \defined{\zrs} over $A$ as functions with
 %\emph{finite support} from $A$ to $\Z$.  These are functions $f: A
@@ -270,7 +270,7 @@ WHERE p(I.c)
 &
 \parbox[b][][t]{\commentsize}{
   Select each value separately.  If the value is selected preserve the
-  weigth, else make the weight 0.
+  weight, else make the weight 0.
 }
 % \\ \hline
 %Selection &
@@ -574,13 +574,14 @@ $\distinct$ operator.  How does the output change?  If the row was not
 in the prior full input table, then it will appear with weight 1 in
 the output change.  Otherwise an empty output is produced.  Only
 tuples that appear in the input change $\Delta d$ can appear in the
-output change $\Delta o$.  The implementation needs to maintain the
-\emph{entire input set} in order to discover whether an item is new or
-not.  That is the purpose of the $\I$ operator in the above diagram.
-The $i$ arrow is the previous version of the full input table.  The
-function $H$ detects whether the weight of a row in $i$ is changing
-sign (positive to negative or vice-versa) when the row appears in
-$\Delta d$.  A precise definition of $H$ is given in the full paper.
+output change $\Delta o$, so the work performed is $O(|\Delta d)|$.
+The implementation needs to maintain the \emph{entire input set} in
+order to discover whether an item is new or not.  That is the purpose
+of the $\I$ operator in the above diagram.  The $i$ arrow is the
+previous version of the full input table.  The function $H$ detects
+whether the weight of a row in $i$ is changing sign (positive to
+negative or vice-versa) when the row appears in $\Delta d$.  A precise
+definition of $H$ is given in the full paper.
 
 \subsection{Incremental view maintenance}
 

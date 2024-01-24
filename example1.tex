@@ -1,7 +1,7 @@
 \textbf{Relational Query Example}\label{sec:relational-example}
 
 %Let's apply the IVM algorithm to a concrete relational SQL query:
-\begin{lstlisting}[language=SQL,basicstyle=\small]
+\begin{lstlisting}[language=SQL,basicstyle=\small\ttfamily]
 CREATE VIEW v AS
 SELECT DISTINCT a.x, b.y FROM (
      SELECT t1.x, t1.id FROM t1 WHERE t1.a > 2

@@ -24,7 +24,7 @@ database (and not just to the size of the changes) --- and since some
 indexes are over intermediate relations, they can even exceed the size
 of the original database.  In \dbsp the indexes are represented by
 delay operators $\zm$.  In fact, the delay operator (and its lifted
-variant $\lift{\zm}$ are the only operators that maintains state.
+variant $\lift{\zm}$) are the only operators that maintains state.
 This is also the only state that needs to be persisted, checkpointed,
 or migrated to make \dbsp computations fault-tolerant.
 

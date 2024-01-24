@@ -191,10 +191,10 @@ $\Delta DB$ and $DB$:
 \end{tikzpicture}
 \end{center}
 
-What is a view in our streaming model?  It is also a stream!  For each
-Suppose we are given a query $Q$ defining a view $V$.  snapshot of the
-database stream we have a snapshot of the view: $V[t] = Q(DB[t])$.  In
-general, given an arbitrary function $f: A \to B$, we define a
+What is a view in our streaming model?  It is also a stream!  Suppose
+we are given a query $Q$ defining a view $V$.  For each snapshot of
+the database stream we have a snapshot of the view: $V[t] = Q(DB[t])$.
+In general, given an arbitrary function $f: A \to B$, we define a
 streaming ``version'' of $f$, denoted by $\lift{f}$ (read as ``$f$
 lifted''), which applies $f$ to every element of the input stream
 independently.  We can thus write $V = (\lift{Q})(DB)$.

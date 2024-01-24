@@ -72,7 +72,7 @@ where all weights are positive.  Crucially, \zrs can also represent
 arbitrary \emph{changes} to sets and bags.  Negative weights in a
 change represent elements that are being \emph{removed}.
 
-We can define a three operations on \zr of a given type (i.e., where
+We can define three operations on \zr of a given type (i.e., where
 the values have a given type): (1) zero (with all weights 0) (2)
 negation: just negate all weights; (3) plus: add up the weights of the
 rows that have the same value.  Using these operations \zrs behave
@@ -154,7 +154,7 @@ elements with negative weights.
 %\fi
 This definition of $\distinct$ has been carefully
 chosen to enable us to implement the database computations
-in terms of computations \zrs.
+in terms of computations on \zrs.
 %Circuits derived from relational queries only compute on positive \zrs.
 
 %\begin{definition}(mononotonicity)
@@ -168,19 +168,21 @@ in terms of computations \zrs.
 %
 %\paragraph{Functions as circuits}
 
-We will use a circuit representation for functions values: boxes with
-input and output arrows.  For simple functions the arrow will have a
-single head.
+We also use a circuit representation for functions: functions are
+boxes with inputs and outputs shown as arrows.  For simple functions
+the arrows have a single head.
 
 \subsection{Implementing relational operators}\label{sec:relational-operators}
 
 The fact that relational algebra can be implemented by computations on
 \zrs has been shown before, e.g.~\cite{green-pods07}.  The translation
 of the relational operators to functions computing on \zrs is shown in
-Table~\ref{tab:relational}.  The first row of the table shows that a
-composite query is translated recursively: implement the sub-queries,
-and connect them with an arrow.  This gives us a recipe for
-translating an arbitrary relational query plan into a circuit.
+Table~\ref{tab:relational}.  The functions ($\pi$, $\sigma$,
+$\bowtie$) are the standard relational operators projection,
+selection, join, used in database theory.  The first row of the table
+shows that a composite query is translated recursively: implement the
+sub-queries, and connect them with an arrow.  This gives us a recipe
+for translating an arbitrary relational query plan into a circuit.
 
 \newlength{\commentsize}
 \setlength{\commentsize}{5.2cm}

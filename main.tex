@@ -60,11 +60,11 @@
 %\numberwithin{equation}{section}
 %
 %\graphicspath{ {.} }
+\lstset{basicstyle=\ttfamily}
 \lstset{language=Java,
   commentstyle=\color{brown},
   keywordstyle=\color{blue},
-  stringstyle=\color{red},
-  basicstyle=\ttfamily}
+  stringstyle=\color{red}}
 
 \lstdefinelanguage{ddlog}{
   language=Java, % we base it on Java, just for comments
@@ -81,7 +81,7 @@
 %}
 %\hypersetup{final}
 %
-\usetikzlibrary{shapes, arrows.meta, positioning}
+\usetikzlibrary{shapes, arrows.meta, positioning, decorations.pathreplacing}
 \tikzstyle{block}=[draw,fill=white,rectangle]
 \tikzstyle{every node}=[font=\small]
 
@@ -93,6 +93,14 @@
 \newtheorem{proposition}[theorem]{Proposition}
 \newtheorem{example}[theorem]{Example}
 \newtheorem{algorithm}[theorem]{Algorithm}
+
+\permission{Copyright is held by the owner/author(s). Publication
+  rights licensed to the VLDB Endowment. This is a simplified version
+  of the paper entitled \dbsp: Automatic Incremental View Maintenance
+  for Rich Query Languages, published in PVLDB, Vol. 16, Issue 7, ISSN
+  2150-8097~\cite{budiu-vldb23}.  DOI:
+  https://doi.org/10.14778/3587136.3587137}
+\copyrightetc{}
 
 \begin{document}
 
@@ -140,11 +148,10 @@
 \newcommand{\sv}[1]{ % simple stream value, supplied as a space-separated list of 5 values
 \setsepchar{ }
 \readlist\arg{#1}
-{[}
-\begin{array}{cccccc}
-    \arg[1] & \arg[2] & \arg[3] & \arg[4] & \arg[5] & \cdots
-\end{array}
-{]}
+\begin{tabular}{|c|c|c|c|c|} \hline
+  \!\arg[1]\! & \!\arg[2]\! & \!\arg[3]\! & \!\arg[4]\! %& \arg[5]
+  & \!\ensuremath{\cdots}\! \\ \hline
+\end{tabular}
 }
 
 \newcommand{\dbsp}{DBSP\xspace}
@@ -162,50 +169,57 @@
   \and
   \alignauthor Leonid Ryzhyk \\
   \affaddr{Feldera} \\
-  \email{ryzhyk@feldera.com} \\
+  \email{leonid@feldera.com} \\
   \alignauthor Val Tannen \\
   \affaddr{University of Pennsylvania} \\
   \email{val@seas.upenn.edu} \\
 }
 
-\title{\dbsp: Automatic Incremental View Maintenance for Rich Query Languages}
-\maketitle
+\title{\dbsp: Incremental Computation on Streams and Its Applications
+  to Databases} \maketitle
 
 \begin{abstract}
-Incremental view maintenance (IVM) has long been a central problem in
-database theory.  Many solutions have been proposed for restricted
-classes of database languages, such as the relational algebra, or
-Datalog.  These techniques do not naturally generalize to richer
-languages.  In this paper we give a general, heuristic-free solution
-to this problem in 3 steps: (1) we describe a simple but expressive
-language called \dbsp for describing computations over data streams;
-(2) we give a new mathematical definition of IVM and a general
-algorithm for solving IVM for arbitrary \dbsp programs, and (3) we
-show how to model many rich database query languages using \dbsp
-(including the full relational algebra, queries over sets and
-multisets, arbitrarily nested relations, aggregation, flatmap
-(unnest), monotonic and non-monotonic recursion, streaming
-aggregation, and arbitrary compositions of all of these).  SQL and
-Datalog can both be implemented in \dbsp.  As a consequence, we
-obtain efficient incremental view maintenance algorithms for queries
-written in all these languages.
-\end{abstract}
+  We describe \dbsp, a framework for incremental computation.
+  Incremental computations repeatedly evaluate a function on
+  some input values that are ``changing''.  The goal of an efficient
+  implementation is to ``reuse'' previously computed results.
+  Ideally, when presented with a new change to the input, an
+  incremental computation should only perform work proportional to the
+  size of the changes of the (input and output) data, rather than to
+  the size of the entire dataset.
 
-\permission{}
-\copyrightetc{Copyright is held by the owner/author(s). Publication
-  rights licensed to the VLDB Endowment. This is a minor revision of
-  the paper entitled \dbsp: Automatic Incremental View Maintenance for
-  Rich Query Languages, published in PVLDB, Vol. 16, Issue 7, ISSN
-  2150-8097.  DOI: https://doi.org/10.14778/3587136.3587137}
+  In the area of databases the incremental computation problem is
+  known as Incremental View Maintenance (IVM); IVM has long been a
+  central problem in database theory.  Many solutions have been
+  proposed for restricted classes of computation, but we are
+  seeking a general solution.
+
+  As a first step of our solution, we define incremental computations
+  as computations on data streams, i.e., sequences of data values.  We
+  borrow ideas from the theory of Digital Signal Processing, which is
+  a form of computation over streams.
+
+  Using these tools, we give a general solution to the incremental
+  computation problem in 4 steps: (1) we describe a simple but
+  expressive language called \dbsp for describing computations over
+  data streams; (2) we give a new mathematical definition of
+  incremental computation for \dbsp programs; (3) we give a general
+  algorithm for converting any \dbsp program into an incremental
+  program, and (4) we show that practical database query languages,
+  such as SQL and Datalog, can be directly implemented on top of
+  \dbsp.  As a consequence, we obtain efficient incremental view
+  maintenance algorithms for essentially arbitrary queries written in
+  all these languages.
+\end{abstract}
 
 \input{intro}
 \input{streams}
 \input{relational}
 \input{recursion}
 \input{nested}
-\input{extensions}
+%\input{extensions}
 \input{implementation}
-\input{related}
+%\input{related}
 \input{conclusions}
 
 \bibliographystyle{abbrv}

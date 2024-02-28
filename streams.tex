@@ -1,79 +1,22 @@
-\section{Stream computations}\label{sec:streams}
+\section{Stream operators}\label{sec:streams}
 
-The core notion of \dbsp is the \textbf{stream}.  In this section we
-introduce streams, and several structured ways of computing on
-streams.  Stream operators are the basic building block of stream
-computations; operators can be composed into complex computational
-circuits.
+%\subsection{Useful stream operators}\label{sec:abelian}
 
-\subsection{Streams and stream operators}\label{sec:notation}
+For the rest of this paper we require the set of values $A$ of a
+stream $\stream{A}$ to form a commutative group, with operations $+$,
+$-$, and a $0$ (zero) value.  The \emph{plus} defines what it means to
+\emph{add} new data, while the \emph{minus} allows us to compute
+differences (deltas).  We show later that this requirement is not a
+problem for using \dbsp in the context of databases.
 
-%\begin{definition}[stream]
-Given a set $A$, a \defined{stream} \emph{of values from $A$} is an
-infinite sequence of values from $A$.  We write $\stream{A}$ is the
-set of all streams with value from $A$.
-%\end{definition}
-We write $s[t]$ for the $t$-th element of the stream $s$.  Think of
-$t$ as the ``time'' and of $s[t]\in A$ as the value of the the stream
-$s$ ``at time'' $t$.  We show streams as a sequence of boxes: e.g.,
-the stream $s[t] = t$ is \sv{0 1 2 3 4}.
+Stream operators are very powerful mathematically, but in \dbsp we
+restrict ourselves to a very small subset.  All \dbsp computations are
+\emph{causal}~\cite{causal}: the output at time $t$ is produced
+immediately after all inputs at time $t$ have been received.  This
+also makes \dbsp operators easy to implement.
 
-%\begin{definition}[stream operator]
-A \defined{stream operator} is a function that computes on streams and
-produces streams.
-%\end{definition}
-In general we use ``operator'' for streams, and ``function'' for
-computations on ``scalar'' values.
-
-In this paper we use circuit diagrams to depict \dbsp
-programs\footnote{Circuits hide the \emph{order} of the inputs of an
-operator.}.  In a circuit a rectangle represents an operator (and is
-labeled with the operator name, e.g., $T$), while an arrow with a
-double head is a stream.  Please note that this notation differs from
-the one in the original paper~\cite{budiu-vldb23}, where we used
-single arrows for stream in most cases.
-
-Stream operators can be composed, as in this example:
-
-\begin{center}
-\begin{tikzpicture}[auto,>=latex]
-  \node[] (input) {$s$};
-  \node[] [right of=input] (dummy) {};
-  \node[block, below of=dummy, node distance=.7cm] (S1) {$S$};
-  \node[block, right of=S1] (T1) {$T$};
-  \node[block, right of=T1] (T2) {$T$};
-  \node[block, above of=T2, node distance=.7cm] (S2) {$S$};
-  \node[right of=T2] (output) {$o$};
-  \draw[->>] (input) -| (S1);
-  \draw[->>] (input) -| (T1);
-  \draw[->>] (S1) -- (T1);
-  \draw[->>] (T1) -- (T2);
-  \draw[->>] (input) |- (S2);
-  \draw[->>] (T2) -- (output);
-  \draw[->>] (S2) -- (T2);
-\end{tikzpicture}
-\end{center}
-
-%\begin{definition}(lifting)
-Given a function $f: A \to B$, we define a stream operator $\lift{f}
-:\stream{A} \to \stream{B}$ (read as $f$ lifted) by applying function
-$f$ to the input stream(s) independently at each point in time.
-\begin{center}
-  \begin{tikzpicture}[auto,>=latex]
-    \node[] (input) {$\sv{a b c d e}$};
-    \node[block, right of=input, node distance=2.2cm] (f) {$\lift{f}$};
-    \node[right of=f, node distance=2.8cm] (output) {$\sv{f(a) f(b) f(c) f(d) f(e)}$};
-    \draw[->>] (input) -- (f);
-    \draw[->>] (f) -- (output);
-  \end{tikzpicture}
-\end{center}
-%\end{definition}
-
-We say that two \dbsp programs are \defined{equivalent} if they
-compute the same input-output function on streams.  We use the symbol
-$\cong$ to indicate circuit equivalence.  For example, we
-can prove the following circuit equivalence (where $\circ$ is function
-composition):
+The following circuit equivalence tells us that we can lift a circuit
+composed of multiple functions by lifting each function separately:
 
 \noindent
 \begin{tabular}{m{3.5cm}m{.3cm}m{3.5cm}}
@@ -98,18 +41,6 @@ $\cong$
 \end{tikzpicture}
 \end{tabular}
 
-To simplify the notation, we will write $a + b$ for streams $a, b$
-instead of $a (\lift{+}) b$; we will also write $-a$ instead of
-$(\lift{-})a$.
-
-\subsection{Useful stream operators}\label{sec:abelian}
-
-For the rest of this paper we require the set of values $A$ of a
-stream $\stream{A}$ to form a commutative group, with operations $+$,
-$-$, and a $0$ (zero) value.  The \emph{plus} defines what it means to
-\emph{add} new data, while the \emph{minus} allows us to compute
-differences (deltas).  We show later that this requirement is not a
-problem for using \dbsp in the context of databases.
 
 %\subsubsection{Delays}\label{sec:delay}
 
@@ -129,6 +60,12 @@ processing.}:
   \end{tikzpicture}
   \end{center}
 %\end{definition}
+
+A very important property of the delay operator is that it produces
+the first output \emph{before} having received the first input, and it
+produces the second output before having received the second input,
+etc.  The delay operator is similar to a \emph{latch}~\cite{latch} in
+a sequential logic circuit.
 
 %\begin{definition}[Time invariance]
 %A stream operator $S: \stream{A} \to \stream{B}$ is \defined{time-invariant} (TI) if
@@ -305,7 +242,7 @@ processing.}:
 
 %\begin{definition}[Differentiation]
 We can define \defined{differentiation operator} as a composition of
-several other operators: $\D(s) \defn s - \zm(s)$, show as:
+several other operators: $\D(s) \defn s - \zm(s)$, shown as:
 
 \begin{center}
 \begin{tikzpicture}[auto,>=latex,node distance=1cm]
@@ -314,7 +251,7 @@ several other operators: $\D(s) \defn s - \zm(s)$, show as:
     \node[right of=plus] (output) {$\D(s)$};
     \draw[draw,->] (input) -- node (i) {} (plus);
     \node[block, below of=i, node distance=.8cm] (z) {$\zm$};
-    \node[block, shape=circle, right of=z, inner sep=1pt] (minus) {$-$};
+    \node[block, shape=circle, right of=z, inner sep=0pt] (minus) {$-$};
     \draw[->>] (plus) -- (output);
     \draw[->>] (i) -- (z);
     \draw[->>] (z) -- (minus);
@@ -327,8 +264,17 @@ several other operators: $\D(s) \defn s - \zm(s)$, show as:
 
 If $s$ is a stream, then $\D(s)$ is the \emph{stream of changes} of
 $s$; a value in the output is the difference between two consecutive
-values in the input.  As an example, $\D(\sv{0 1 2 3 4 5}) = \sv{0 1 1
-  1 1}$.
+values in the input.  As an example:
+{
+  \small
+\begin{align*}
+  &\D(\sv{0 1 2 1 0}) = \\
+  &\sv{0 1 2 1 0} - \zm(\sv{0 1 2 1 0}) =\\
+  &\sv{0 1 2 1 0} - \sv{0 0 1 2 1} =\\
+  &\sv{0-0 1-0 2-1 1-2 0-1} =\\
+  &\sv{0 1 1 -1 -1}
+\end{align*}
+}
 
 %\begin{proposition}
 %\label{prop-diff-properties}
@@ -355,9 +301,17 @@ is given by the following circuit:
 %\end{definition}
 
 While this definition may seem strange, because the output stream is
-used to compute itself, the use of the delay in the ``feedback'' loop
-ensures that only ``previous'' values of the output are used in
-computing the current one, so this circuit is really well-defined.
+used to compute itself, the use of the delay in the ``feedback'' loop,
+which can produce an output before having seen its last input, ensures
+that only ``previous'' values of the output are used in computing the
+current one.  Using the notation $o = \I(s)$ to make it easier to
+read, we can compute the contents of the stream $o$ step by step:
+\begin{align*}
+  o[0] &= s[0] + (\zm(o))[0] = s[0] + 0 = s[0] \\
+  o[1] &= s[1] + (\zm(o))[1] = s[1] + o[0] = s[1] + s[0] \\
+  o[2] &= s[2] + (\zm(o))[2] = s[2] + o[1] = s[2] + (s[1] + s[0])
+\end{align*}
+
 %\noindent
 %We also generally omit the type, and write just $\I$.
 %This is the construction from Proposition~\ref{prop-rec-linear}
@@ -366,8 +320,13 @@ computing the current one, so this circuit is really well-defined.
 %\begin{proposition}
 %$\I(s)$ is the discrete (indefinite) integral applied to the stream $s$:
 %\end{proposition}
-In general, $\I(s)[t] = \sum_{i \leq t} s[i]$.
-As an example, $\I(\sv{0 1 2 3 4 5}) = \sv{0 1 3 6 10}$.
+In general, $\I(s)[t] = o[t] = \sum_{i \leq t} s[i]$.
+
+Examples:
+\begin{align*}
+  \I(\sv{0 1 2 3 4 5}) &= \sv{0 1 3 6 10} \\
+  \I(\sv{0 1 1 -1 -1}) &= \sv{0 1 2 1 0}.
+\end{align*}
 
 %\begin{proposition}
 %\label{prop-integ-properties}
@@ -380,7 +339,10 @@ As an example, $\I(\sv{0 1 2 3 4 5}) = \sv{0 1 3 6 10}$.
 %$\forall s . \I(\D(s)) = \D(\I(s)) = s$.
 %\end{theorem}
 
-Integration and differentiation ``cancel'' each other:
+Integration and differentiation are inverses of each other: while $\D$
+compute the changes of a stream, $\I$ reconstitutes the original
+stream given the stream of changes.  $\I$ and $\D$ ``cancel out'' when
+applied in sequence:
 
 \noindent
 \begin{tabular}{m{2.5cm}m{.3cm}m{1cm}m{.3cm}m{2.5cm}}
@@ -417,6 +379,11 @@ Integration and differentiation ``cancel'' each other:
 \end{tabular}
 
 \section{Incremental view maintenance}\label{sec:incremental}
+
+The results in this section are not specific to databases, they are
+true for arbitrary streaming computations.  However, for each result
+we emphasize it's applicability in the domain of databases.  We tie
+these results to databases more tightly in the next section.
 
 %Here we define IVM and analyze its properties.
 
@@ -524,10 +491,12 @@ $\cong$ \\
 \end{tikzpicture}
 \end{tabular}
 
-\noindent In other words, \textbf{to incrementalize a composite query
-  you can incrementalize each sub-query independently}.  This gives us
-a simple deterministic recipe for computing the incremental version of
-an arbitrarily complex query.
+\noindent In the database world, we can read this as: \textbf{to
+  incrementalize a composite query you can incrementalize each
+  sub-query independently}.  This gives us a simple deterministic
+recipe for reducing the incremental version of an arbitrarily complex
+query to the incremental version of the primitive operators that are
+used in the query.
 
 The \defined{cycle rule} states that these circuits are equivalent:
 
@@ -584,18 +553,22 @@ function.
 
 We call an operator with two inputs $Q$ \defined{bilinear} if it
 distributes over stream addition: $Q(a+b, c) = Q(a, c) + Q(b, c)$, and
-$Q(a, c+d) = Q(a, c) + Q(a, d)$.  (This is similar how multiplication
-distributes over addition.)  In databases intersection, joins, and
+$Q(a, c+d) = Q(a, c) + Q(a, d)$.  (Similar to multiplication's
+distributivity over addition.)  In databases intersection, joins, and
 Cartesian products are bilinear.
 
 %\begin{theorem}[Bilinear]\label{bilinear}
-For a bilinear operator $\times$ we have:
+Using infix notation to make the formulas more readable: for a
+bilinear operator $\times$ we have:
 \begin{eqnarray*}
 \inc{(\Delta a \times \Delta b)} = \\
 (\Delta a \times \Delta b ~+~ \zm(\I(\Delta a)) \times
 \Delta b ~+~ \Delta a \times \zm(\I(\Delta b)) = \\
 \Delta a \times \Delta b + \zm(a) \times \Delta b + \Delta a \times \zm(b)
 \end{eqnarray*}
+
+If we ignore the delay operators, we get the well-known formula for
+join delta queries, e.g.,\cite{koch-pods10}.
 
 %In pictures: \\
 \noindent

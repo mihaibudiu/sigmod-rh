@@ -7,10 +7,10 @@ assumptions of the model do not detract from its practicality.  In
 fact, we have built an open-source implementation of \dbsp as a query
 engine in Rust~\cite{dbsp-crate}; we have also built a compiler from
 SQL to \dbsp~\cite{sql-to-dbsp-compiler}.  This compiler handles
-essentially the entire SQL language\footnote{The only construct which
-is not handled efficiently is ORDER BY without LIMIT.}.  The compiler
-generates execution plans for incrementally maintaining any number of
-views defined in SQL.
+essentially the entire SQL language\footnote{Support for recursive SQL
+queries is not finalized; and ORDER BY without LIMIT is handled
+inefficiently.}.  The compiler generates execution plans for
+incrementally maintaining any number of views defined in SQL.
 
 Incremental computation is not free.  It is in fact a trade-off
 between time and space.  We have to consider both the time and the
@@ -59,9 +59,9 @@ done naturally:
     designed for handling negative changes.
   \item Databases do not have any mechanism for reporting changes to
     the outside world.  In fact, entire industries have sprung up
-    around the concept of Change Data Capture, which is building
-    ad-hoc solutions for extracting changes from databases, usually by
-    inspecting the write-ahead transaction log.
+    around the concept of Change Data Capture~\cite{cdc}, which is
+    building ad-hoc solutions for extracting changes from databases,
+    usually by inspecting the write-ahead transaction log.
 \end{itemize}
 
 %The scope of this paper is the \dbsp theory of IVM, so we only briefly touch upon

@@ -51,16 +51,23 @@ We define the function $\int : \stream{A} \rightarrow A$.  Its input
 stream is required to eventually reach the value 0 and never change
 afterwards.  This function just sums up all the values in the input
 stream and returns the result when it encounters the first 0 in the
-input stream.  For example, $\int(\sv{1 2 3 0 0}) = 6$.  Notice that
-the input is a double arrow, while the output is a single arrow.
+input stream.  Notice that the input is a double arrow, while the
+output is a single arrow.  For example:
 
 \begin{tikzpicture}[auto,node distance=1cm,>=latex]
-    \node[] (input) {$i$};
-    \node[block, right of=input] (S) {$\int$};
-    \node[right of=S] (output) {$o$};
+    \node[] (input) {$\sv{1 2 3 0 0}$};
+    \node[block, right of=input, node distance=2.2cm] (S) {$\int$};
+    \node[right of=S] (output) {$\fbox{6}$};
     \draw[->>] (input) -- (S);
     \draw[->] (S) -- (output);
 \end{tikzpicture}
+
+(This function is also an integrator; it's relationship to the $\I$
+operator is the same one as the relationship of the definite
+integral~\cite{integral} to the indefinite
+integral~\cite{antiderivative} in mathematics.)
+
+The operations $\delta$ and $\int$ are both linear.
 
 %$\delta$ is the left inverse of $\int$, i.e.: $\int \circ \; \delta = \id_A$.
 %\begin{proposition}
@@ -81,7 +88,7 @@ $\int$ operator:
 \begin{tikzpicture}[auto,node distance=1cm,>=latex]
     \node[] (input) {$i$};
     \node[block, right of=input] (delta) {$\delta$};
-    \node[block, right of=delta] (f) {$Q$};
+    \node[block, right of=delta] (f) {$S$};
     \draw[->] (input) -- (delta);
     \draw[->>] (delta) -- (f);
 
@@ -92,7 +99,7 @@ $\int$ operator:
 \end{tikzpicture}
 \end{center}
 
-In this circuit $Q$ is a streaming operator, but the entire circuit
+In this circuit $S$ is a streaming operator, but the entire circuit
 implements a scalar function, as shown by the single arrowheads.
 
 %\begin{proposition}
@@ -109,9 +116,9 @@ recursive relations.
 
 We describe the algorithm for the simple case of a single-input,
 single-output query.  The input of our algorithm is a Datalog query of
-the form $O = R(I, O)$, where $R$ is a \emph{relational},
-non-recursive query, producing a set as a result, but whose output $O$
-is also an input.  The output of the algorithm is a \dbsp circuit
+the form $O = R(I, O)$, where $R$ is a \textbf{relational,
+  non-recursive} query, producing a set as a result, but whose output
+$O$ is also an input.  The output of the algorithm is a \dbsp circuit
 which evaluates this recursive query producing output $O$ when given
 the input $I$.  In this section we build a non-incremental circuit,
 which evaluates the Datalog query; in \refsec{sec:nested} we derive

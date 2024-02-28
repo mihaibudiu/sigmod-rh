@@ -6,7 +6,7 @@ to efficiently compute the incremental version of any relational query
 $Q$.
 
 However, we face a technical problem: we said that streams require
-their values to belong to a commutative groups, and relational
+their values to belong to a commutative group, and relational
 databases in general are \emph{not} commutative groups, since they
 operate on sets.  Fortunately, there is a well-known tool in the
 database literature which converts set operations into group
@@ -51,7 +51,7 @@ show the corresponding row.
 
 \begin{center}
 \begin{tabular}{|c|c|}\hline
-  Value & Weight \\ \hline
+  Row & Weight \\ \hline
   joe & 1 \\
   mary & 2 \\
   anne & -1 \\ \hline
@@ -66,11 +66,11 @@ show the corresponding row.
 %Since \zrs form a group, all results from \secref{sec:streams} apply to streams over \zrs.
 
 \zrs are more general than sets and multisets: A set can be
-represented as a \zr by associating a weight of 1 with each element.
+represented as a \zr by associating a weight of 1 with each row.
 Multisets (also called ``bags'' in the database literature) are \zrs
 where all weights are positive.  Crucially, \zrs can also represent
 arbitrary \emph{changes} to sets and bags.  Negative weights in a
-change represent elements that are being \emph{removed}.
+change represent rows that are being \emph{removed}.
 
 We can define three operations on \zr of a given type (i.e., where
 the values have a given type): (1) zero (with all weights 0) (2)
@@ -134,21 +134,23 @@ like a commutative group.
 %$$
 %%\end{definition}
 
-We define a handy function on \zrs called $\distinct$.  This function
-when applied to a \zr gives us another \zr where all elements with
-negative weights are removed, and all positive weights are changed to
-1.  For example, the $\distinct$ of the above \zr is:
+We define a handy function on \zrs called $\distinct$ (this function
+is called $\epsilon$ in~\cite{griffin-sigmod95}, but we use this name
+because it is strongly related to the SQL \texttt{DISTINCT} operator).
+This function, applied to a \zr, gives us another \zr where all
+rows with negative weights are removed, and all positive weights
+are changed to 1.  For example, the $\distinct$ of the above \zr is:
 
 \begin{center}
 \begin{tabular}{|c|c|}\hline
-  Value & Weight \\ \hline
+  Row & Weight \\ \hline
   joe & 1 \\
   mary & 1 \\ \hline
 \end{tabular}
 \end{center}
 
 Notice that $\distinct$ ``removes'' duplicates from multisets, and it also eliminates
-elements with negative weights.
+rows with negative weights.
 %\ifzsetexamples
 %$\distinct(R) = \{ \texttt{joe} \mapsto 1 \}$.
 %\fi
@@ -168,21 +170,18 @@ in terms of computations on \zrs.
 %
 %\paragraph{Functions as circuits}
 
-We also use a circuit representation for functions: functions are
-boxes with inputs and outputs shown as arrows.  For simple functions
-the arrows have a single head.
-
 \subsection{Implementing relational operators}\label{sec:relational-operators}
 
 The fact that relational algebra can be implemented by computations on
 \zrs has been shown before, e.g.~\cite{green-pods07}.  The translation
 of the relational operators to functions computing on \zrs is shown in
 Table~\ref{tab:relational}.  The functions ($\pi$, $\sigma$,
-$\bowtie$) are the standard relational operators projection,
-selection, join, used in database theory.  The first row of the table
-shows that a composite query is translated recursively: implement the
-sub-queries, and connect them with an arrow.  This gives us a recipe
-for translating an arbitrary relational query plan into a circuit.
+$\bowtie$, $\times$) are the standard relational operators projection,
+selection, join, Cartesian product, used in database theory.  The
+first row of the table shows that a composite query is translated
+recursively: implement the sub-queries, and connect them with an
+arrow.  This gives us a recipe for translating an arbitrary relational
+query plan into a circuit.
 
 \newlength{\commentsize}
 \setlength{\commentsize}{5.2cm}
@@ -243,8 +242,8 @@ FROM I
 &
 \begin{tikzpicture}[auto,>=latex]
   \node[] (input) {\code{I}};
-  \node[block, right of=input] (pi) {$\pi$};
-  \node[block, right of=pi] (distinct) {$\distinct$};
+  \node[block, right of=input] (pi) {$\pi_c$};
+  \node[block, right of=pi, node distance=1.2cm] (distinct) {$\distinct$};
   \node[right of=distinct] (output) {\code{O}};
   \draw[->] (input) -- (pi);
   \draw[->] (pi) -- (distinct);
@@ -252,14 +251,14 @@ FROM I
 \end{tikzpicture}
 &
 \parbox[b][][t]{\commentsize}{
-  Project each value with its weight unchanged.
-  Add up weights of identical values.
+  Project each row with its weight unchanged.
+  Add up weights of identical rows.
 }
 \\ \hline
 Filtering &
 \begin{lstlisting}[language=SQL]
 SELECT * FROM I
-WHERE p(I.c)
+WHERE P(...)
 \end{lstlisting}
 &
 \begin{tikzpicture}[auto,>=latex]
@@ -271,7 +270,8 @@ WHERE p(I.c)
 \end{tikzpicture}
 &
 \parbox[b][][t]{\commentsize}{
-  Select each value separately.  If the value is selected preserve the
+  P is a predicate applied to each row.
+  Select each row separately.  If the row is selected, preserve the
   weight, else make the weight 0.
 }
 % \\ \hline
@@ -317,7 +317,7 @@ FROM I1, I2
 \end{tikzpicture}
 &
 \parbox[b][][t]{\commentsize}{
-  Multiply the weights of the values.
+  Multiply the weights of the rows.
 }
 \\ \hline
 Equi-join &
@@ -339,7 +339,7 @@ ON I1.c1 = I2.c2
 \end{tikzpicture}
 &
 \parbox[b][][t]{\commentsize}{
-  Multiply the weights of the values that appear in the output.
+  Multiply the weights of the rows that appear in the output.
 }
 \\ \hline
 Intersection &
@@ -384,7 +384,7 @@ SELECT * FROM I2
   \draw[->] (distinct) -- (output);
 \end{tikzpicture}
 &
-$\distinct$ removes elements with negative weights from the result.
+$\distinct$ removes rows with negative weights from the result.
 \\ \hline
 \end{tabular}
 \end{center}
@@ -436,6 +436,22 @@ underlying mathematical theory that underlies modern databases ---
 using \zrs.  This implementation produces an abundance of $\distinct$
 operators, but there are known optimizations for removing some of
 them, which can be seen in the full version of this paper.
+
+The following operators from Table~\ref{tab:relational} are linear:
+$\sigma, \pi, -, +$.  The following operators are bilinear: $\times,
+\bowtie$.  In fact, the only non-linear operator is $\distinct$.  In
+consequence, all these operators have very efficient incremental
+versions.
+
+To explain why these operators are linear, consider the case of a
+filtering operation in a database (\texttt{WHERE}).  Why is filtering
+linear.  What happens when we add a row to the input relation -- what
+is the change in the output?  It is sufficient to apply the filter
+predicate to the new row itself.  If the predicate returns
+\texttt{true}, the new row is added to the output.  So the change in
+the output only depends on the change in the input, and not on the
+actual contents of the input.  This is what makes the operation
+linear.
 
 %Prior work (e.g., Proposition 6.13 in~\cite{green-tcs11}) has shown
 %how some invocations of $\distinct$ can be eliminated from query plans
@@ -517,23 +533,42 @@ them, which can be seen in the full version of this paper.
 %These properties allow us to ``consolidate'' distinct operators by performing
 %one $\distinct$ at the end of a chain of computations.
 
-Most of the operators that appear in the circuits in
-Table~\ref{tab:relational} are linear, and thus have very efficient
-incremental versions.
+\subsection{Incremental view maintenance}
 
-As a simple example to develop intuition, consider the case of a
-filtering operation in a database (\texttt{WHERE}).  Filtering is
-linear.  What happens to a filter operation when we add a row to the
-input relation?  What is the change in the output?  It is sufficient
-to apply the filter predicate to the new row itself.  If the predicate
-returns \texttt{true}, the new row is added to the output.  So the
-change in the output only depends on the change in the input, and not
-on the actual contents of the input.  This is what makes the operation
-linear.
+Let us consider a relational query $Q$ defining a view $V$.  To create
+a \dbsp circuit that maintains incrementally $V$ by implementing
+$\inc{Q}$ we apply the following mechanical steps:
 
-We show that $\distinct$ also has an efficient incremental
-implementation.  The following circuit implements
-$\inc{(\lift{\distinct})}$:
+\begin{algorithm}[incremental view maintenance]\label{algorithm-inc}\!
+\begin{enumerate}
+\item Translate $Q$ into a circuit using the rules in Table~\ref{tab:relational}.
+\item{} [Optional] Remove some $\distinct$ operations.
+\item Lift the whole circuit, converting it to a circuit operating
+  on streams.
+\item Incrementalize the whole circuit ``surrounding'' it with $\I$ and $\D$.
+\item Apply the chain rule recursively on the circuit to obtain a
+  circuit based only on primitive incremental operations.
+\end{enumerate}
+\end{algorithm}
+
+This algorithm is deterministic and its running time is proportional
+to the number of operators in the query.  Step (2) generates an
+equivalent circuit, with possibly fewer $\distinct$ operators.  Step
+(3) yields a circuit that consumes a \emph{stream} of complete
+database snapshots and outputs a stream of complete view
+snapshots. Step (4) yields a circuit that consumes a stream of
+\emph{database changes} and outputs a stream of \emph{view changes};
+however, the internal operation of the circuit is non-incremental, as
+it rebuilds the complete database using integration operators.  Step
+(5) optimizes the circuit by replacing each primitive operator with
+its incremental version.
+
+After running this algorithm, all original primitive are replaced by
+their incremental versions.  The only non-linear operation from
+Table~\ref{tab:relational} is $\distinct$.  We show an efficient here
+an incremental implementation (this construction has also been known
+before, but we express it here in terms of streaming operations).  The
+following circuit implements $\inc{(\lift{\distinct})}$:
 
 \noindent
 \begin{tabular}{m{3.9cm}m{0cm}m{5cm}}
@@ -570,7 +605,10 @@ $\cong$ &
 %$$
 %\end{proposition}
 
-Here is the intuition why $\distinct$ is efficiently
+The function $H$ detects whether the weight of a row in $i$ is
+changing sign (positive to negative or vice-versa) when the row
+appears in $\Delta d$.  A precise definition of $H$ is given in the
+full paper.  Here is the intuition why $\distinct$ is efficiently
 incrementalizable: consider a row that is inserted in the input of a
 $\distinct$ operator.  How does the output change?  If the row was not
 in the prior full input table, then it will appear with weight 1 in
@@ -580,40 +618,7 @@ output change $\Delta o$, so the work performed is $O(|\Delta d)|$.
 The implementation needs to maintain the \emph{entire input set} in
 order to discover whether an item is new or not.  That is the purpose
 of the $\I$ operator in the above diagram.  The $i$ arrow is the
-previous version of the full input table.  The function $H$ detects
-whether the weight of a row in $i$ is changing sign (positive to
-negative or vice-versa) when the row appears in $\Delta d$.  A precise
-definition of $H$ is given in the full paper.
-
-\subsection{Incremental view maintenance}
-
-Let us consider a relational query $Q$ defining a view $V$.  To create
-a \dbsp circuit that maintains incrementally $V$ by implementing
-$\inc{Q}$ we apply the following mechanical steps:
-
-\begin{algorithm}[incremental view maintenance]\label{algorithm-inc}\!
-\begin{enumerate}
-\item Translate $Q$ into a circuit using the rules in Table~\ref{tab:relational}.
-\item{} [Optional] Remove some $\distinct$ operations.
-\item Lift the whole circuit, converting it to a circuit operating
-  on streams.
-\item Incrementalize the whole circuit ``surrounding'' it with $\I$ and $\D$.
-\item Apply the chain rule recursively on the circuit to obtain an
-  efficient implementation.
-\end{enumerate}
-\end{algorithm}
-
-This algorithm is deterministic and its running time is proportional
-to the number of operators in the query.  Step (2) generates an
-equivalent circuit, with possibly fewer $\distinct$ operators.  Step
-(3) yields a circuit that consumes a \emph{stream} of complete
-database snapshots and outputs a stream of complete view
-snapshots. Step (4) yields a circuit that consumes a stream of
-\emph{database changes} and outputs a stream of \emph{view changes};
-however, the internal operation of the circuit is non-incremental, as
-it rebuilds the complete database using integration operators.  Step
-(5) optimizes the circuit by replacing each primitive operator with
-its incremental version.
+previous version of the full input table.
 
 \input{example1}
 

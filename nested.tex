@@ -74,8 +74,8 @@ while $\lift{\zm}$ delays ``columns''.
 %lifting all operators independently, including the $\zm$ back-edge.
 %\end{proposition}
 
-We have seen that lifting a graph entails lifting all operators.  This
-extends to graphs with cycles:
+We have seen in equation (**) that lifting a graph entails lifting all
+operators.  This extends to graphs with cycles:
 %This means that lifting a \dbsp stream operator can be expressed within \dbsp
 %itself.
 For example:
@@ -109,11 +109,11 @@ even circuits for recursive relations.
 \noindent Step 1: Start with the ``semi-naive'' circuit:
 \begin{center}
 \begin{tikzpicture}[>=latex]
-  \node[] (Iinput) {\code{I}};
+  \node[] (Iinput) {$x$};
   \node[block, right of=Iinput] (Idelta) {$\delta_0$};
   \node[block, right of=Idelta, node distance=1.2cm] (f) {$\inc{(\lift{R})}$};
   \node[block, right of=f, node distance=1.5cm] (S) {$\int$};
-  \node[right of=S] (output)  {\code{O}};
+  \node[right of=S] (output)  {$O$};
   \draw[->>] (f) -- node (o) {} (S);
   \node[block, below of=o, node distance=.7cm] (z) {$\zm$};
   \draw[->] (Iinput) -- (Idelta);
@@ -127,13 +127,13 @@ even circuits for recursive relations.
 \noindent Steps 3 and 4: Lift the circuit and incrementalize:
 \begin{center}
 \begin{tikzpicture}[>=latex]
-  \node[] (Iinput) {$\Delta$\code{I}};
+  \node[] (Iinput) {$\Delta x$};
   \node[block, right of=Iinput] (I) {$\I$};
   \node[block, right of=I] (Idelta) {$\lift{\delta_0}$};
   \node[block, right of=Idelta, node distance=1.5cm] (f) {$\lift{\inc{(\lift{R})}}$};
   \node[block, right of=f, node distance=1.5cm] (S) {$\lift{\int}$};
   \node[block, right of=S] (D) {$\D$};
-  \node[right of=D] (output)  {$\Delta$\code{O}};
+  \node[right of=D] (output)  {$\Delta O$};
   \draw[->>>] (f) -- node (o) {} (S);
   \node[block, below of=o, node distance=.7cm] (z) {$\lift{\zm}$};
   \draw[->>] (Iinput) -- (I);
@@ -150,11 +150,11 @@ even circuits for recursive relations.
 $\lift{\delta_0}$ and $\lift{\int}$ are linear:
 
 \begin{tikzpicture}[>=latex]
-  \node[] (Iinput) {$\Delta$\code{I}};
+  \node[] (Iinput) {$\Delta x$};
   \node[block, right of=Iinput] (Idelta) {$\lift{\delta_0}$};
   \node[block, right of=Idelta, node distance=1.8cm] (f) {$\inc{(\lift{\inc{(\lift{R})}})}$};
   \node[block, right of=f, node distance=2cm] (S) {$\lift{\int}$};
-  \node[right of=S] (output)  {$\Delta$\code{O}};
+  \node[right of=S] (output)  {$\Delta O$};
   \draw[->>>] (f) -- node (o) {} (S);
   \node[block, below of=o, node distance=.9cm] (z) {$\lift{\zm}$};
   \draw[->>] (Iinput) -- (Idelta);
@@ -164,8 +164,9 @@ $\lift{\delta_0}$ and $\lift{\int}$ are linear:
   \draw[->>>] (Idelta) -- (f);
 \end{tikzpicture}
 
-\noindent This is the incremental version of a recursive query.
-%An example for a transitive closure query is in our report~\cite{tr}.
+\noindent This is the incremental version of a recursive query.  A
+concrete example for a transitive closure query is Section~9.1 of
+a longer technical report~\cite{tr}.
 
 %\refsec{sec:recursive-incremental-example} shows how Algorithm~\ref{algorithm-inc} is
 %applied to the \dbsp circuit produced by the example from~\refsec{sec:recursive-example},

@@ -16,10 +16,12 @@ immediately after all inputs at time $t$ have been received.  This
 also makes \dbsp operators easy to implement.
 
 The following circuit equivalence tells us that we can lift a circuit
-composed of multiple functions by lifting each function separately:
+composed of multiple functions by lifting each function separately
+(this equivalence is related to equation (*) in
+\refsec{sec:intro-circuits}):
 
 \noindent
-\begin{tabular}{m{3.5cm}m{.3cm}m{3.5cm}}
+\begin{tabular}{m{3cm}m{.3cm}m{3cm}c}
 \begin{tikzpicture}[auto,>=latex]
   \node[] (input) {$s$};
   \node[block, right of=input] (g) {$\lift{g}$};
@@ -39,6 +41,8 @@ $\cong$
     \draw[->>] (input) -- (fg);
     \draw[->>] (fg) -- (output);
 \end{tikzpicture}
+&
+(**)
 \end{tabular}
 
 
@@ -49,8 +53,8 @@ The \defined{delay operator} $z^{-1}$ produces an output stream by
 delaying its input by one step (and starting with a
 zero)\footnote{This bizarre name comes from digital signal
 processing.}:
-
-  \begin{center}
+%
+\begin{center}
   \begin{tikzpicture}[auto,>=latex,node distance=2.4cm]
     \node[] (input) {$\sv{a b c d e}$};
     \node[block, right of=input] (z) {$z^{-1}$};
@@ -58,9 +62,9 @@ processing.}:
     \draw[->>] (input) -- (z);
     \draw[->>] (z) -- (output);
   \end{tikzpicture}
-  \end{center}
+\end{center}
 %\end{definition}
-
+%
 A very important property of the delay operator is that it produces
 the first output \emph{before} having received the first input, and it
 produces the second output before having received the second input,
@@ -243,7 +247,7 @@ a sequential logic circuit.
 %\begin{definition}[Differentiation]
 We can define \defined{differentiation operator} as a composition of
 several other operators: $\D(s) \defn s - \zm(s)$, shown as:
-
+%
 \begin{center}
 \begin{tikzpicture}[auto,>=latex,node distance=1cm]
     \node[] (input) {$s$};
@@ -261,7 +265,7 @@ several other operators: $\D(s) \defn s - \zm(s)$, shown as:
 %\end{definition}
 %We generally omit the type, and write just $\D$.
 %The value of $\D(s)[t] = s[t] - s[t-1]$ if $t > 0$.
-
+%
 If $s$ is a stream, then $\D(s)$ is the \emph{stream of changes} of
 $s$; a value in the output is the difference between two consecutive
 values in the input.  As an example:
@@ -290,7 +294,7 @@ is given by the following circuit:
 \begin{tikzpicture}[auto,>=latex, node distance=1.1cm]
     \node[] (input) {s};
     \node[block, shape=circle, right of=input, inner sep=0pt] (plus) {$+$};
-    \node[right of=plus, node distance=1.6cm] (output) {$\I(s)$};
+    \node[right of=plus, node distance=1.9cm] (output) {$\I(s) = o$};
     \node[block, below of=plus, node distance=.8cm] (z) {$z^{-1}$};
     \draw[->>] (input) -- (plus);
     \draw[->>] (plus) -- node (o) {} (output);
@@ -299,13 +303,13 @@ is given by the following circuit:
 \end{tikzpicture}
 \end{center}
 %\end{definition}
-
+%
 While this definition may seem strange, because the output stream is
-used to compute itself, the use of the delay in the ``feedback'' loop,
-which can produce an output before having seen its last input, ensures
-that only ``previous'' values of the output are used in computing the
-current one.  Using the notation $o = \I(s)$ to make it easier to
-read, we can compute the contents of the stream $o$ step by step:
+used to compute itself, the use of the delay in the ``feedback'' loop
+ensures that only ``previous'' values of the output are used in
+computing the current one.  Using the notation $o = \I(s)$ to make
+formulas more readable, we can see the contents of stream $o$ is
+produced step by step:
 \begin{align*}
   o[0] &= s[0] + (\zm(o))[0] = s[0] + 0 = s[0] \\
   o[1] &= s[1] + (\zm(o))[1] = s[1] + o[0] = s[1] + s[0] \\
@@ -382,14 +386,14 @@ applied in sequence:
 
 The results in this section are not specific to databases, they are
 true for arbitrary streaming computations.  However, for each result
-we emphasize it's applicability in the domain of databases.  We tie
-these results to databases more tightly in the next section.
+we emphasize how it applies in the domain of databases.  We tie these
+results to databases more tightly in the next section.
 
 %Here we define IVM and analyze its properties.
 
 %\begin{definition}
-Given a stream operator $Q: \stream{A} \to \stream{B}$ we define the
-\defined{incremental version} of $Q$ as:
+Given a stream operator $S: \stream{A} \to \stream{B}$ we define the
+\defined{incremental version} of $S$ as:
 %\begin{equation}\label{def:inc}
 %\inc{Q} \defn \D \circ Q \circ \I.
 %\end{equation}
@@ -406,7 +410,7 @@ Given a stream operator $Q: \stream{A} \to \stream{B}$ we define the
 \begin{tikzpicture}[auto,>=latex]
     \node[] (input) {$\Delta s$};
     \node[block, right of=input] (I) {$\I$};
-    \node[block, right of=I] (Q) {$Q$};
+    \node[block, right of=I] (Q) {$S$};
     \node[block, right of=Q] (D) {$\D$};
     \node[right of=D] (output) {$\Delta o$};
     \draw[->>] (input) -- (I);
@@ -414,21 +418,23 @@ Given a stream operator $Q: \stream{A} \to \stream{B}$ we define the
     \draw[->>] (Q) -- node (o) {$o$} (D);
     \draw[->>] (D) -- (output);
     \draw[decorate, decoration = {brace, raise=13pt}] (input) -- (output)
-    node[pos=.5, above=13pt]{$\inc{Q}$};
+    node[pos=.5, above=13pt]{$\inc{S}$};
 \end{tikzpicture}
 \end{center}
 %\end{definition}
 
-If $Q$ computes on a stream $s$, then $\inc{Q}$ computes on a stream
-of changes to $s$.  If $Q$ produces a stream $o$, then $\inc{Q}$
-produces the stream of changes to $o$.
+If $S$ computes on a stream $s$, then $\inc{S}$ computes on a stream
+of changes to $s$.  If $S$ produces a stream $o$, then $\inc{S}$
+produces the stream of changes to $o$.  Note that this definition does
+not require $S$ to be a lifted function.
+
 %Notice that our definition of incremental computation is meaningful only for \emph{streaming}
 %computations; this is in contrast to classic definitions, e.g.~\cite{gupta-idb95} which
 %consider only one change.  Generalizing the definition to operate on streams gives us
 %additional power, especially when operating with recursive queries.
 %
 %The following proposition is one of our central results:
-$\inc{Q}$ has many nice properties:
+$\inc{S}$ has many nice properties:
 
 %\begin{proposition}(Properties of the incremental version):
 %\label{prop-inc-properties}
@@ -519,7 +525,7 @@ The \defined{cycle rule} states that these circuits are equivalent:
 \begin{tikzpicture}[>=latex]
     \node[] (input) {$\Delta s$};
     \node[block, right of=input] (f) {$\inc{T}$};
-    \node[right of=f, node distance=1.2cm] (output) {$\Delta o$};
+    \node[right of=f, node distance=1.3cm] (output) {$\Delta o$};
     \node[block, below of=f, node distance=.6cm] (z) {$\zm$};
     \draw[->>] (input) -- (f);
     \draw[->>] (f) -- node (mid) {} (output);
@@ -528,7 +534,9 @@ The \defined{cycle rule} states that these circuits are equivalent:
 \end{tikzpicture}
 \end{tabular}
 
-In other words, the incremental version of a feedback loop around a query
+\noindent
+(We have omitted the labels on the inputs of $T$ for brevity.) In
+other words, the incremental version of a feedback loop around a query
 is just the feedback loop with the incremental query for its body.
 This result will be useful when we implement recursive queries.
 
@@ -537,23 +545,23 @@ This result will be useful when we implement recursive queries.
 %that stream operators $+$, $-$, and $\zm$ are identical to their incremental versions.
 %The following theorems generalize this to linear and bi-linear operators:
 
-We call an operator $Q$ \defined{linear} if it has the property that
-$Q(a+b) = Q(a) + Q(b)$ (where $+$ is the addition of streams).
+We call an operator $S$ \defined{linear} if it has the property that
+$S(a+b) = S(a) + S(b)$ (where $+$ is the addition of streams).
 
 %\begin{theorem}[Linear]\label{linear}
-For a linear operator $Q$ we have $\inc{Q}=Q$.
+For a linear operator $S$ we have $\inc{S}=S$.
 %\end{theorem}
 
-This is a very useful fact, because many database operations can be
+This is very useful because many primitive database operations can be
 implemented as linear operators.  We will see that in databases
 selection, projection, filtering, grouping, parts of aggregation are
 all linear.  Moreover, many of the operators we have seen so far are
 linear: $-$, $z^{-1}$, $\I$, $\D$, $\lift{f}$ if $f$ is a linear
 function.
 
-We call an operator with two inputs $Q$ \defined{bilinear} if it
-distributes over stream addition: $Q(a+b, c) = Q(a, c) + Q(b, c)$, and
-$Q(a, c+d) = Q(a, c) + Q(a, d)$.  (Similar to multiplication's
+We call an operator with two inputs $T$ \defined{bilinear} if it
+distributes over stream addition: $T(a+b, c) = T(a, c) + T(b, c)$, and
+$T(a, c+d) = T(a, c) + T(a, d)$.  (Similar to multiplication's
 distributivity over addition.)  In databases intersection, joins, and
 Cartesian products are bilinear.
 
@@ -567,8 +575,8 @@ bilinear operator $\times$ we have:
 \Delta a \times \Delta b + \zm(a) \times \Delta b + \Delta a \times \zm(b)
 \end{eqnarray*}
 
-If we ignore the delay operators, we get the well-known formula for
-join delta queries, e.g.,\cite{koch-pods10}.
+If we ignore the delay operators in this equation we recover the
+well-known formula for join delta queries, e.g.,\cite{koch-pods10}.
 
 %In pictures: \\
 \noindent
@@ -577,16 +585,16 @@ join delta queries, e.g.,\cite{koch-pods10}.
 \begin{tikzpicture}[auto,>=latex]
     \node[] (a) {$\Delta a$};
     \node[block, right of=a] (ai) {$\I$};
-    \node[below of=a, node distance=.7cm] (midway) {};
-    \node[below of=midway, node distance=.7cm] (b) {$\Delta b$};
+    \node[below of=a, node distance=.8cm] (midway) {};
+    \node[below of=midway, node distance=.8cm] (b) {$\Delta b$};
     \node[block, right of=b] (bi) {$\I$};
     \node[block, right of=midway, node distance=1cm] (q) {$\times$};
     \node[block, right of=q] (D) {$\D$};
     \node[right of=D] (output) {$\Delta o$};
     \draw[->>] (a) -- (ai);
     \draw[->>] (b) -- (bi);
-    \draw[->>] (ai) -| (q);
-    \draw[->>] (bi) -| (q);
+    \draw[->>] (ai) -- (q);
+    \draw[->>] (bi) -- (q);
     \draw[->>] (q) -- (D);
     \draw[->>] (D) -- (output);
 \end{tikzpicture} &

@@ -1,6 +1,6 @@
 \section{Introduction}\label{sec:introduction}
 
-\subsection{Incremental computation}
+\subsection{Incremental computation}\label{sec:intro-incremental}
 
 Incremental view maintenance (IVM) is an important and well-studied
 problem in databases~\cite{gupta-idb95}.  The IVM problem can be
@@ -29,7 +29,7 @@ smaller than the database itself (e.g., a change could touch perhaps
 100 records).  The ``up'' arrows show the re-evaluation of $Q$ for
 each database snapshot.
 
-\includegraphics[trim={0 3.8in 4in 0},clip,scale=.29]{view.pdf}
+\includegraphics[trim={0 3.9in 4.1in 0},clip,scale=.30]{view.pdf}
 
 The naive solution is expensive.  After the first version of the view
 has been constructed, an ideal algorithm would compute only
@@ -39,7 +39,7 @@ $\inc{Q}$ with the property that $\Delta V = \inc{Q}(\Delta DB)$,
 i.e., $\inc{Q}$ can compute the change of the view from the change of
 the database:
 
-\includegraphics[trim={0 4in 4in 0},clip,scale=.3]{incview.pdf}
+\includegraphics[trim={0 4.5in 4.1in 0},clip,scale=.30]{incview.pdf}
 
 We call $\inc{Q}$ the \emph{incremental} version of $Q$.  If one
 thinks of $\inc{Q}$ as a function of a database change, one can show
@@ -47,19 +47,18 @@ that the ideal solution as described above is impossible to reach.
 
 In this paper we provide a new perspective, by proposing a new way to
 precisely define $\inc{Q}$ as a form of \emph{computation on streams}.
-This definition can be given in a one-line formula.  Our model is
-inspired by Digital Signal Processing DSP~\cite{rabiner-book75},
-applied to databases, hence the name \dbsp.  This view of $\inc{Q}$
-enables us to unlock the desired speed-up.  As for traditional
-database queries, the performance of $\inc{Q}$ depends both on the
-query $Q$ but also on the actual data that the query is applied to.
-While one cannot give a simple closed form for the speed-up obtained
-by $\inc{Q}$, as a rule of thumb, for essentially all practical
-queries $Q$, the incremental version of $\inc{Q}$ that our algorithm
-constructs, is faster than $Q$ by a factor of $O(|DB| / |\Delta DB|)$.
-In practice this may be an improvement of several orders of magnitude.
-For our example numbers, $|DB| \approx 10^9$ and $|\Delta DB| \approx
-10^2$ this is \textbf{10 million times} faster!
+Our model is inspired by Digital Signal Processing
+DSP~\cite{rabiner-book75}, applied to databases, hence the name \dbsp.
+$\inc{Q}$ can be very efficient.  As for traditional database queries,
+the performance of $\inc{Q}$ depends both on the query $Q$ but also on
+the actual data that the query is applied to.  While one cannot give a
+simple closed form for the speed-up obtained by $\inc{Q}$, as a rule
+of thumb, for essentially all practical queries $Q$, the incremental
+version of $\inc{Q}$ that our algorithm constructs, is faster than $Q$
+by a factor of $O(|DB| / |\Delta DB|)$.  In practice this may be an
+improvement of several orders of magnitude.  For our example above
+$|DB| \approx 10^9$ and $|\Delta DB| \approx 10^2$, this makes
+$\inc{Q}$ \textbf{10 million times} faster than $Q$!
 
 Instead of treating the database as a monolithic changing object, we
 treat it as a \emph{sequence} or \emph{stream} of database snapshots.
@@ -132,29 +131,19 @@ reasons:
 %briefly discuss in \refsec{sec:implementation}.
 %\end{enumerate}
 
-\subsection{Circuits and Streams}
+\subsection{Circuits and Streams}\label{sec:intro-circuits}
 
 In this paper we use circuit diagrams to depict programs.  In a
 circuit a rectangle represents a function, and an arrow represents an
 input or output value.  The following diagram shows a function $f$
 consuming two inputs $i$ (input 0) and $j$ (input 1) and producing one
 output $o = f(i, j)$:
-
+%
 \begin{center}
-\begin{tikzpicture}[auto,>=latex]
-  \matrix (function) [
-    matrix of nodes,
-    inner sep=0,
-    row sep=.1cm,
-    column sep={.3cm,between origins},
-    draw
-  ]{  & & \\
-    \node[font=\tiny] (0) {0}; & & \\
-      & {$f$} & \\
-    \node[font=\tiny] (1) {1}; & & \\
-      & & \\
-    };
-
+\begin{tikzpicture}[auto,>=latex,inner sep=0mm]
+  \node[block, minimum height=.7cm, minimum width=.5cm] (function) {$f$};
+  \node[below=1mm of function.north west,font=\tiny,anchor=north west] (0) {0};
+  \node[above=1mm of function.south west,font=\tiny,anchor=south west] (1) {1};
   \node[left of=0, node distance=.5cm] (input0) {$i$};
   \node[left of=1, node distance=.5cm] (input1) {$j$};
   \node[right of=function, node distance=.8cm] (output) {$o$};
@@ -163,11 +152,13 @@ output $o = f(i, j)$:
   \draw[->] (function) -- (output);
 \end{tikzpicture}
 \end{center}
-
+%
 Most of the functions we deal with are commutative, and in this case
-we do not need to label the inputs, thus we will display the circuit
+we do not need to label the inputs.  We also avoid showing input
+labels if the arrows are labeled in the text and can be used to
+distinguish the order of inputs; thus we will display the circuit
 above as:
-
+%
 \begin{center}
   \begin{tikzpicture}[auto,>=latex, node distance=.7cm]
     \node[] (input0) {$i$};
@@ -180,10 +171,10 @@ above as:
     \draw[->] (T) -- (output);
   \end{tikzpicture}
 \end{center}
-
-Functions, and their circuits, can be composed, as in this example,
-depicting the function $o = g(s) + (f(s) \times s)$:
-
+%
+Functions, and their circuits, can be composed, as in the following
+example for the function $o = g(s) + (f(s) \times s)$:
+%
 \begin{center}
 \begin{tikzpicture}[auto,>=latex]
   \node[] (input) {$s$};
@@ -202,14 +193,14 @@ depicting the function $o = g(s) + (f(s) \times s)$:
   \draw[->] (S2) -- (T2);
 \end{tikzpicture}
 \end{center}
-
+%
 We say that two circuits are \defined{equivalent} if they compute the
 same function.  We use the symbol $\cong$ to indicate circuit
 equivalence.  For example, we have the following circuit equivalence
 (where $\circ$ is function composition):
 
 \noindent
-\begin{tabular}{m{3.5cm}m{.3cm}m{3.5cm}}
+\begin{tabular}{m{3cm}m{.3cm}m{3cm}c}
 \begin{tikzpicture}[auto,>=latex]
   \node[] (input) {$s$};
   \node[block, right of=input] (g) {$g$};
@@ -229,18 +220,20 @@ $\cong$
     \draw[->] (input) -- (fg);
     \draw[->] (fg) -- (output);
 \end{tikzpicture}
+&
+(*)
 \end{tabular}
 
 \subsection{Streams}
 
-The core notion of \dbsp is the \textbf{stream}.
-Given a set $A$, a \defined{stream} \emph{of values from $A$} is an
-infinite sequence of values from $A$.  We write $\stream{A}$ is the
-set of all streams with value from $A$.
-We write $s[t]$ for the $t$-th element of the stream $s$.  Think of
-$t$ as the ``time'' and of $s[t]\in A$ as the value of the stream
-$s$ ``at time'' $t$.  We show streams as a sequence of boxes, where
-time goes from \emph{right to left}: e.g., the stream $s[t] = t$ is:
+The core notion of \dbsp is the \textbf{stream}.  Given a set $A$, a
+\defined{stream} \emph{of values from $A$} is an infinite sequence of
+values from $A$.  We write $\stream{A}$ is the set of all streams with
+value from $A$.  We write $s[t]$ for the $t$-th element of the stream
+$s$.  Think of $t$ as the ``time'' and of $s[t]\in A$ as the value of
+the stream $s$ ``at time'' $t$.  In examples we show streams as a
+sequence of boxes, where time goes from \emph{right to left}: e.g.,
+the stream $s[t] = t$ is:
 
 \begin{center}
 \begin{tabular}{cc}
@@ -264,22 +257,24 @@ operator $T$ consuming two input streams $s_0$ and $s_1$ and producing
 one output stream $s$:
 
 \begin{center}
-\begin{tikzpicture}[auto,>=latex,minimum width=.5cm]
-  \node[] (input0) {$s_0$};
-  \node[below of=input0,node distance=.3cm] (dummy) {};
-  \node[below of=dummy,node distance=.3cm] (input1) {$s_1$};
-  \node[block, right of=dummy] (T) {$T$};
-  \node[right of=T] (output) {$s$};
-  \draw[->>] (input0) -- (T);
-  \draw[->>] (input1) -- (T);
-  \draw[->>] (T) -- (output);
+\begin{tikzpicture}[auto,>=latex,inner sep=0mm]
+  \node[block, minimum height=.7cm, minimum width=.5cm] (function) {$T$};
+  \node[below=1mm of function.north west,font=\tiny,anchor=north west] (0) {0};
+  \node[above=1mm of function.south west,font=\tiny,anchor=south west] (1) {1};
+  \node[left of=0, node distance=0.8cm] (input0) {$s_0$};
+  \node[left of=1, node distance=0.8cm] (input1) {$s_1$};
+  \node[right of=function, node distance=.8cm] (output) {$s$};
+  \draw[->>] (input0) -- (0);
+  \draw[->>] (input1) -- (1);
+  \draw[->>] (function) -- (output);
 \end{tikzpicture}
 \end{center}
 
+We write $s = T(s_0, s_1)$.
 %\begin{definition}(lifting)
 Given a function $f: A \to B$, we define a stream operator $\lift{f}
 :\stream{A} \to \stream{B}$ (read as $f$ lifted) by applying function
-$f$ to the input stream(s) independently at each point in time.
+$f$ to the input stream(s) independently at each point in time:
 \begin{center}
   \begin{tikzpicture}[auto,>=latex]
     \node[] (input) {$\sv{a b c d e}$};
@@ -303,7 +298,8 @@ whole database as a \emph{stream of database snapshots}.  We model a
 database as a stream $DB$.  Time is not wall-clock time, but counts
 the transactions applied to the database.  Since transactions are
 linearizable, they have a total order.  $DB[t]$ is the snapshot of the
-database contents after $t$ transactions have been applied.
+database contents after $t$ transactions have been applied.  This
+notation is apparent in the diagrams in \refsec{sec:intro-incremental}.
 
 Database transactions also form a stream $\Delta DB$, this time a
 stream of \emph{changes}, or \emph{deltas} that are applied to the
@@ -350,11 +346,11 @@ algorithm needs to compute the \emph{changes} to the view given the
 changes to the database. Given a query $Q$, a key contribution of this
 paper is the definition of its \emph{incremental version} $\inc{Q}$,
 using stream integration and differentiation, depicted graphically as:
-
+%
 \begin{center}
 \begin{tikzpicture}[auto,>=latex,minimum width=.5cm]
   \node[] (input) {$\Delta DB$};
-  \node[block, right of=input] (I) {$\I$};
+  \node[block, right of=input, node distance=1.3cm] (I) {$\I$};
   \node[block, right of=I, node distance=1.3cm] (Q) {$\lift{Q}$};
   \node[block, right of=Q, node distance=1.3cm] (D) {$\D$};
   \node[right of=D] (output) {$\Delta V$};
@@ -366,14 +362,15 @@ using stream integration and differentiation, depicted graphically as:
   node[pos=.5, above=13pt]{$\inc{Q}$};
 \end{tikzpicture}
 \end{center}
-
-The incremental version of a query $Q$ is a stateful \emph{streaming
-operator} $\inc{Q}$ which computes directly on changes and produces
-changes.  The incremental version of a query is thus always
-well-defined.  The above definition also gives us one way to compute a
-query incrementally, but applying it naively produces an inefficient
-execution plan, since it will reconstruct the database at each step.
-It is in fact as bad as the naive solution.  In
+%
+Mathematically this is written as $\inc{Q} = \D \circ (\lift{Q}) \circ
+\I$.  The incremental version of a query $Q$ is a stateful
+\emph{streaming operator} $\inc{Q}$ which computes directly on changes
+and produces changes.  The incremental version of a query is thus
+always well-defined.  The above definition also gives us one way to
+compute a query incrementally, but applying it naively produces an
+inefficient execution, since it reconstructs the database at each
+step.  It is in fact as bad as the naive solution.  In
 \refsec{sec:incremental} we show how we can optimize the
 implementation of $\inc{Q}$. The key property is that the incremental
 composition of two queries $Q_1$ and $Q_2$ is the composition of their
@@ -389,8 +386,7 @@ previously known, but they are cleanly modeled by \dbsp.
 implemented and incrementalized in \dbsp.  For example, given an
 implementation of transitive closure in the natural recursive way, our
 algorithm produces a program that efficiently maintains the transitive
-closure of a graph as the graph is changed by adding and deleting
-nodes and edges.
+closure of a graph as nodes and edges are added and deleted.
 
 \subsection{Contributions}
 

@@ -1,12 +1,13 @@
 \section{Recursive queries}\label{sec:recursion}
 
-Recursive queries are very useful in a many applications.  For
+Recursive queries are very useful in many applications.  For
 example, graph algorithms such as graph reachability or transitive
 closure are naturally expressed using recursive queries.  We introduce
 two simple \dbsp stream operators that are used for expressing
 recursive query evaluation.  These operators allow us to build
 circuits implementing looping constructs, which are used to iterate
-computations until a fixed-point is reached.
+computations until a fixed-point is reached (i.e., the output of some
+operator does not change anymore).
 
 \subsection{Creating and destroying streams}
 
@@ -22,8 +23,9 @@ computations until a fixed-point is reached.
 
 The \defined{delta function} $\delta : A \rightarrow \stream{A}$
 produces a stream from a scalar value.  Given an input value $x$ the
-output stream is $x$ followed by an infinite number of zeros.  Notice
-that the input is a single arrow, while the output is a double arrow.
+output stream is $x$ followed by an infinite number of zeros.  The
+input of $\delta$ has a single arrow, while the output has a double
+arrow.
 
 %$$\delta(v)[t] \defn \left\{
 %\begin{array}{ll}
@@ -116,11 +118,11 @@ recursive relations.
 
 We describe the algorithm for the simple case of a single-input,
 single-output query.  The input of our algorithm is a Datalog query of
-the form $O = R(I, O)$, where $R$ is a \textbf{relational,
+the form $O = R(x, O)$, where $R$ is a \textbf{relational,
   non-recursive} query, producing a set as a result, but whose output
 $O$ is also an input.  The output of the algorithm is a \dbsp circuit
 which evaluates this recursive query producing output $O$ when given
-the input $I$.  In this section we build a non-incremental circuit,
+the input $x$.  In this section we build a non-incremental circuit,
 which evaluates the Datalog query; in \refsec{sec:nested} we derive
 the incremental version of this circuit.
 
@@ -132,38 +134,42 @@ the incremental version of this circuit.
     an acyclic circuit whose inputs and outputs are \zrs:
     \begin{center}
     \begin{tikzpicture}[auto,>=latex]
-      \node[] (I) {\code{I}};
-      \node[below of=I, node distance=.5cm] (O) {\code{O}};
+      \node[] (I) {$x$};
+      \node[below of=I, node distance=.5cm] (O) {$O$};
       \node[block, right of=I] (R) {$R$};
-      \node[right of=R] (o) {\code{O}};
+      \node[right of=R] (o) {$O$};
       \draw[->] (I) -- (R);
       \draw[->] (O) -| (R);
       \draw[->] (R) -- (o);
     \end{tikzpicture}
     \end{center}
 
+In all these diagrams we show input 0 of operator $R$ on the left, and
+input 1 on the bottom.
+
 \item Lift this circuit to operate on streams:
     \begin{center}
     \begin{tikzpicture}[auto,>=latex]
-      \node[] (I) {\code{I}};
-      \node[below of=I, node distance=.7cm] (O) {\code{O}};
+      \node[] (I) {$x$};
+      \node[below of=I, node distance=.7cm] (O) {$O$};
       \node[block, right of=I] (R) {$\lift R$};
-      \node[right of=R] (o) {\code{O}};
+      \node[right of=R] (o) {$O$};
       \draw[->>] (I) -- (R);
       \draw[->>] (O) -| (R);
       \draw[->>] (R) -- (o);
     \end{tikzpicture}
     \end{center}
-  Construct $\lift{R}$ by lifting each operator individually.
+  Construct $\lift{R}$ by lifting each operator individually, as shown
+  by equation (**) in \refsec{sec:streams}.
 
 \item Build a cycle, connecting the output to the corresponding
 recursive input via a delay:
 
  \begin{center}
 \begin{tikzpicture}[auto,>=latex, node distance=.8cm]
-  \node[] (I) {\code{I}};
-  \node[block, right of=I] (R) {$\lift R$};
-  \node[right of=R, node distance=1.5cm] (O) {\code{O}};
+  \node[] (I) {$x$};
+  \node[block, right of=I, node distance=1cm] (R) {$\lift R$};
+  \node[right of=R, node distance=1.5cm] (O) {$O$};
   \node[block, below of=R, node distance=.8cm] (z) {$\zm$};
   \draw[->>] (I) -- (R);
   \draw[->>] (R) -- node(o) {} (O);
@@ -175,13 +181,13 @@ recursive input via a delay:
 
 \begin{center}
 \begin{tikzpicture}[auto,>=latex, node distance=.8cm]
-  \node[] (Iinput) {\code{I}};
+  \node[] (Iinput) {$x$};
   \node[block, right of=Iinput] (ID) {$\delta$};
   \node[block, right of=ID] (II) {$\I$};
   \node[block, right of=II, node distance=1cm] (f) {$\lift{R}$};
   \node[block, right of=f, node distance=1.5cm] (D) {$\D$};
   \node[block, right of=D] (S) {$\int$};
-  \node[right of=S] (output)  {\code{O}};
+  \node[right of=S] (output)  {$O$};
   \draw[->] (Iinput) -- (ID);
   \draw[->>] (ID) -- (II);
   \draw[->>] (II) -- (f);
@@ -196,11 +202,17 @@ recursive input via a delay:
 \end{enumerate}
 \end{algorithm}
 
-Think of the feedback cycle in this circuit as a \texttt{while} loop
-that iterates until no changes are observed (i.e., a fixed-point of
-$R$ is reached).  The $\D$ operator yields the set of \emph{new
-changes} computed by each iteration of the loop.  When the set of new
-changes becomes empty, the fixed point has been reached.
+The left input of $\lift{R}$ is an infinite stream of identical values
+\sv{$x$ $x$ $x$ $x$ $x$}.  The feedback cycle in this circuit as a
+\texttt{while} loop that iterates until no changes are observed (i.e.,
+a fixed-point of $R$ is reached); the outputs produced by $\lift{R}$
+will be: in sequence $R(x,0)$, $R(x,R(x,0))$, $R(x,R(x,R(x,0)))$,
+etc..  The $\D$ operator yields the set of \emph{new changes} computed
+by each iteration of the loop.  When the set of new changes becomes
+empty, the fixed point has been reached.
+
+A concrete example for a transitive closure query is Section~8.2 of a
+longer technical report~\cite{tr}.
 
 %\begin{theorem}[Recursion correctness]\label{theorem:recursion}
 %If $\isset(\code{I})$, the output of the circuit above is
@@ -235,23 +247,24 @@ changes becomes empty, the fixed point has been reached.
 %$\code{O} = \fix{x}{R(\code{I}, x)}$.
 %\end{proof}
 
-Note that this loop is not guaranteed to terminate.  But if a program
-does converge, the above construction will find the least fixed point.
+Note that this loop is not guaranteed to terminate.  But if the
+program does converge, the above construction will find the least
+fixed point that contains $x$.
 
 In fact, this circuit implements the standard Datalog
 \defined{na\"{\i}ve evaluation} algorithm (e.g., see Algorithm~1 in
 \cite{greco-sldm15}).  Notice that the inner part of the circuit is
 the incremental form of another circuit, since it is sandwiched
-between $\I$ and $\D$ operators.  Using the cycle rule of we can
+between $\I$ and $\D$ operators.  Using the cycle rule we can
 rewrite this circuit:
 
 \begin{center}
 \begin{tikzpicture}[auto,>=latex]
-  \node[] (Iinput) {\code{I}};
+  \node[] (Iinput) {$x$};
   \node[block, right of=Iinput] (Idelta) {$\delta$};
   \node[block, right of=Idelta, node distance=1.3cm] (f) {$\inc{(\lift{R})}$};
   \node[block, right of=f, node distance=1.5cm] (S) {$\int$};
-  \node[right of=S] (output)  {\code{O}};
+  \node[right of=S] (output)  {$O$};
   \node[block, below of=f, node distance=.9cm] (z) {$\zm$};
   \draw[->] (Iinput) -- (Idelta);
   \draw[->] (f) -- node (o) {} (S);

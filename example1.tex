@@ -133,6 +133,10 @@ sequence of equivalent circuits:
     \draw[->] (d) -- (V);
 \end{tikzpicture}
 
+This step is found in some traditional database optimizers.  Notice
+that some arrows that used to represent sets in the original circuit
+may represent multisets in the optimized circuit.
+
 Step 3: lift the circuit to compute over streams; all arrows are
 doubled and all functions are lifted:
 
@@ -194,7 +198,9 @@ such change it produces the corresponding change in the output view \code{V}:
     \draw[->>] (D) -- (V);
 \end{tikzpicture}
 
-Step 5: apply the chain rule to rewrite the circuit as a composition of incremental operators;
+Step 5: apply the chain rule to rewrite the circuit as a composition
+of incremental operators; notice the use of $\inc{.}$ for all
+operators:
 
 \noindent
 \begin{tikzpicture}[node distance=1.6cm,>=latex]
@@ -249,7 +255,7 @@ all linear operators no longer have a $\inc{\cdot}$):
 
 Finally, replace the incremental join and the incremental $\distinct$,
 obtaining the following circuit (we have used a slightly different
-expansion for the join than the one shown previously, which only
+expansion for the join than the one shown previously; this one only
 contains two integrators):
 
 \noindent
@@ -298,4 +304,5 @@ contains two integrators):
 Notice that the resulting circuit contains three integration
 operations: two from the join, and one from the $\distinct$.  It also
 contains two join operators.  However, the work performed by each
-operator for each new input is proportional to the size of the change.
+operator for each new input is proportional to the size of its input
+change.

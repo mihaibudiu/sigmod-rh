@@ -191,18 +191,18 @@
   implementation is to ``reuse'' previously computed results.
   Ideally, when presented with a new change to the input, an
   incremental computation should only perform work proportional to the
-  size of the changes of the, rather than to the size of the entire
-  dataset.
+  size of the changes of the input, rather than to the size of the
+  entire dataset.
 
-  In the area of databases the incremental computation problem is
-  known as Incremental View Maintenance (IVM); IVM has long been a
-  central problem in database theory and practice.  Many solutions
-  have been proposed for restricted classes of computation, but we are
-  seeking a general solution.
+  In databases ``incremental computation'' is known as Incremental
+  View Maintenance (IVM); IVM has long been a central problem of
+  database theory and practice.  Many solutions have been proposed for
+  restricted classes of computation or changes, but we are seeking a
+  general solution.
 
   We start by defining incremental computations as computations on
-  data streams, i.e., sequences of data values.  We borrow ideas from
-  the theory of Digital Signal Processing.
+  data streams, i.e., sequences of data values, by borrowing ideas
+  from Digital Signal Processing.
 
   Using these tools, we give a general solution to the incremental
   computation problem in 4 steps: (1) we describe a simple but
@@ -210,14 +210,14 @@
   data streams; (2) we give a new mathematical definition of
   incremental computation for \dbsp programs; (3) we give a general
   algorithm for converting any \dbsp program into an incremental
-  program by reducing the problem of incrementalizing a complex query
-  to the problem of incrementalizing the primitive operations that the
-  query is built from, and (4) we show that practical database query
-  languages, such as SQL and Datalog, can be directly implemented on
-  top of \dbsp, using only primitive operators that can be efficiently
-  incrementalized.  As a consequence, we obtain efficient incremental
-  view maintenance algorithms for essentially arbitrary queries
-  written in all these languages.
+  program.  The algorithm reduces the problem of incrementalizing a
+  complex query to the problem of incrementalizing the primitive
+  operations that compose the query. Finally, (4) we show that
+  practical database query languages, such as SQL and Datalog, can be
+  directly implemented on top of \dbsp, using only primitive operators
+  that can be efficiently incrementalized.  As a consequence, we
+  obtain a general recipe for efficient IVM for essentially arbitrary
+  queries written in all these languages.
 \end{abstract}
 
 \input{intro}

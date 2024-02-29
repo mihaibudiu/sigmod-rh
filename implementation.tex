@@ -2,31 +2,30 @@
 
 %\subsection{Practicality and limitations}
 
-While \dbsp is a theoretical construct, we want to emphasize that the
-assumptions of the model do not detract from its practicality.  In
-fact, we have built an open-source implementation of \dbsp as a query
-engine in Rust~\cite{dbsp-crate}; we have also built a compiler from
-SQL to \dbsp~\cite{sql-to-dbsp-compiler}.  This compiler handles
-essentially the entire SQL language\footnote{Support for recursive SQL
-queries is not finalized; and ORDER BY without LIMIT is handled
-inefficiently.}.  The compiler generates execution plans for
+\dbsp does not make any simplifying assumptions that can cause
+obstacles to its application in practice.  In fact, Feldera Inc. has
+built an open-source implementation of \dbsp as a query engine in
+Rust~\cite{dbsp-crate}; and also a compiler from SQL to
+\dbsp~\cite{sql-to-dbsp-compiler}.  This compiler handles essentially
+the entire SQL language.  The compiler generates execution plans for
 incrementally maintaining any number of views defined in SQL.
 
 Incremental computation is not free.  It is in fact a trade-off
-between time and space.  We have to consider both the time and the
-space used by each operator.  While many database operations can be
-done using work proportional to the size of the changes, and no
-storage overhead, several classes of database operations, such as
-joins, ``distinct'', and aggregates can be implemented efficiently
-only using additional storage in the form of \emph{indexes}.  The size
-of these indexes is proportional to the size of the total data in the
-database (and not just to the size of the changes) --- and since some
-indexes are over intermediate relations, they can even exceed the size
-of the original database.  In \dbsp the indexes are represented by
-delay operators $\zm$.  In fact, the delay operator (and its lifted
-variant $\lift{\zm}$) are the only operators that maintains state.
-This is also the only state that needs to be persisted, checkpointed,
-or migrated to make \dbsp computations fault-tolerant.
+between time and space.  In the cost analysis we have to consider both
+the time and the space used by each operator.  While many incremental
+database operations can be implemented using work proportional to the
+size of the changes, and no storage overhead, several classes of
+database operations, such as joins, ``distinct'', and aggregates can
+be implemented efficiently only using additional storage in the form
+of \emph{indexes}.  The size of these indexes is proportional to the
+size of the total data in the database (and not just to the size of
+the changes) --- and since some indexes are over intermediate
+relations, they can even exceed the size of the original database.  In
+\dbsp the indexes are represented by delay operators $\zm$.  In fact,
+the delay operator (and its lifted variant $\lift{\zm}$) are the only
+operators that maintains state.  This is also the only state that
+needs to be persisted, checkpointed, or migrated to make \dbsp
+computations fault-tolerant.
 
 Another limitation of incremental computation is the startup cost.
 When a new view is installed, the IVM system must compute the first
@@ -43,7 +42,6 @@ really wants to inspect the views.  In contrast, ``lazy'' or
 inspected.  Such models have the potential to be more efficient.
 Eager models can be converted into lazy ones if something is known
 about the class of operations that will be executed against the views.
-But this is in essence just another time-space trade-off.
 
 An IVM system like \dbsp can in principle be integrated as a service
 in a traditional database.  The ``right'' interface for this service
@@ -53,7 +51,7 @@ is notified with all the changes for the views they are monitoring.
 Unfortunately several obstacles prevent such an integration from being
 done naturally:
 \begin{itemize}
-  \item The core data structure in incremental plans is the
+  \item The core data structure in incremental circuits is the
     ``change''.  Changes can be both positive (insertions) and
     negative (deletions).  Existing database query engines are not
     designed for handling negative changes.

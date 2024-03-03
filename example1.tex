@@ -48,89 +48,83 @@ this circuit is essentially a dataflow implementation of the query:
     \draw[->] (d) -- (V);
 \end{tikzpicture}
 
-Step 2: apply rules to eliminate $\distinct$ operators, producing a
-sequence of equivalent circuits:
+Step 2: apply rules to eliminate $\distinct$ operators, producing an
+equivalent circuit: (from now on we omit the subscripts to save
+space):
 
-\noindent
-\begin{tikzpicture}[node distance=1.2cm,>=latex]
-    \node[] (t1) {\code{t1}};
-    \node[block, right of=t1, node distance=.9cm] (s1) {$\sigma_{a > 2}$};
-    \node[block, right of=s1] (p1) {$\pi_{x, id}$};
-    \node[block, right of=p1] (d11) {$\distinct$};
-    \node[below of=t1, node distance=1cm] (t2) {\code{t2}};
-    \node[block, right of=t2, node distance=.9cm] (s2) {$\sigma_{s > 5}$};
-    \node[block, right of=s2] (p2) {$\pi_{y, id}$};
-    \node[block, right of=p2] (d21) {$\distinct$};
-    \node[below of=d11, node distance=.5cm] (mid) {};
-    \node[block, right of=mid, node distance=.8cm] (j) {$\bowtie_{id = id}$};
-    \node[block, right of=j] (p) {$\pi_{x, y}$};
-    \node[block, right of=p] (d) {$\distinct$};
-    \node[right of=d, node distance=1.2cm] (V) {\code{V}};
-    \draw[->] (t1) -- (s1);
-    \draw[->] (s1) -- (p1);
-    \draw[->] (p1) -- (d11);
-    \draw[->] (t2) -- (s2);
-    \draw[->] (s2) -- (p2);
-    \draw[->] (p2) -- (d21);
-    \draw[->] (d11) -| (j);
-    \draw[->] (d21) -| (j);
-    \draw[->] (j) -- (p);
-    \draw[->] (p) -- (d);
-    \draw[->] (d) -- (V);
-\end{tikzpicture}
+%\noindent
+%\begin{tikzpicture}[node distance=1.2cm,>=latex]
+%    \node[] (t1) {\code{t1}};
+%    \node[block, right of=t1, node distance=.9cm] (s1) {$\sigma_{a > 2}$};
+%    \node[block, right of=s1] (p1) {$\pi_{x, id}$};
+%    \node[block, right of=p1] (d11) {$\distinct$};
+%    \node[below of=t1, node distance=1cm] (t2) {\code{t2}};
+%    \node[block, right of=t2, node distance=.9cm] (s2) {$\sigma_{s > 5}$};
+%    \node[block, right of=s2] (p2) {$\pi_{y, id}$};
+%    \node[block, right of=p2] (d21) {$\distinct$};
+%    \node[below of=d11, node distance=.5cm] (mid) {};
+%    \node[block, right of=mid, node distance=.8cm] (j) {$\bowtie_{id = id}$};
+%    \node[block, right of=j] (p) {$\pi_{x, y}$};
+%    \node[block, right of=p] (d) {$\distinct$};
+%    \node[right of=d, node distance=1.2cm] (V) {\code{V}};
+%    \draw[->] (t1) -- (s1);
+%    \draw[->] (s1) -- (p1);
+%    \draw[->] (p1) -- (d11);
+%    \draw[->] (t2) -- (s2);
+%    \draw[->] (s2) -- (p2);
+%    \draw[->] (p2) -- (d21);
+%    \draw[->] (d11) -| (j);
+%    \draw[->] (d21) -| (j);
+%    \draw[->] (j) -- (p);
+%    \draw[->] (p) -- (d);
+%    \draw[->] (d) -- (V);
+%\end{tikzpicture}
 
-\noindent (from now on we omit the subscripts to save space):
 
-\noindent
-\begin{tikzpicture}[node distance=1.2cm,>=latex]
-    \node[] (t1) {\code{t1}};
-    \node[block, right of=t1, node distance=.9cm] (s1) {$\sigma$};
-    \node[block, right of=s1] (p1) {$\pi$};
-    \node[below of=t1, node distance=1cm] (t2) {\code{t2}};
-    \node[block, right of=t2, node distance=.9cm] (s2) {$\sigma$};
-    \node[block, right of=s2] (p2) {$\pi$};
-    \node[below of=p1, node distance=.5cm] (mid) {};
-    \node[block, right of=mid, node distance=.8cm] (j) {$\bowtie$};
-    \node[block, right of=j] (d0) {$\distinct$};
-    \node[block, right of=d0] (p) {$\pi$};
-    \node[block, right of=p] (d) {$\distinct$};
-    \node[right of=d, node distance=1.2cm] (V) {\code{V}};
-    \draw[->] (t1) -- (s1);
-    \draw[->] (s1) -- (p1);
-    \draw[->] (t2) -- (s2);
-    \draw[->] (s2) -- (p2);
-    \draw[->] (p1) -| (j);
-    \draw[->] (p2) -| (j);
-    \draw[->] (j) -- (d0);
-    \draw[->] (d0) -- (p);
-    \draw[->] (p) -- (d);
-    \draw[->] (d) -- (V);
-\end{tikzpicture}
-
+%\noindent
+%\begin{tikzpicture}[node distance=1.2cm,>=latex]
+%    \node[] (t1) {\code{t1}};
+%    \node[block, right of=t1, node distance=.9cm] (s1) {$\sigma$};
+%    \node[block, right of=s1] (p1) {$\pi$};
+%    \node[below of=t1, node distance=1cm] (t2) {\code{t2}};
+%    \node[block, right of=t2, node distance=.9cm] (s2) {$\sigma$};
+%    \node[block, right of=s2] (p2) {$\pi$};
+%    \node[below of=p1, node distance=.5cm] (mid) {};
+%    \node[block, right of=mid, node distance=.8cm] (j) {$\bowtie$};
+%    \node[block, right of=j] (d0) {$\distinct$};
+%    \node[block, right of=d0] (p) {$\pi$};
+%    \node[block, right of=p] (d) {$\distinct$};
+%    \node[right of=d, node distance=1.2cm] (V) {\code{V}};
+%    \draw[->] (t1) -- (s1);
+%    \draw[->] (s1) -- (p1);
+%    \draw[->] (t2) -- (s2);
+%    \draw[->] (s2) -- (p2);
+%    \draw[->] (p1) -| (j);
+%    \draw[->] (p2) -| (j);
+%    \draw[->] (j) -- (d0);
+%    \draw[->] (d0) -- (p);
+%    \draw[->] (p) -- (d);
+%    \draw[->] (d) -- (V);
+%\end{tikzpicture}
+%
 %\noindent And again~\ref{prop-distinct-once}:
 
 \noindent
 \begin{tikzpicture}[node distance=1cm,>=latex]
-    \node[] (t1) {\code{t1}};
-    \node[block, right of=t1, node distance=.9cm] (s1) {$\sigma$};
-    \node[block, right of=s1] (p1) {$\pi$};
-    \node[below of=t1, node distance=1cm] (t2) {\code{t2}};
-    \node[block, right of=t2, node distance=.9cm] (s2) {$\sigma$};
-    \node[block, right of=s2] (p2) {$\pi$};
-    \node[below of=p1, node distance=.5cm] (mid) {};
-    \node[block, right of=mid, node distance=.8cm] (j) {$\bowtie$};
-    \node[block, right of=j] (p) {$\pi$};
-    \node[block, right of=p] (d) {$\distinct$};
-    \node[right of=d, node distance=1cm] (V) {\code{V}};
-    \draw[->] (t1) -- (s1);
-    \draw[->] (s1) -- (p1);
-    \draw[->] (t2) -- (s2);
-    \draw[->] (s2) -- (p2);
-    \draw[->] (p1) -| (j);
-    \draw[->] (p2) -| (j);
-    \draw[->] (j) -- (p);
-    \draw[->] (p) -- (d);
-    \draw[->] (d) -- (V);
+    \node[] (t1) {\code{t1}}; \node[block, right of=t1, node
+      distance=.9cm] (s1) {$\sigma$}; \node[block, right of=s1] (p1)
+         {$\pi$}; \node[below of=t1, node distance=1cm] (t2)
+         {\code{t2}}; \node[block, right of=t2, node distance=.9cm]
+         (s2) {$\sigma$}; \node[block, right of=s2] (p2) {$\pi$};
+         \node[below of=p1, node distance=.5cm] (mid) {}; \node[block,
+           right of=mid, node distance=.8cm] (j) {$\bowtie$};
+         \node[block, right of=j] (p) {$\pi$}; \node[block, right
+           of=p] (d) {$\distinct$}; \node[right of=d, node
+           distance=1cm] (V) {\code{V}}; \draw[->] (t1) -- (s1);
+         \draw[->] (s1) -- (p1); \draw[->] (t2) -- (s2); \draw[->]
+         (s2) -- (p2); \draw[->] (p1) -| (j); \draw[->] (p2) -| (j);
+         \draw[->] (j) -- (p); \draw[->] (p) -- (d); \draw[->] (d) --
+         (V);
 \end{tikzpicture}
 
 This step is found in some traditional database optimizers.  Notice
@@ -254,9 +248,9 @@ all linear operators no longer have a $\inc{\cdot}$):
 \end{tikzpicture}
 
 Finally, replace the incremental join and the incremental $\distinct$,
-obtaining the following circuit (we have used a slightly different
-expansion for the join than the one shown previously; this one only
-contains two integrators):
+with their incremental implementations, obtaining the following
+circuit (we have used a slightly different expansion for the join than
+the one shown previously; this one only contains two integrators):
 
 \noindent
 \begin{tikzpicture}[node distance=.8cm,>=latex]

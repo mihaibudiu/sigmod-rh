@@ -228,8 +228,8 @@ $\cong$
 
 The core notion of \dbsp is the \textbf{stream}.  Given a set $A$, a
 \defined{stream} \emph{of values from $A$} is an infinite sequence of
-values from $A$.  We write $\stream{A}$ is the set of all streams with
-value from $A$.  We write $s[t]$ for the $t$-th element of the stream
+values from $A$.  $\stream{A}$ denotes the set of all streams with
+values from $A$.  We write $s[t]$ for the $t$-th element of the stream
 $s$.  Think of $t$ as the ``time'' and of $s[t]\in A$ as the value of
 the stream $s$ ``at time'' $t$.  In examples we show streams as a
 sequence of boxes, where time goes from \emph{right to left}: e.g.,
@@ -273,8 +273,9 @@ one output stream $s$:
 We write $s = T(s_0, s_1)$.
 %\begin{definition}(lifting)
 Given a function $f: A \to B$, we define a stream operator $\lift{f}
-:\stream{A} \to \stream{B}$ (read as $f$ lifted) by applying function
-$f$ to the input stream(s) independently at each point in time:
+:\stream{A} \to \stream{B}$ (read as ``$f$ lifted'') by applying
+function $f$ to the input stream(s) independently at each point in
+time:
 \begin{center}
   \begin{tikzpicture}[auto,>=latex]
     \node[] (input) {$\sv{a b c d e}$};
@@ -302,7 +303,7 @@ database contents after $t$ transactions have been applied.  This
 notation is apparent in the diagrams in \refsec{sec:intro-incremental}.
 
 Database transactions also form a stream $\Delta DB$, this time a
-stream of \emph{changes}, or \emph{deltas} that are applied to the
+stream of \emph{changes}, or \emph{deltas}, that are applied to the
 database.  The values of this stream are defined by $(\Delta DB)[t] =
 DB[t] - DB[t-1]$, where ``$-$'' stands for the difference between two
 databases, a notion that we will soon make more precise.  The $\Delta
@@ -335,10 +336,7 @@ $\Delta DB$ and $DB$:
 What is a view in our streaming model?  It is also a stream!  Suppose
 we are given a query $Q$ defining a view $V$.  For each snapshot of
 the database stream we have a snapshot of the view: $V[t] = Q(DB[t])$.
-In general, given an arbitrary function $f: A \to B$, we define a
-streaming ``version'' of $f$, denoted by $\lift{f}$ (read as ``$f$
-lifted''), which applies $f$ to every element of the input stream
-independently.  We can thus write $V = (\lift{Q})(DB)$.
+A view is thus just a lifted query: $V = (\lift{Q})(DB)$.
 
 Armed with these basic definitions, we can precisely define IVM.  What
 does it mean to maintain a view incrementally?  A maintenance
@@ -364,18 +362,17 @@ using stream integration and differentiation, depicted graphically as:
 \end{center}
 %
 Mathematically this is written as $\inc{Q} = \D \circ (\lift{Q}) \circ
-\I$.  The incremental version of a query $Q$ is a stateful
-\emph{streaming operator} $\inc{Q}$ which computes directly on changes
-and produces changes.  The incremental version of a query is thus
-always well-defined.  The above definition also gives us one way to
-compute a query incrementally, but applying it naively produces an
-inefficient execution, since it reconstructs the database at each
-step.  It is in fact as bad as the naive solution.  In
-\refsec{sec:incremental} we show how we can optimize the
-implementation of $\inc{Q}$. The key property is that the incremental
-composition of two queries $Q_1$ and $Q_2$ is the composition of their
-incremental versions: $\inc{(Q_1 \circ Q_2)} = \inc{Q_1} \circ
-\inc{Q_2}$.
+\I$.  The incremental version of a query $Q$ is a \emph{streaming
+operator} $\inc{Q}$ which computes directly on changes and produces
+changes.  The incremental version of a query is thus always
+well-defined.  The above definition gives us one way to compute a
+query incrementally, but applying it naively produces an inefficient
+execution, since it reconstructs the database at each step.  It is in
+fact as bad as the naive solution.  In \refsec{sec:incremental} we
+show how we can optimize the implementation of $\inc{Q}$. The key
+property is that the incremental composition of two queries $Q_1$ and
+$Q_2$ is the composition of their incremental versions: $\inc{(Q_1
+  \circ Q_2)} = \inc{Q_1} \circ \inc{Q_2}$.
 
 Armed with this general theory of incremental computation, in
 \secref{sec:relational} we show how to model relational queries in
@@ -392,9 +389,9 @@ closure of a graph as nodes and edges are added and deleted.
 
 This work makes the following contributions:
 \begin{enumerate}
-  \item We introduce \dbsp, a \textbf{simple} but \textbf{expressive}
-    language for streaming computation. \dbsp gives an elegant formal
-    foundation unifying the manipulation of streaming and incremental
+  \item We introduce \dbsp, a simple but expressive language for
+    streaming computation. \dbsp gives an elegant formal foundation
+    unifying the manipulation of streaming and incremental
     computations.
   \item An algorithm for incrementalizing any streaming
     computation expressed in \dbsp in the presence of arbitrary
@@ -406,7 +403,7 @@ This work makes the following contributions:
     theoretical results in the original version of this
     paper~\cite{budiu-vldb23} have been checked~\cite{dbsp-theory}
     using the Lean proof assistant~\cite{moura-cade15}.
-  \item Practical open-source implementations of this theory as a
+  \item A practical open-source implementation of this theory as a
     runtime and a SQL compiler.
 \end{enumerate}
 

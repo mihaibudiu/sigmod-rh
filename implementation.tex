@@ -2,13 +2,13 @@
 
 %\subsection{Practicality and limitations}
 
-\dbsp does not make any simplifying assumptions that can cause
-obstacles to its application in practice.  In fact, Feldera Inc. has
-built an open-source implementation of \dbsp as a query engine in
-Rust~\cite{dbsp-crate}; and also a compiler from SQL to
-\dbsp~\cite{sql-to-dbsp-compiler}.  This compiler handles essentially
-the entire SQL language.  The compiler generates execution plans for
-incrementally maintaining any number of views defined in SQL.
+\dbsp does not make any simplifying assumptions that would make it
+impractical.  In fact, Feldera Inc. has built an open-source
+implementation of \dbsp as a query engine in Rust~\cite{dbsp-crate};
+and also a compiler from SQL to \dbsp~\cite{sql-to-dbsp-compiler}.
+This compiler handles essentially the entire SQL language.  The
+compiler generates execution plans for incrementally maintaining any
+number of views defined in SQL.
 
 Incremental computation is not free.  It is in fact a trade-off
 between time and space.  In the cost analysis we have to consider both
@@ -43,24 +43,24 @@ inspected.  Such models have the potential to be more efficient.
 Eager models can be converted into lazy ones if something is known
 about the class of operations that will be executed against the views.
 
-An IVM system like \dbsp can in principle be integrated as a service
-in a traditional database.  The ``right'' interface for this service
-is the following: users register to receive notifications for changes
-in one or more views.  Then for any transaction committed, every user
-is notified with all the changes for the views they are monitoring.
-Unfortunately several obstacles prevent such an integration from being
-done naturally:
-\begin{itemize}
-  \item The core data structure in incremental circuits is the
-    ``change''.  Changes can be both positive (insertions) and
-    negative (deletions).  Existing database query engines are not
-    designed for handling negative changes.
-  \item Databases do not have any mechanism for reporting changes to
-    the outside world.  In fact, entire industries have sprung up
-    around the concept of Change Data Capture~\cite{cdc}, which is
-    building ad-hoc solutions for extracting changes from databases,
-    usually by inspecting the write-ahead transaction log.
-\end{itemize}
+Traditional databases do not offer efficient IVM implementations for
+arbitrary queries.  Databases could in principle be retrofitted to use
+the algorithms in this paper, but the existing query engines are not
+built around structures that can represent negative changes (like
+\zrs), so this effort will require a significant redesign.
+
+Moreover, we argue that databases should not only compute views
+incrementally, but should use ``changes'' as the fundamental data
+structure to communicate with their environment: a database service
+should offer the following API: users register to receive
+notifications for changes in one or more views.  Then, for any
+transaction committed, each user receives a notification containing
+the list of changes for the all the views they registered.  Databases
+today do not have any mechanism for reporting changes to the outside
+world.  In fact, entire industries have sprung up around the concept
+of Change Data Capture~\cite{cdc}, which is building ad-hoc solutions
+for extracting changes from databases, usually by inspecting the
+write-ahead transaction log.
 
 %The scope of this paper is the \dbsp theory of IVM, so we only briefly touch upon
 %the implementation aspects.  We defer a full description and evaluation of the

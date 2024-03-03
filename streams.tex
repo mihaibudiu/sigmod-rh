@@ -12,8 +12,9 @@ problem for using \dbsp in the context of databases.
 Stream operators are very powerful mathematically, but in \dbsp we
 restrict ourselves to a very small subset.  All \dbsp computations are
 \emph{causal}~\cite{causal}: the output at time $t$ is produced
-immediately after all inputs at time $t$ have been received.  This
-also makes \dbsp operators easy to implement.
+immediately after all inputs at time $t$ have been received; it
+follows that the output at time $t$ cannot depend on inputs arriving
+after $t$.
 
 The following circuit equivalence tells us that we can lift a circuit
 composed of multiple functions by lifting each function separately
@@ -344,7 +345,7 @@ Examples:
 %\end{theorem}
 
 Integration and differentiation are inverses of each other: while $\D$
-compute the changes of a stream, $\I$ reconstitutes the original
+computes the changes of a stream, $\I$ reconstitutes the original
 stream given the stream of changes.  $\I$ and $\D$ ``cancel out'' when
 applied in sequence:
 
@@ -386,8 +387,8 @@ applied in sequence:
 
 The results in this section are not specific to databases, they are
 true for arbitrary streaming computations.  However, for each result
-we emphasize how it applies in the domain of databases.  We tie these
-results to databases more tightly in the next section.
+we emphasize how it applies in the domain of databases.  We directly
+tie these results to databases in the next section.
 
 %Here we define IVM and analyze its properties.
 
@@ -398,10 +399,6 @@ Given a stream operator $S: \stream{A} \to \stream{B}$ we define the
 %\inc{Q} \defn \D \circ Q \circ \I.
 %\end{equation}
 %$\inc{Q}$ has the same ``type'' as $Q$: $\inc{Q}: \stream{A} \to \stream{B}$.
-%For an operator with multiple inputs we define
-%the incremental version by applying $\I$ to each input independently:
-%e.g., if $T: \stream{A} \times \stream{B} \rightarrow \stream{C}$ then
-%$\inc{T}(a, b) \defn \D (T(\I(a), \I(b)))$.
 
 %The following diagram illustrates the intuition behind this
 %definition:
@@ -428,6 +425,10 @@ of changes to $s$.  If $S$ produces a stream $o$, then $\inc{S}$
 produces the stream of changes to $o$.  Note that this definition does
 not require $S$ to be a lifted function.
 
+For an operator with multiple inputs and outputs we define the
+incremental version by applying $\I$ to each input, and $\D$ to each
+output, e.g.: $\inc{T}(a, b) \defn \D (T(\I(a), \I(b)))$.
+
 %Notice that our definition of incremental computation is meaningful only for \emph{streaming}
 %computations; this is in contrast to classic definitions, e.g.~\cite{gupta-idb95} which
 %consider only one change.  Generalizing the definition to operate on streams gives us
@@ -453,7 +454,7 @@ The \defined{chain rule} states that $\inc{(Q_1 \circ Q_2)} =
 \inc{Q_1} \circ \inc{Q_2}$, i.e., these circuits are equivalent:
 
 \noindent
-\begin{tabular}{rr}
+\begin{tabular}{cr}
 \begin{tikzpicture}[auto,>=latex]
   \node[] (input) {$\Delta i$};
   \node[block, right of=input] (I) {$\I$};
@@ -559,7 +560,7 @@ all linear.  Moreover, many of the operators we have seen so far are
 linear: $-$, $z^{-1}$, $\I$, $\D$, $\lift{f}$ if $f$ is a linear
 function.
 
-We call an operator with two inputs $T$ \defined{bilinear} if it
+We call an operator $T$ with two inputs \defined{bilinear} if it
 distributes over stream addition: $T(a+b, c) = T(a, c) + T(b, c)$, and
 $T(a, c+d) = T(a, c) + T(a, d)$.  (Similar to multiplication's
 distributivity over addition.)  In databases intersection, joins, and

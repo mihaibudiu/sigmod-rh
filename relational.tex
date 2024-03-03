@@ -136,8 +136,8 @@ like a commutative group.
 
 We define a handy function on \zrs called $\distinct$ (this function
 is called $\epsilon$ in~\cite{griffin-sigmod95}, but we prefer our
-name because it is strongly related to the SQL \texttt{DISTINCT}
-operator).  This function, applied to a \zr, gives us another \zr
+name because it is closely related to the SQL \texttt{DISTINCT}
+operator).  This function, applied to a \zr, returns another \zr
 where all rows with negative weights are removed, and all positive
 weights are changed to 1.  For example, the $\distinct$ of the above
 \zr is:
@@ -545,8 +545,8 @@ apply the following mechanical steps:
 \item Lift the whole circuit, converting it to a circuit operating
   on streams, using formula (**) in \refsec{sec:streams}.
 \item Incrementalize the whole circuit ``surrounding'' it with $\I$ and $\D$.
-\item Apply the chain rule recursively on the circuit to obtain a
-  circuit based only on primitive incremental operations.
+\item Apply the chain rule recursively, producing a circuit using only
+  primitive incremental operations.
 \end{enumerate}
 \end{algorithm}
 
@@ -560,9 +560,11 @@ snapshots. Step (4) yields a circuit that consumes a stream of
 however, the internal operation of the circuit is non-incremental, as
 it rebuilds the complete database using integration operators.  Step
 (5) optimizes the circuit by replacing each primitive operator with
-its incremental version.
+its incremental version.  It essentially adds a $\I \circ \D$ pair on
+every edge in the circuit, and then uses the chain rule to replace
+each $\I \circ Q \circ \D$ triple with $\inc{Q}$.
 
-After running this algorithm, all original primitive are replaced by
+After running this algorithm, all original primitives are replaced by
 their incremental versions.  The only non-linear operation from
 Table~\ref{tab:relational} is $\distinct$.  Despite being non-linear,
 there is an efficient incremental implementation for $\distinct$ (this
@@ -607,13 +609,16 @@ $\cong$ &
 The function $H$ has two inputs: the left input is the change $\Delta
 d$, while the top input is the full set, obtained as an integral of
 the changes.  $H$ detects whether the weight of a row in the full set
-is changing sign (positive to negative or vice-versa) when the row
-appears in a new change.  A precise definition of $H$ is given in the
-full paper.  Here is the intuition why $\distinct$ is efficiently
-incrementalizable: consider a row that is inserted in the input of a
-$\distinct$ operator.  How does the output change?  If the row was not
-in the prior full input table, then it will appear with weight 1 in
-the output change.  Otherwise an empty output is produced.  Only
+is changing sign (from negative to positive on a row insertion, and
+from positive to negative on a deletion) when the row appears in a new
+change.  A precise definition of $H$ is given in the full paper.  Here
+is the intuition why $\distinct$ is efficiently incrementalizable:
+consider a row that is inserted in the input of a $\distinct$
+operator.  How does the output change?  If the row was not in the
+prior full input table, then it will appear with weight 1 in the
+output change.  Otherwise an empty output is produced.
+
+Only
 tuples that appear in the input change $\Delta d$ can appear in the
 output change $\Delta o$, so the work performed is $O(|\Delta d)|$.
 The implementation needs to maintain the \emph{entire input set}
@@ -674,10 +679,11 @@ by $\inc{P} = \D \circ \lift{P} \circ \I$.
 The SQL language is more powerful than the relational algebra.  It can
 perform operations on multisets, and it offers operations such as
 \texttt{GROUP BY} and aggregations.  All of these can be modeled as
-\zr operations.  Moreover, \texttt{GROUP BY} is a linear operation.
-Some aggregations are ``almost'' linear, but other, such as
-\texttt{MIN}, require maintaining the full input set, similar to
-$\distinct$, to properly handle deletions.
+operations on \zr-like structures.  Moreover, \texttt{GROUP BY} is a
+linear operation.  Some aggregations are ``almost'' linear, but other,
+such as \texttt{MIN}, require maintaining the full input set, similar
+to $\distinct$, to properly handle deletions.  See the full paper and
+the technical report for more details.
 
 \subsection{IVM query plans and optimality}
 

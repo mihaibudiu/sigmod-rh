@@ -64,7 +64,7 @@ output is a single arrow.  For example:
     \draw[->] (S) -- (output);
 \end{tikzpicture}
 
-(This function is also an integrator; it's relationship to the $\I$
+(This function is also an integrator; its relationship to the $\I$
 operator is the same one as the relationship of the definite
 integral~\cite{integral} to the indefinite
 integral~\cite{antiderivative} in mathematics.)
@@ -211,6 +211,12 @@ etc..  The $\D$ operator yields the set of \emph{new changes} computed
 by each iteration of the loop.  When the set of new changes becomes
 empty, the fixed point has been reached.
 
+Please note that this is \textbf{not} a streaming circuit: the input
+and output arrows are both simple.  This is a circuit which receives a
+single input value and produces a single corresponding output.  The
+circuit uses streams internally to implement the fixed point
+iteration.
+
 A concrete example for a transitive closure query is Section~8.2 of a
 longer technical report~\cite{tr}.
 
@@ -247,9 +253,11 @@ longer technical report~\cite{tr}.
 %$\code{O} = \fix{x}{R(\code{I}, x)}$.
 %\end{proof}
 
-Note that this loop is not guaranteed to terminate.  But if the
-program does converge, the above construction will find the least
-fixed point that contains $x$.
+When $R$, the body of the loop, implements a Datalog programs
+computing on a finite data domain, this program can be proven to
+always terminate and compute the least fixed point that contains $x$.
+For an arbirary function $R$, the resulting circuit may loop forever
+for some inputs.
 
 In fact, this circuit implements the standard Datalog
 \defined{na\"{\i}ve evaluation} algorithm (e.g., see Algorithm~1 in

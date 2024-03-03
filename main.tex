@@ -81,10 +81,10 @@
 %}
 %\hypersetup{final}
 %
-\usetikzlibrary{shapes, arrows.meta, positioning, decorations.pathreplacing}
-\tikzstyle{block}=[draw,fill=white,rectangle]
+\usetikzlibrary{shapes, arrows.meta, positioning,
+  decorations.pathreplacing, matrix}
+\tikzstyle{block}=[draw,rectangle]
 \tikzstyle{every node}=[font=\small]
-
 %\theoremstyle{note}
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -129,7 +129,7 @@
 \newcommand{\inc}[1]{{#1}^{\Delta}}
 \newcommand{\distinct}{\mathit{distinct}}  % distinct operator
 % set with elements of given type
-\newcommand{\secref}[1]{\S\ref{#1}}  % reference to a section
+\newcommand{\secref}[1]{Section~\ref{#1}}  % reference to a section
 \newcommand{\refsec}[1]{\secref{#1}}
 \newcommand{\set}[1]{\mathit{set}_{#1}}
 \newcommand{\id}{\ensuremath{\mathit{id}}} % identity function
@@ -149,8 +149,14 @@
 \setsepchar{ }
 \readlist\arg{#1}
 \begin{tabular}{|c|c|c|c|c|} \hline
-  \!\arg[1]\! & \!\arg[2]\! & \!\arg[3]\! & \!\arg[4]\! %& \arg[5]
-  & \!\ensuremath{\cdots}\! \\ \hline
+  % notice that this is in reverse
+  \!\ensuremath{\cdots}\! &
+  \!\arg[4]\! &
+  \!\arg[3]\! &
+  \!\arg[2]\! &
+  \!\arg[1]\!
+  % \arg[5] &
+  \\ \hline
 \end{tabular}
 }
 
@@ -180,24 +186,23 @@
 
 \begin{abstract}
   We describe \dbsp, a framework for incremental computation.
-  Incremental computations repeatedly evaluate a function on
-  some input values that are ``changing''.  The goal of an efficient
+  Incremental computations repeatedly evaluate a function on some
+  input values that are ``changing''.  The goal of an efficient
   implementation is to ``reuse'' previously computed results.
   Ideally, when presented with a new change to the input, an
   incremental computation should only perform work proportional to the
-  size of the changes of the (input and output) data, rather than to
-  the size of the entire dataset.
+  size of the changes of the input, rather than to the size of the
+  entire dataset.
 
-  In the area of databases the incremental computation problem is
-  known as Incremental View Maintenance (IVM); IVM has long been a
-  central problem in database theory.  Many solutions have been
-  proposed for restricted classes of computation, but we are
-  seeking a general solution.
+  In databases ``incremental computation'' is known as Incremental
+  View Maintenance (IVM); IVM has long been a central problem of
+  database theory and practice.  Many solutions have been proposed for
+  restricted classes of computation or changes, but we are seeking a
+  general solution.
 
-  As a first step of our solution, we define incremental computations
-  as computations on data streams, i.e., sequences of data values.  We
-  borrow ideas from the theory of Digital Signal Processing, which is
-  a form of computation over streams.
+  We start by defining incremental computations as computations on
+  data streams, i.e., sequences of data values, by borrowing ideas
+  from Digital Signal Processing.
 
   Using these tools, we give a general solution to the incremental
   computation problem in 4 steps: (1) we describe a simple but
@@ -205,11 +210,14 @@
   data streams; (2) we give a new mathematical definition of
   incremental computation for \dbsp programs; (3) we give a general
   algorithm for converting any \dbsp program into an incremental
-  program, and (4) we show that practical database query languages,
-  such as SQL and Datalog, can be directly implemented on top of
-  \dbsp.  As a consequence, we obtain efficient incremental view
-  maintenance algorithms for essentially arbitrary queries written in
-  all these languages.
+  program.  The algorithm reduces the problem of incrementalizing a
+  complex query to the problem of incrementalizing the primitive
+  operations that compose the query. Finally, (4) we show that
+  practical database query languages, such as SQL and Datalog, can be
+  directly implemented on top of \dbsp, using only primitive operators
+  that can be efficiently incrementalized.  As a consequence, we
+  obtain a general recipe for efficient IVM for essentially arbitrary
+  queries written in all these languages.
 \end{abstract}
 
 \input{intro}

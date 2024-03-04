@@ -1,4 +1,4 @@
-\textbf{Relational Query Example}\label{sec:relational-example}
+\subsection{Relational Query Example}\label{sec:relational-example}
 
 %Let's apply the IVM algorithm to a concrete relational SQL query:
 \begin{lstlisting}[language=SQL,basicstyle=\small\ttfamily]
@@ -10,7 +10,7 @@ SELECT DISTINCT a.x, b.y FROM (
 ) b ON a.id = b.id
 \end{lstlisting}
 
-\vspace{-1ex}
+\vspace{-1.6ex}
 
 Step 1: Create a \dbsp circuit to represent this query using the
 translation rules from Table~\ref{tab:relational}; notice that
@@ -127,9 +127,9 @@ space):
          (V);
 \end{tikzpicture}
 
-This step is found in some traditional database optimizers.  Notice
-that some arrows that used to represent sets in the original circuit
-may represent multisets in the optimized circuit.
+This step is found in some traditional database optimizers.  Note that
+some arrows that represented sets in the original circuit may
+represent multisets in the optimized circuit.
 
 Step 3: lift the circuit to compute over streams; all arrows are
 doubled and all functions are lifted:

@@ -26,7 +26,7 @@ produces a stream from a scalar value.  Given an input value $x$ the
 output stream is $x$ followed by an infinite number of zeros.  The
 input of $\delta$ has a single arrow, while the output has a double
 arrow.
-
+%
 %$$\delta(v)[t] \defn \left\{
 %\begin{array}{ll}
 %  v & \mbox{if } t = 0 \\
@@ -85,7 +85,7 @@ $\delta$ operator creates a stream with a ``new'', independent time
 dimension.  We require \emph{well-formed circuits} to ``insulate''
 nested time domains by ``bracketing'' them between a $\delta$ and an
 $\int$ operator:
-
+%
 \begin{center}
 \begin{tikzpicture}[auto,node distance=1cm,>=latex]
     \node[] (input) {$i$};
@@ -100,9 +100,9 @@ $\int$ operator:
     \draw[->] (S) -- (output);
 \end{tikzpicture}
 \end{center}
-
-In this circuit $S$ is a streaming operator, but the entire circuit
-implements a scalar function, as shown by the single arrowheads.
+\vspace{-1ex}
+$S$ is a streaming operator, but the entire circuit implements a
+scalar function, as shown by the single arrowheads.
 
 %\begin{proposition}
 %If $Q$ is time-invariant, the circuit above has the zero-preservation
@@ -128,7 +128,7 @@ the incremental version of this circuit.
 
 \begin{algorithm}[recursive queries]\label{algorithm-rec}
 \noindent
-\begin{enumerate}
+\begin{enumerate}[nosep, leftmargin=0pt, itemindent=0.5cm, label=\textbf{(\arabic{*})}]
 \item Implement the non-recursive relational query $R$ as described in
     \secref{sec:relational} and Table~\ref{tab:relational}; this produces
     an acyclic circuit whose inputs and outputs are \zrs:
@@ -143,7 +143,8 @@ the incremental version of this circuit.
       \draw[->] (R) -- (o);
     \end{tikzpicture}
     \end{center}
-
+    \vspace{-2ex}
+%
 In all these diagrams we show input 0 of operator $R$ on the left, and
 input 1 on the bottom.
 
@@ -159,6 +160,7 @@ input 1 on the bottom.
       \draw[->>] (R) -- (o);
     \end{tikzpicture}
     \end{center}
+    \vspace{-2ex}
   Construct $\lift{R}$ by lifting each operator individually, as shown
   by equation (**) in \refsec{sec:streams}.
 
@@ -177,8 +179,9 @@ recursive input via a delay:
   \draw[->>] (z) -- (R);
  \end{tikzpicture}
  \end{center}
+ \vspace{-2ex}
 \item ``Bracket'' the circuit as follows:
-
+%
 \begin{center}
 \begin{tikzpicture}[auto,>=latex, node distance=.8cm]
   \node[] (Iinput) {$x$};
@@ -198,6 +201,7 @@ recursive input via a delay:
   \draw[->>] (o) |- (z);
   \draw[->>] (z) -- (f);
 \end{tikzpicture}
+    \vspace{-2ex}
 \end{center}
 \end{enumerate}
 \end{algorithm}
@@ -265,7 +269,7 @@ In fact, this circuit implements the standard Datalog
 the incremental form of another circuit, since it is sandwiched
 between $\I$ and $\D$ operators.  Using the cycle rule we can
 rewrite this circuit:
-
+%
 \begin{center}
 \begin{tikzpicture}[auto,>=latex]
   \node[] (Iinput) {$x$};
@@ -282,9 +286,9 @@ rewrite this circuit:
   \draw[->>] (Idelta) -- (f);
 \end{tikzpicture}
 \end{center}
-
+\vspace{-2ex}
 This circuit implements \defined{semi-na\"{\i}ve evaluation}
-(Algorithm~2 from~\cite{greco-sldm15}).  We have just proven the
+(Algorithm~2 in~\cite{greco-sldm15}).  We have just proven the
 correctness of semi-na\"{\i}ve evaluation as an immediate consequence
 of the cycle rule!
 

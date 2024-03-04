@@ -17,9 +17,8 @@ follows that the output at time $t$ cannot depend on inputs arriving
 after $t$.
 
 The following circuit equivalence tells us that we can lift a circuit
-composed of multiple functions by lifting each function separately
-(this equivalence is related to equation (*) in
-\refsec{sec:intro-circuits}):
+by lifting each of its functions separately (this equivalence is
+related to equation (*) in \refsec{sec:intro-circuits}):
 
 \noindent
 \begin{tabular}{m{3cm}m{.3cm}m{3cm}c}
@@ -64,6 +63,7 @@ processing.}:
     \draw[->>] (z) -- (output);
   \end{tikzpicture}
 \end{center}
+\vspace{-1ex}
 %\end{definition}
 %
 A very important property of the delay operator is that it produces
@@ -271,12 +271,12 @@ If $s$ is a stream, then $\D(s)$ is the \emph{stream of changes} of
 $s$; a value in the output is the difference between two consecutive
 values in the input.  As an example:
 {
-  \small
+\noindent \small
 \begin{align*}
-  &\D(\sv{0 1 2 1 0}) = \\
-  &\sv{0 1 2 1 0} - \zm(\sv{0 1 2 1 0}) =\\
-  &\sv{0 1 2 1 0} - \sv{0 0 1 2 1} =\\
-  &\sv{0-0 1-0 2-1 1-2 0-1} =\\
+  &\D(\sv{0 1 2 1 0}) &= \\
+  &\sv{0 1 2 1 0} - \zm(\sv{0 1 2 1 0}) &=\\
+  &\sv{0 1 2 1 0} - \sv{0 0 1 2 1} &=\\
+%  &\sv{0-0 1-0 2-1 1-2 0-1} =\\
   &\sv{0 1 1 -1 -1}
 \end{align*}
 }
@@ -303,6 +303,7 @@ is given by the following circuit:
     \draw[->>] (z) -- (plus);
 \end{tikzpicture}
 \end{center}
+\vspace{-1ex}
 %\end{definition}
 %
 While this definition may seem strange, because the output stream is
@@ -326,7 +327,6 @@ produced step by step:
 %$\I(s)$ is the discrete (indefinite) integral applied to the stream $s$:
 %\end{proposition}
 In general, $\I(s)[t] = o[t] = \sum_{i \leq t} s[i]$.
-
 Examples:
 \begin{align*}
   \I(\sv{0 1 2 3 4 5}) &= \sv{0 1 3 6 10} \\
@@ -385,10 +385,10 @@ applied in sequence:
 
 \section{Incremental view maintenance}\label{sec:incremental}
 
-The results in this section are not specific to databases, they are
-true for arbitrary streaming computations.  However, for each result
-we emphasize how it applies in the domain of databases.  We directly
-tie these results to databases in the next section.
+The results in this section are not specific to databases, they hold
+for any stream computations.  However, for each result we emphasize
+how it applies in the domain of databases.  We tie these results to
+databases in the next section.
 
 %Here we define IVM and analyze its properties.
 
@@ -414,10 +414,11 @@ Given a stream operator $S: \stream{A} \to \stream{B}$ we define the
     \draw[->>] (I) -- node (s) {$s$} (Q);
     \draw[->>] (Q) -- node (o) {$o$} (D);
     \draw[->>] (D) -- (output);
-    \draw[decorate, decoration = {brace, raise=13pt}] (input) -- (output)
+    \draw[decorate, decoration = {brace, raise=10pt}] (input) -- (output)
     node[pos=.5, above=13pt]{$\inc{S}$};
 \end{tikzpicture}
 \end{center}
+\vspace{-1ex}
 %\end{definition}
 
 If $S$ computes on a stream $s$, then $\inc{S}$ computes on a stream
@@ -501,9 +502,8 @@ $\cong$ \\
 \noindent In the database world, we can read this as: \textbf{to
   incrementalize a composite query you can incrementalize each
   sub-query independently}.  This gives us a simple deterministic
-recipe for reducing the incremental version of an arbitrarily complex
-query to the incremental version of the primitive operators that are
-used in the query.
+recipe reducing the incremental version of an arbitrary query to the
+incremental version of its primitive operators.
 
 The \defined{cycle rule} states that these circuits are equivalent:
 
@@ -536,10 +536,10 @@ The \defined{cycle rule} states that these circuits are equivalent:
 \end{tabular}
 
 \noindent
-(We have omitted the labels on the inputs of $T$ for brevity.) In
-other words, the incremental version of a feedback loop around a query
-is just the feedback loop with the incremental query for its body.
-This result will be useful when we implement recursive queries.
+(We have omitted the labels on the inputs of $T$.) In other words, the
+incremental version of a feedback loop around a query is just the
+feedback loop with the incremental query for its body.  This result
+will be useful for recursive queries.
 
 %To execute incremental queries efficiently, we want to compute directly
 %on streams of changes, without integrating them. The invariance property above shows
@@ -548,17 +548,16 @@ This result will be useful when we implement recursive queries.
 
 We call an operator $S$ \defined{linear} if it has the property that
 $S(a+b) = S(a) + S(b)$ (where $+$ is the addition of streams).
-
+%
 %\begin{theorem}[Linear]\label{linear}
 For a linear operator $S$ we have $\inc{S}=S$.
 %\end{theorem}
-
+%
 This is very useful because many primitive database operations can be
-implemented as linear operators.  We will see that in databases
-selection, projection, filtering, grouping, parts of aggregation are
-all linear.  Moreover, many of the operators we have seen so far are
-linear: $-$, $z^{-1}$, $\I$, $\D$, $\lift{f}$ if $f$ is a linear
-function.
+implemented as linear operators.  We will see that selection,
+projection, filtering, grouping, parts of aggregation are all linear.
+Moreover, many of the operators we have seen so far are linear: $-$,
+$z^{-1}$, $\I$, $\D$, $\lift{f}$ if $f$ is a linear function.
 
 We call an operator $T$ with two inputs \defined{bilinear} if it
 distributes over stream addition: $T(a+b, c) = T(a, c) + T(b, c)$, and
@@ -567,8 +566,7 @@ distributivity over addition.)  In databases intersection, joins, and
 Cartesian products are bilinear.
 
 %\begin{theorem}[Bilinear]\label{bilinear}
-Using infix notation to make the formulas more readable: for a
-bilinear operator $\times$ we have:
+Using infix notation, for a bilinear operator $\times$ we have:
 \begin{eqnarray*}
 \inc{(\Delta a \times \Delta b)} = \\
 (\Delta a \times \Delta b ~+~ \zm(\I(\Delta a)) \times
@@ -658,16 +656,16 @@ of Cartesian product $a \times b$.  The incremental product has inputs
 $\Delta a = \D(a)$ and $\Delta b = \D(b)$.
 
 What happens when we add a row $x$ to relation $a$ (i.e., $\Delta a =
-x$)?  How does the output change?  The new row $x$ will appear
-combined with every row in the \emph{previous version} of the
-\emph{full} relation $b$.  The operator $\I(\Delta b)$ in fact
-computes relation $b$ from the stream $\Delta b$ of changes, and $\zm$
-applied to this value gives us its previous version.  So the bottom
-$\times$ operator computes $x \times \zm(b) = \Delta a \times
-\zm(\I(\Delta b))$, the change produced by the new row $x$.  The top
-$\times$ operator performs the symmetric operation for the changes of
-the $b$ relation.  And the middle $\times$ operator produces results
-when changes happen to both relations.
+x$)?  The new row $x$ will appear in the output change combined with
+every row in the \emph{previous version} of the \emph{full} relation
+$b$.  The operator $\I(\Delta b)$ in fact computes relation $b$ from
+the stream $\Delta b$ of changes, and $\zm$ applied to this value
+gives us its previous version.  So the bottom $\times$ operator
+computes $x \times \zm(b) = \Delta a \times \zm(\I(\Delta b))$, the
+change produced by the new row $x$.  The top $\times$ operator
+performs the symmetric operation for the changes of the $b$ relation.
+The middle $\times$ operator produces results when changes happen to
+both relations.
 
 %Rewriting this statement using $\Delta a$ for the stream of changes to
 %$a$ we get the familiar formula for incremental equi-joins:

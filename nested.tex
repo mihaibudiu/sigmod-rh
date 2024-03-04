@@ -39,7 +39,7 @@ A scalar function $f$ can be lifted twice to produce an operator
 between streams of streams:
 %$\lift{\lift{f}}: \stream{\stream{A}} \rightarrow
 %\stream{\stream{B}}$.
-
+%
 \begin{center}
 \begin{tikzpicture}[>=latex]
   \node[] (input) {$i$};
@@ -49,7 +49,7 @@ between streams of streams:
   \draw[->>>] (I) -- (output);
 \end{tikzpicture}
 \end{center}
-
+\vspace{-2ex}
 %To define recursive nested queries, we need a slightly different definition of strictness. If we think of a nested stream $F: \stream{\stream{A}} \to \stream{\stream{B}}$ as a function of timestamps $(i, j)$, then the prior definition of strictness corresponds to strictness in the first dimension $i$, which we extend here to allow $F$ to be strict in its second dimension $j$: for any $s, s' \in \stream{\stream{A}}$ and all times $t \in \N$, $\forall i, j < t.\, s[i][j] = s'[i][j]$ implies $F(s)[i][t] = F(s')[i][t]$.
 %Proposition~\ref{prop-unique-fix} holds for this extended notion of strictness, i.e., the fixed point operator $\fix{\alpha}{F(\alpha)}$ is well defined for a strict operator $F$.
 
@@ -75,10 +75,10 @@ while $\lift{\zm}$ delays ``columns''.
 %\end{proposition}
 
 We have seen in equation (**) that lifting a graph entails lifting all
-operators.  This extends to graphs with cycles:
+operators.  This extends to graphs with cycles, e.g:
 %This means that lifting a \dbsp stream operator can be expressed within \dbsp
 %itself.
-For example:
+
 
 \begin{tabular}{m{2cm}m{.5cm}m{4cm}}
 \begin{tikzpicture}[>=latex]
@@ -123,7 +123,8 @@ even circuits for recursive relations.
   \draw[->>] (Idelta) -- (f);
 \end{tikzpicture}
 \end{center}
-\noindent Step 2: nothing to do (for $\distinct$). \\
+\vspace{-1ex}
+\noindent Step 2: nothing to do for $\distinct$. \\
 \noindent Steps 3 and 4: Lift the circuit and incrementalize:
 \begin{center}
 \begin{tikzpicture}[>=latex]
@@ -145,9 +146,9 @@ even circuits for recursive relations.
   \draw[->>>] (Idelta) -- (f);
 \end{tikzpicture}
 \end{center}
-
-\noindent Step 5: apply the chain rule and use the fact that
-$\lift{\delta_0}$ and $\lift{\int}$ are linear:
+\vspace{-1ex}
+\noindent Step 5: apply the chain rule and the linearity of
+$\lift{\delta_0}$ and $\lift{\int}$:
 
 \begin{tikzpicture}[>=latex]
   \node[] (Iinput) {$\Delta x$};

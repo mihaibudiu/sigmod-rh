@@ -1,5 +1,191 @@
 \section{IVM for the Relational Algebra}\label{sec:relational}
 
+\newlength{\commentsize}
+\setlength{\commentsize}{7cm}
+\begin{table*}[h]
+\centering
+\small
+\caption{Implementation of SQL relational set operators as circuits
+  computing on \zrs.\label{tab:relational}}
+\begin{tabular}{|m{1.4cm}m{3.6cm}m{3.5cm}m{\commentsize}|} \hline
+Operation & SQL example & \dbsp circuit & Details \\ \hline
+Composition &
+ \begin{lstlisting}[language=SQL]
+SELECT ... FROM
+(SELECT ... FROM I)
+\end{lstlisting}
+ &
+ \begin{tikzpicture}[auto,>=latex]
+  \node[] (I) {\code{I}};
+  \node[block, right of=I] (CI) {$C_I$};
+  \draw[->] (I) -- (CI);
+  \node[block, right of=CI] (CO) {$C_O$};
+  \node[right of=CO] (O) {\code{O}};
+  \draw[->] (CI) -- (CO);
+  \draw[->] (CO) -- (O);
+\end{tikzpicture}
+ &
+ \parbox[b][][t]{\commentsize}{
+  $C_I$ circuit for inner query, \\
+   $C_O$ circuit for outer query.}
+ \\[-3mm] \hline
+Union &
+\begin{lstlisting}[language=SQL]
+(SELECT * FROM I1)
+UNION
+(SELECT * FROM I2)
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input1) {\code{I1}};
+  \node[below of=input1, node distance=.4cm] (midway) {};
+  \node[below of=midway, node distance=.4cm] (input2) {\code{I2}};
+  \node[block, shape=circle, right of=midway, inner sep=0in] (plus) {$+$};
+  \node[block, right of=plus] (distinct) {$\distinct$};
+  \node[right of=distinct] (output) {\code{O}};
+  \draw[->] (input1) -| (plus);
+  \draw[->] (input2) -| (plus);
+  \draw[->] (plus) -- (distinct);
+  \draw[->] (distinct) -- (output);
+\end{tikzpicture}
+& $\distinct$ eliminates duplicates.  An implementation of
+\texttt{UNION ALL} does not need the $\distinct$.
+\\[-3mm] \hline
+Projection &
+\begin{lstlisting}[language=SQL]
+SELECT DISTINCT I.c
+FROM I
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {\code{I}};
+  \node[block, right of=input] (pi) {$\pi_c$};
+  \node[block, right of=pi, node distance=1.2cm] (distinct) {$\distinct$};
+  \node[right of=distinct] (output) {\code{O}};
+  \draw[->] (input) -- (pi);
+  \draw[->] (pi) -- (distinct);
+  \draw[->] (distinct) -- (output);
+\end{tikzpicture}
+&
+\parbox[b][][t]{\commentsize}{
+  Project each row with its weight unchanged.
+  Add up weights of identical rows.
+}
+\\[-3mm] \hline
+Filtering &
+\begin{lstlisting}[language=SQL]
+SELECT * FROM I
+WHERE P(...)
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {\code{I}};
+  \node[block, right of=input] (map) {$\sigma_P$};
+  \node[right of=map] (output) {\code{O}};
+  \draw[->] (input) -- (map);
+  \draw[->] (map) -- (output);
+\end{tikzpicture}
+&
+\parbox[b][][t]{\commentsize}{
+  P is a predicate applied to each row.
+  Select each row separately.  If the row is selected, preserve the
+  weight, else make the weight 0.
+}
+\\[-3mm] \hline
+\parbox[b][][t]{1cm}{
+Cartesian \\
+product} &
+\begin{lstlisting}[language=SQL]
+SELECT I1.*, I2.*
+FROM I1, I2
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (i1) {\code{I1}};
+  \node[below of=i1, node distance=.4cm] (midway) {};
+  \node[below of=midway, node distance=.4cm] (i2) {\code{I2}};
+  \node[block, right of=midway] (prod) {$\times$};
+  \node[right of=prod] (output) {\code{O}};
+  \draw[->] (i1) -| (prod);
+  \draw[->] (i2) -| (prod);
+  \draw[->] (prod) -- (output);
+\end{tikzpicture}
+&
+\parbox[b][][t]{\commentsize}{
+  The weight of the pair (a,b) is the product of the the weights of a
+  and b.
+}
+\\[-1mm] \hline
+Equi-join &
+\begin{lstlisting}[language=SQL]
+SELECT I1.*, I2.*
+FROM I1 JOIN I2
+ON I1.c1 = I2.c2
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (i1) {\code{I1}};
+  \node[below of=i1, node distance=.4cm] (midway) {};
+  \node[below of=midway, node distance=.4cm] (i2) {\code{I2}};
+  \node[block, right of=midway] (prod) {$\bowtie_{c1 = c2}$};
+  \node[right of=prod] (output) {\code{O}};
+  \draw[->] (i1) -| (prod);
+  \draw[->] (i2) -| (prod);
+  \draw[->] (prod) -- (output);
+\end{tikzpicture}
+&
+\parbox[b][][t]{\commentsize}{
+  Multiply the weights of the rows that appear in the output.
+}
+\\[-3mm] \hline
+Intersection &
+\begin{lstlisting}[language=SQL]
+(SELECT * FROM I1)
+INTERSECT
+(SELECT * FROM I2)
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (i1) {\code{I1}};
+  \node[below of=i1, node distance=.4cm] (midway) {};
+  \node[below of=midway, node distance=.4cm] (i2) {\code{I2}};
+  \node[block, right of=midway] (prod) {$\bowtie$};
+  \node[right of=prod] (output) {\code{O}};
+  \draw[->] (i1) -| (prod);
+  \draw[->] (i2) -| (prod);
+  \draw[->] (prod) -- (output);
+\end{tikzpicture}
+&
+Special case of equi-join when both relations have the same schema.
+ \\[-3mm] \hline
+Difference &
+\begin{lstlisting}[language=SQL]
+SELECT * FROM I1
+EXCEPT
+SELECT * FROM I2
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex, node distance=.7cm]
+  \node[] (i1) {\code{I1}};
+  \node[below of=i1, node distance=.4cm] (midway) {};
+  \node[below of=midway, node distance=.4cm] (i2) {\code{I2}};
+  \node[block, shape=circle, inner sep=0in, right of=i2] (m) {$-$};
+  \node[block, right of=midway, shape=circle, inner sep=0in, node distance=1.3cm] (plus) {$+$};
+  \node[block, right of=plus, node distance=1cm] (distinct) {$\distinct$};
+  \node[right of=distinct, node distance=1cm] (output) {\code{O}};
+  \draw[->] (i1) -| (plus);
+  \draw[->] (i2) -- (m);
+  \draw[->] (m) -| (plus);
+  \draw[->] (plus) -- (distinct);
+  \draw[->] (distinct) -- (output);
+\end{tikzpicture}
+&
+$\distinct$ removes rows with negative weights from the result.
+\\ \hline
+\end{tabular}
+\vspace{-3ex}
+\end{table*}
+
 In this section we apply the results on incremental computation to
 relational databases.  As explained in the introduction, our goal is
 to efficiently compute the incremental version of any relational query
@@ -48,7 +234,7 @@ indicates \emph{how many times} the row belongs to the table.
 The following table shows an example \zr with three rows.  The first
 row has value \texttt{joe} and weight 1.  If a weight is 0 we do not
 show the corresponding row.
-
+%
 \begin{center}
 \begin{tabular}{|c|c|}\hline
   Row & Weight \\ \hline
@@ -69,8 +255,8 @@ show the corresponding row.
 represented as a \zr by associating a weight of 1 with each row.
 Multisets (also called ``bags'' in the database literature) are \zrs
 where all weights are positive.  Crucially, \zrs can also represent
-arbitrary \emph{changes} to sets and bags.  Negative weights in a
-change represent rows that are being \emph{removed}.
+arbitrary \emph{changes} to sets and bags.  Negative weights represent
+rows that are being \emph{removed}.
 
 We can define three operations on \zr of a given type (i.e., where
 the values have a given type): (1) zero (with all weights 0) (2)
@@ -134,14 +320,11 @@ like a commutative group.
 %$$
 %%\end{definition}
 
-We define a handy function on \zrs called $\distinct$ (this function
-is called $\epsilon$ in~\cite{griffin-sigmod95}, but we prefer our
-name because it is closely related to the SQL \texttt{DISTINCT}
-operator).  This function, applied to a \zr, returns another \zr
-where all rows with negative weights are removed, and all positive
-weights are changed to 1.  For example, the $\distinct$ of the above
-\zr is:
-
+We define the function $\distinct$.  This function, applied to a \zr,
+returns another \zr where all rows with negative weights are removed,
+and all positive weights are changed to 1.  For example, the
+$\distinct$ of the above \zr is:
+%
 \begin{center}
 \begin{tabular}{|c|c|}\hline
   Row & Weight \\ \hline
@@ -155,21 +338,8 @@ rows with negative weights.
 %\ifzsetexamples
 %$\distinct(R) = \{ \texttt{joe} \mapsto 1 \}$.
 %\fi
-This definition of $\distinct$ has been carefully
-chosen to enable us to implement the database computations
-in terms of computations on \zrs.
-%Circuits derived from relational queries only compute on positive \zrs.
-
-%\begin{definition}(mononotonicity)
-%A stream $s \in \stream{\Z[A]}$ is \defined{positive} if every value of the stream is positive:
-%$s[t] \geq 0 . \forall t \in \N$.
-%A stream $s \in \stream{\Z[A]}$ is \defined{monotone} if $s[t] \geq s[t-1], \forall t \in \N$.
-%\end{definition}
-%
-%If $s \in \stream{\Z[A]}$ is positive, then $\I(s)$ is monotone.
-%If $s \in \stream{\Z[A]}$ is monotone, $\D(s)$ is positive.
-%
-%\paragraph{Functions as circuits}
+This definition will enable us to implement set or multiset database
+computations in terms of computations on \zrs.
 
 \subsection{Implementing relational operators}\label{sec:relational-operators}
 
@@ -178,217 +348,10 @@ The fact that relational algebra can be implemented by computations on
 of the relational operators to functions computing on \zrs is shown in
 Table~\ref{tab:relational}.  The functions ($\pi$, $\sigma$,
 $\bowtie$, $\times$) are the standard relational operators projection,
-selection, join, Cartesian product.  The first row of the table shows
+selection, join, C artesian product.  The first row of the table shows
 that a composite query is translated recursively: implement the
 sub-queries, and connect them with an arrow.  This gives us a recipe
 for translating an arbitrary relational query plan into a circuit.
-
-\newlength{\commentsize}
-\setlength{\commentsize}{5.2cm}
-\begin{table*}[h]
-\begin{center}
-\small
-\caption{Implementation of SQL relational set operators as circuits
-  computing on \zrs.\label{tab:relational}}
-\begin{tabular}{|m{1.4cm}m{3.6cm}m{3.5cm}m{\commentsize}|} \hline
-Operation & SQL example & \dbsp circuit & Details \\ \hline
-Composition &
- \begin{lstlisting}[language=SQL]
-SELECT ... FROM
-(SELECT ... FROM ...)
-\end{lstlisting}
- &
- \begin{tikzpicture}[auto,>=latex]
-  \node[] (I) {\code{I}};
-  \node[block, right of=I] (CI) {$C_I$};
-  \draw[->] (I) -- (CI);
-  \node[block, right of=CI] (CO) {$C_O$};
-  \node[right of=CO] (O) {\code{O}};
-  \draw[->] (CI) -- (CO);
-  \draw[->] (CO) -- (O);
-\end{tikzpicture}
- &
- \parbox[b][][t]{\commentsize}{
-  $C_I$ circuit for inner query, \\
-  $C_O$ circuit for outer query.}
-\\ \hline
-Union &
-\begin{lstlisting}[language=SQL]
-(SELECT * FROM I1)
-UNION
-(SELECT * FROM I2)
-\end{lstlisting}
-&
-\begin{tikzpicture}[auto,>=latex]
-  \node[] (input1) {\code{I1}};
-  \node[below of=input1, node distance=.4cm] (midway) {};
-  \node[below of=midway, node distance=.4cm] (input2) {\code{I2}};
-  \node[block, shape=circle, right of=midway, inner sep=0in] (plus) {$+$};
-  \node[block, right of=plus] (distinct) {$\distinct$};
-  \node[right of=distinct] (output) {\code{O}};
-  \draw[->] (input1) -| (plus);
-  \draw[->] (input2) -| (plus);
-  \draw[->] (plus) -- (distinct);
-  \draw[->] (distinct) -- (output);
-\end{tikzpicture}
-& $\distinct$ eliminates duplicates.  An implementation of
-\texttt{UNION ALL} does not need the $\distinct$.
-\\ \hline
-Projection &
-\begin{lstlisting}[language=SQL]
-SELECT DISTINCT I.c
-FROM I
-\end{lstlisting}
-&
-\begin{tikzpicture}[auto,>=latex]
-  \node[] (input) {\code{I}};
-  \node[block, right of=input] (pi) {$\pi_c$};
-  \node[block, right of=pi, node distance=1.2cm] (distinct) {$\distinct$};
-  \node[right of=distinct] (output) {\code{O}};
-  \draw[->] (input) -- (pi);
-  \draw[->] (pi) -- (distinct);
-  \draw[->] (distinct) -- (output);
-\end{tikzpicture}
-&
-\parbox[b][][t]{\commentsize}{
-  Project each row with its weight unchanged.
-  Add up weights of identical rows.
-}
-\\ \hline
-Filtering &
-\begin{lstlisting}[language=SQL]
-SELECT * FROM I
-WHERE P(...)
-\end{lstlisting}
-&
-\begin{tikzpicture}[auto,>=latex]
-  \node[] (input) {\code{I}};
-  \node[block, right of=input] (map) {$\sigma_P$};
-  \node[right of=map] (output) {\code{O}};
-  \draw[->] (input) -- (map);
-  \draw[->] (map) -- (output);
-\end{tikzpicture}
-&
-\parbox[b][][t]{\commentsize}{
-  P is a predicate applied to each row.
-  Select each row separately.  If the row is selected, preserve the
-  weight, else make the weight 0.
-}
-% \\ \hline
-%Selection &
-%\begin{lstlisting}[language=SQL]
-%SELECT DISTINCT f(I.c, ...)
-%FROM I
-%\end{lstlisting}
-%&
-%\begin{tikzpicture}[auto,>=latex]
-%  \node[] (input) {\code{I}};
-%  \node[block, right of=input, node distance=1.5cm] (map) {$\mbox{map}(f)$};
-%  \node[block, right of=map, node distance=1.5cm] (distinct) {$\distinct$};
-%  \node[right of=distinct, node distance=1.5cm] (output) {\code{O}};
-%  \draw[->] (input) -- (map);
-%  \draw[->] (map) -- (distinct);
-%  \draw[->] (distinct) -- (output);
-%\end{tikzpicture}
-%&
-%\parbox[b][][t]{\commentsize}{
-%For a function $f$ \\
-%$\map(f)$ is linear, \\
-%$\ispositive(\map(f)), \zpp{\map(f)}$
-%}.
-\\ \hline
-\parbox[b][][t]{1cm}{
-Cartesian \\
-product} &
-\begin{lstlisting}[language=SQL]
-SELECT I1.*, I2.*
-FROM I1, I2
-\end{lstlisting}
-&
-\begin{tikzpicture}[auto,>=latex]
-  \node[] (i1) {\code{I1}};
-  \node[below of=i1, node distance=.4cm] (midway) {};
-  \node[below of=midway, node distance=.4cm] (i2) {\code{I2}};
-  \node[block, right of=midway] (prod) {$\times$};
-  \node[right of=prod] (output) {\code{O}};
-  \draw[->] (i1) -| (prod);
-  \draw[->] (i2) -| (prod);
-  \draw[->] (prod) -- (output);
-\end{tikzpicture}
-&
-\parbox[b][][t]{\commentsize}{
-  Multiply the weights of the rows.
-}
-\\ \hline
-Equi-join &
-\begin{lstlisting}[language=SQL]
-SELECT I1.*, I2.*
-FROM I1 JOIN I2
-ON I1.c1 = I2.c2
-\end{lstlisting}
-&
-\begin{tikzpicture}[auto,>=latex]
-  \node[] (i1) {\code{I1}};
-  \node[below of=i1, node distance=.4cm] (midway) {};
-  \node[below of=midway, node distance=.4cm] (i2) {\code{I2}};
-  \node[block, right of=midway] (prod) {$\bowtie_{c1 = c2}$};
-  \node[right of=prod] (output) {\code{O}};
-  \draw[->] (i1) -| (prod);
-  \draw[->] (i2) -| (prod);
-  \draw[->] (prod) -- (output);
-\end{tikzpicture}
-&
-\parbox[b][][t]{\commentsize}{
-  Multiply the weights of the rows that appear in the output.
-}
-\\ \hline
-Intersection &
-\begin{lstlisting}[language=SQL]
-(SELECT * FROM I1)
-INTERSECT
-(SELECT * FROM I2)
-\end{lstlisting}
-&
-\begin{tikzpicture}[auto,>=latex]
-  \node[] (i1) {\code{I1}};
-  \node[below of=i1, node distance=.4cm] (midway) {};
-  \node[below of=midway, node distance=.4cm] (i2) {\code{I2}};
-  \node[block, right of=midway] (prod) {$\bowtie$};
-  \node[right of=prod] (output) {\code{O}};
-  \draw[->] (i1) -| (prod);
-  \draw[->] (i2) -| (prod);
-  \draw[->] (prod) -- (output);
-\end{tikzpicture}
-&
-Special case of equi-join when both relations have the same schema.
- \\ \hline
-Difference &
-\begin{lstlisting}[language=SQL]
-SELECT * FROM I1
-EXCEPT
-SELECT * FROM I2
-\end{lstlisting}
-&
-\begin{tikzpicture}[auto,>=latex, node distance=.7cm]
-  \node[] (i1) {\code{I1}};
-  \node[below of=i1, node distance=.4cm] (midway) {};
-  \node[below of=midway, node distance=.4cm] (i2) {\code{I2}};
-  \node[block, shape=circle, inner sep=0in, right of=i2] (m) {$-$};
-  \node[block, right of=midway, shape=circle, inner sep=0in, node distance=1.3cm] (plus) {$+$};
-  \node[block, right of=plus, node distance=1cm] (distinct) {$\distinct$};
-  \node[right of=distinct, node distance=1cm] (output) {\code{O}};
-  \draw[->] (i1) -| (plus);
-  \draw[->] (i2) -- (m);
-  \draw[->] (m) -| (plus);
-  \draw[->] (plus) -- (distinct);
-  \draw[->] (distinct) -- (output);
-\end{tikzpicture}
-&
-$\distinct$ removes rows with negative weights from the result.
-\\ \hline
-\end{tabular}
-\end{center}
-\end{table*}
 
 The translation is fairly straightforward, but many operators require
 the application of a $\distinct$ \textbf{to produce sets}.  For
@@ -444,13 +407,13 @@ consequence, all these functions have very efficient incremental
 versions.
 
 To explain why these functions are linear, consider the filtering
-query from the introduction (\texttt{WHERE}).  Why is filtering
-linear?  What happens when we add a row to the input relation -- what
-is the change in the output?  It is sufficient to check the predicate
-for the new row.  If the predicate returns \texttt{true}, the new row
-is added to the output.  So the change in the output only depends on
-the change in the input, and not on the actual contents of the input.
-This is what makes the operation linear.
+query from the introduction (\texttt{WHERE}).  What happens when we
+add a row to the input relation -- what is the change in the output?
+It is sufficient to check the predicate for the new row.  If the
+predicate returns \texttt{true}, the new row is added to the output.
+So the change in the output only depends on the change in the input,
+and not on the actual contents of the input.  This is what makes the
+operation linear.
 
 %Prior work (e.g., Proposition 6.13 in~\cite{green-tcs11}) has shown
 %how some invocations of $\distinct$ can be eliminated from query plans
@@ -534,42 +497,41 @@ This is what makes the operation linear.
 
 \subsection{Incremental view maintenance}
 
-Let us consider a relational query $Q$ defining a view $V$.  To create
-a \dbsp circuit for $\inc{Q}$ that maintains incrementally $V$ we
-apply the following mechanical steps:
+Let us consider a relational query $Q$ defining a view $V$.  To the
+following algorithm builds a \dbsp circuit for $\inc{Q}$:
 %
 \begin{algorithm}[incremental view maintenance]\label{algorithm-inc}\!
-\begin{enumerate}
+  \vspace{-3mm}
+\begin{enumerate}[nosep, leftmargin=0pt, itemindent=0.5cm, label=\textbf{(\arabic{*})}]
 \item Translate $Q$ into a circuit using the rules in Table~\ref{tab:relational}.
 \item{} [Optional] Remove some $\distinct$ operations.
 \item Lift the whole circuit, converting it to a circuit operating
   on streams, using formula (**) in \refsec{sec:streams}.
-\item Incrementalize the whole circuit ``surrounding'' it with $\I$ and $\D$.
+\item Incrementalize the circuit ``surrounding'' it with $\I$ and $\D$.
 \item Apply the chain rule recursively, producing a circuit using only
   primitive incremental operations.
 \end{enumerate}
 \end{algorithm}
 
-This algorithm is deterministic and its running time is proportional
-to the number of operators in the query.  Step (2) generates an
-equivalent circuit, with possibly fewer $\distinct$ operators.  Step
-(3) yields a circuit that consumes a \emph{stream} of complete
-database snapshots and outputs a stream of complete view
-snapshots. Step (4) yields a circuit that consumes a stream of
-\emph{database changes} and outputs a stream of \emph{view changes};
-however, the internal operation of the circuit is non-incremental, as
-it rebuilds the complete database using integration operators.  Step
-(5) optimizes the circuit by replacing each primitive operator with
-its incremental version.  It essentially adds a $\I \circ \D$ pair on
-every edge in the circuit, and then uses the chain rule to replace
-each $\I \circ Q \circ \D$ triple with $\inc{Q}$.
+This algorithm is deterministic; its running time is proportional to
+the number of operators in the query.  Step (2) generates an
+equivalent circuit, with fewer $\distinct$ operators.  Step (3) yields
+a circuit that consumes a \emph{stream} of complete database snapshots
+and outputs a stream of view snapshots. Step (4) yields a circuit that
+consumes a stream of \emph{database changes} and outputs a stream of
+\emph{view changes}; however, the internal operation of the circuit is
+non-incremental, as it rebuilds the complete database using
+integrations.  Step (5) optimizes the circuit by replacing each
+primitive operator with its incremental version.  It essentially adds
+a $\I \circ \D$ pair on every edge in the circuit, and then uses the
+chain rule to replace each $\I \circ Q \circ \D$ with $\inc{Q}$.
 
-After running this algorithm, all original primitives are replaced by
-their incremental versions.  The only non-linear operation from
-Table~\ref{tab:relational} is $\distinct$.  Despite being non-linear,
-there is an efficient incremental implementation for $\distinct$ (this
-construction has also been known before, but we express it here in
-terms of streaming operations), shown in the following diagram:
+After running this algorithm, all primitives operations are replaced
+by their incremental versions.  The only non-linear operation from
+Table~\ref{tab:relational} is $\distinct$.  However, there is an
+efficient incremental implementation for $\distinct$ (this
+construction has also been known before, but we show it in terms of
+streaming operations), shown in the following diagram:
 
 \noindent
 \begin{tabular}{m{3.9cm}m{0cm}m{5cm}}
@@ -627,10 +589,10 @@ That is the purpose of the $\I$ operator in the above diagram.
 
 The algorithm reduces the problem of incremental execution of a query
 plan to the incremental execution of subplans/primitive operators.
-However, this algorithm is applicable even if our query language uses
-a primitive $P$ for which no efficient incremental version is known:
-we can always use the inefficient ``brute-force'' implementation given
-by $\inc{P} = \D \circ \lift{P} \circ \I$.
+However, this algorithm works even if we use a primitive $P$ for which
+no efficient incremental version is known: we can always use the
+inefficient ``brute-force'' implementation given by $\inc{P} = \D
+\circ \lift{P} \circ \I$.
 
 \input{example1}
 
@@ -676,30 +638,12 @@ by $\inc{P} = \D \circ \lift{P} \circ \I$.
 
 \subsection{SQL}
 
-The SQL language is more powerful than the relational algebra.  It can
-perform operations on multisets, and it offers operations such as
-\texttt{GROUP BY} and aggregations.  All of these can be modeled as
-operations on \zr-like structures.  Moreover, \texttt{GROUP BY} is a
-linear operation.  Some aggregations are ``almost'' linear, but other,
-such as \texttt{MIN}, require maintaining the full input set, similar
-to $\distinct$, to properly handle deletions.  See the full paper and
-the technical report for more details.
-
-\subsection{IVM query plans and optimality}
-
-A relational algebra query can be implemented by multiple plans, each
-with a different data-dependent cost.  The input of
-Algorithm~\ref{algorithm-inc} is a non-incremental query plan,
-produced by a query planner.  The algorithm produces an incremental
-plan that is ``similar'' to the input plan.
-
-Standard query planners use cost-based heuristics and data statistics
-to optimize plans.  A generic IVM planner does not have this luxury,
-since the plan must be generated \emph{before} any data has been fed
-to the database.  Nevertheless, all standard query optimization
-techniques, perhaps based on historical statistics, can be used to
-generate the query plan that is supplied to our Algorithm.  The
-question of optimality in the context of IVM plan is a much more
-difficult topic than optimization of ad-hoc queries, since the chosen
-IVM plan will execute for \emph{all future database updates}.
+SQL is richer than the relational algebra.  It can perform operations
+on multisets, and it offers operations such as \texttt{GROUP BY} and
+aggregations.  All of these can be modeled as operations on \zr-like
+structures.  Moreover, \texttt{GROUP BY} is a linear operation.  Some
+aggregations are ``almost'' linear, but other, such as \texttt{MIN},
+require maintaining the full input set, similar to $\distinct$, to
+properly handle deletions.  See the full paper and the technical
+report for more details.
 

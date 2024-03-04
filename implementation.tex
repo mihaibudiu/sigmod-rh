@@ -10,30 +10,38 @@ This compiler handles essentially the entire SQL language.  The
 compiler generates execution plans for incrementally maintaining any
 number of views defined in SQL.
 
-Incremental computation is not free.  It is in fact a trade-off
-between time and space.  In the cost analysis we have to consider both
-the time and the space used by each operator.  While many incremental
-database operations can be implemented using work proportional to the
-size of the changes, and no storage overhead, several classes of
-database operations, such as joins, ``distinct'', and aggregates can
-be implemented efficiently only using additional storage in the form
-of \emph{indexes}.  The size of these indexes is proportional to the
-size of the total data in the database (and not just to the size of
-the changes) --- and since some indexes are over intermediate
-relations, they can even exceed the size of the original database.  In
-\dbsp the indexes are represented by delay operators $\zm$.  In fact,
-the delay operator (and its lifted variant $\lift{\zm}$) are the only
-operators that maintains state.  This is also the only state that
-needs to be persisted, checkpointed, or migrated to make \dbsp
-computations fault-tolerant.
+\textbf{Plan quality.}  A relational algebra query can be implemented
+by multiple plans, each with a different data-dependent cost.  The
+input of Algorithm~\ref{algorithm-inc} is a non-incremental query
+plan, produced by a query planner.  The algorithm produces an
+incremental plan that is ``similar'' to the input plan.
 
-Another limitation of incremental computation is the startup cost.
-When a new view is installed, the IVM system must compute the first
-change, which is the same as the initial contents of the view.  This
-computation is in general proportional to the size of the whole
-database.  This is known as the ``backfill'' problem.  Likewise,
-changes to the definition of a view or the data schema require
-recomputing the affected queries from scratch.
+Standard query planners use cost-based heuristics and data statistics
+to optimize plans.  A generic IVM planner does not have this luxury,
+since the plan must be generated \emph{before} any data has been fed
+to the database.  Nevertheless, all standard query optimization
+techniques, perhaps based on historical statistics, can be used to
+generate the query plan that is supplied to our Algorithm.  The
+question of optimality in the context of IVM plan is a much more
+difficult topic than optimization of ad-hoc queries, since the chosen
+IVM plan will execute for \emph{all future database updates}.
+
+\textbf{Tradeoffs.}  Incremental computation is not free.  It is in
+fact a trade-off between time and space.  In the cost analysis we have
+to consider both the time and the space used by each operator.  While
+many incremental database operations can be implemented using work
+proportional to the size of the changes, and no storage overhead,
+several classes of database operations, such as joins, ``distinct'',
+and aggregates can be implemented efficiently only using additional
+storage in the form of \emph{indexes}.  The size of these indexes is
+proportional to the size of the total data in the database (and not
+just to the size of the changes) --- and since some indexes are over
+intermediate relations, they can even exceed the size of the original
+database.  In \dbsp the indexes are represented by delay operators
+$\zm$.  In fact, the delay operator (and its lifted variant
+$\lift{\zm}$) are the only operators that maintains state.  This is
+also the only state that needs to be persisted, checkpointed, or
+migrated to make \dbsp computations fault-tolerant.
 
 \dbsp is an ``eager'' or ``top-down'' execution model: it constantly
 maintains the entire contents of any number of views, even if no one
@@ -43,11 +51,19 @@ inspected.  Such models have the potential to be more efficient.
 Eager models can be converted into lazy ones if something is known
 about the class of operations that will be executed against the views.
 
-Traditional databases do not offer efficient IVM implementations for
-arbitrary queries.  Databases could in principle be retrofitted to use
-the algorithms in this paper, but the existing query engines are not
-built around structures that can represent negative changes (like
-\zrs), so this effort will require a significant redesign.
+\textbf{Start-up costs.}  When a new view is installed, the IVM system
+must compute the first change, which is the same as the initial
+contents of the view.  This computation is in proportional to the size
+of the whole database.  This is known as the ``backfill'' problem.
+Likewise, changes to the definition of a view or the data schema
+require recomputing the affected queries from scratch.
+
+\textbf{Adopting \dbsp.} Traditional databases do not offer efficient
+IVM implementations for arbitrary queries.  Databases could in
+principle be retrofitted to use the algorithms in this paper, but the
+existing query engines are not built around structures that can
+represent negative changes (like \zrs), so this effort will require a
+significant redesign.
 
 Moreover, we argue that databases should not only compute views
 incrementally, but should use ``changes'' as the fundamental data

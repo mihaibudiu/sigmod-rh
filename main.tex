@@ -37,10 +37,11 @@
 \usepackage{listofitems}
 %\usepackage{graphicx}
 \usepackage[final]{listings}
-%\usepackage{enumitem}
+\usepackage{enumitem}
 %%\usepackage{amsthm}
 \usepackage{ifthen}
 \usepackage{url}
+%\renewcommand{\floatpagefraction}{.8}
 
 % space saving tricks
 \newif\ifstreamexamples
@@ -159,15 +160,15 @@
   \\ \hline
 \end{tabular}
 }
-
 \newcommand{\dbsp}{DBSP\xspace}
+
 \numberofauthors{5}
 \author{
   \alignauthor Mihai Budiu \\
   \affaddr{Feldera} \\
   \email{mbudiu@feldera.com} \\
   \alignauthor Tej Chajed \\
-  \affaddr{University of Wisconsin-Madison} \\
+  \affaddr{Univ. of Wisconsin-Madison} \\
   \email{chajed@wisc.edu} \\
   \alignauthor Frank McSherry \\
   \affaddr{Materialize Inc.} \\
@@ -214,10 +215,10 @@
   complex query to the problem of incrementalizing the primitive
   operations that compose the query. Finally, (4) we show that
   practical database query languages, such as SQL and Datalog, can be
-  directly implemented on top of \dbsp, using only primitive operators
-  that can be efficiently incrementalized.  As a consequence, we
-  obtain a general recipe for efficient IVM for essentially arbitrary
-  queries written in all these languages.
+  directly implemented on top of \dbsp, using primitives with
+  efficient incremental implementations.  As a consequence, we obtain
+  a general recipe for efficient IVM for essentially arbitrary queries
+  written in all these languages.
 \end{abstract}
 
 \input{intro}

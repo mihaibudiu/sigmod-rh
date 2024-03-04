@@ -10,36 +10,32 @@ to keep the contents of $V$ up-to-date in response to changes of the
 database.
 
 As a concrete example, consider the following view definition
-statement in SQL:
-
-\texttt{CREATE VIEW V AS SELECT * FROM T WHERE Age >= 10}.
-
-In this example the query $Q$ defining the view $V$ is
-\\ \texttt{SELECT * FROM T WHERE Age >= 10}.  The view \code{V} always
+statement in SQL: \texttt{CREATE VIEW V AS SELECT * FROM T WHERE Age
+  >= 10}.  In this example the query $Q$ defining the view $V$ is
+\texttt{SELECT * FROM T WHERE Age >= 10}.  The view \code{V} always
 contains all the rows of table \code{T} whose value for the column
 \code{Age} is greater than or equal to 10.
 
 In general a query is a function applied to the database state: $V =
-Q(DB)$.  A naive solution is to re-execute query $Q$ every time the
+Q(DB)$.  A na\"ive solution re-executes query $Q$ every time the
 database changes (or every time someone wants to inspect the view's
-content).  In the following diagram we illustrate the naive solution.
-Time is the horizontal axis; the horizontal arrows labeled with
-$\Delta$ depict changes to the database, which we assume are much
-smaller than the database itself (e.g., a change could touch perhaps
-100 records).  The ``up'' arrows show the re-evaluation of $Q$ for
-each database snapshot.
+content), illustrated in the following diagram.  Time is the
+horizontal axis; the horizontal arrows labeled with $\Delta$ depict
+changes to the database, which we assume are much smaller than the
+database itself (e.g., a change could touch perhaps 100 records).  The
+``up'' arrows show the re-evaluation of $Q$ for each database
+snapshot.
 
-\includegraphics[trim={0 3.9in 4.1in 0},clip,scale=.30]{view.pdf}
+\includegraphics[trim={0 4.2in 4.2in 0},clip,scale=.30]{view.pdf}
 
 The naive solution is expensive.  After the first version of the view
 has been constructed, an ideal algorithm would compute only
-\emph{changes} to the view $\Delta V$ by performing work proportional
-to $O(|\Delta DB|)$.  Ideally, we want to construct a new query
-$\inc{Q}$ with the property that $\Delta V = \inc{Q}(\Delta DB)$,
-i.e., $\inc{Q}$ can compute the change of the view from the change of
-the database:
+\emph{changes} to the view $\Delta V$ doing work $O(|\Delta DB|)$.
+Ideally, we want to construct a new query $\inc{Q}$ with the property
+that $\Delta V = \inc{Q}(\Delta DB)$, i.e., $\inc{Q}$ can compute the
+change of the view from the change of the database:
 
-\includegraphics[trim={0 4.5in 4.1in 0},clip,scale=.30]{incview.pdf}
+\includegraphics[trim={0 4.7in 4.1in 0},clip,scale=.30]{incview.pdf}
 
 We call $\inc{Q}$ the \emph{incremental} version of $Q$.  If one
 thinks of $\inc{Q}$ as a function of a database change, one can show
@@ -52,19 +48,19 @@ DSP~\cite{rabiner-book75}, applied to databases, hence the name \dbsp.
 $\inc{Q}$ can be very efficient.  As for traditional database queries,
 the performance of $\inc{Q}$ depends both on the query $Q$ but also on
 the actual data that the query is applied to.  While one cannot give a
-simple closed form for the speed-up obtained by $\inc{Q}$, as a rule
-of thumb, for essentially all practical queries $Q$, the incremental
-version of $\inc{Q}$ that our algorithm constructs, is faster than $Q$
-by a factor of $O(|DB| / |\Delta DB|)$.  In practice this may be an
+simple closed form for the speed-up of $\inc{Q}$, as a rule of thumb,
+for essentially all practical queries $Q$, the incremental version of
+$\inc{Q}$ that our algorithm constructs, is faster than $Q$ by a
+factor of $O(|DB| / |\Delta DB|)$.  In practice this may be an
 improvement of several orders of magnitude.  For our example above
 $|DB| \approx 10^9$ and $|\Delta DB| \approx 10^2$, this makes
 $\inc{Q}$ \textbf{10 million times} faster than $Q$!
 
 Instead of treating the database as a monolithic changing object, we
 treat it as a \emph{sequence} or \emph{stream} of database snapshots.
-Similarly, the view snapshots form a stream.  \dbsp is a simple
-programming language for computing on streams; the inputs and outputs
-of \dbsp programs are streams of arbitrary values.
+Similarly, view snapshots form a stream.  \dbsp is a simple
+programming language computing on streams; inputs and outputs are
+streams of arbitrary values.
 
 %Whereas previous IVM solutions are based on defining a notion of a
 %(partial) derivative of $Q$ with respect to its inputs, our definition
@@ -95,9 +91,9 @@ Turing-complete language that can be used for many other purposes.
 But it works particularly well in the area of databases, for two
 reasons:
 
-\begin{itemize}
-  \item \dbsp operates on values that must form a commutative group.
-    Databases can be modeled as values from a commutative group.
+\begin{itemize}[nosep, leftmargin=0pt, itemindent=0.5cm]
+  \item \dbsp operates on values from a commutative group.  Databases
+    can be modeled as a commutative group.
   \item \dbsp reduces the problem of incrementalizing a complex
     program to the problem of incrementalizing each primitive
     operation that appears in the program.  For the domain of
@@ -152,11 +148,10 @@ output $o = f(i, j)$:
   \draw[->] (function) -- (output);
 \end{tikzpicture}
 \end{center}
+\vspace{-1ex}
 %
 Most of the functions we deal with are commutative, and in this case
-we do not need to label the inputs.  We also avoid showing input
-labels if the arrows are labeled in the text and can be used to
-distinguish the order of inputs; thus we will display the circuit
+we do not need to label the inputs, thus we will display the circuit
 above as:
 %
 \begin{center}
@@ -171,6 +166,7 @@ above as:
     \draw[->] (T) -- (output);
   \end{tikzpicture}
 \end{center}
+\vspace{-1ex}
 %
 Functions, and their circuits, can be composed, as in the following
 example for the function $o = g(s) + (f(s) \times s)$:
@@ -193,6 +189,7 @@ example for the function $o = g(s) + (f(s) \times s)$:
   \draw[->] (S2) -- (T2);
 \end{tikzpicture}
 \end{center}
+\vspace{-1ex}
 %
 We say that two circuits are \defined{equivalent} if they compute the
 same function.  We use the symbol $\cong$ to indicate circuit
@@ -223,6 +220,7 @@ $\cong$
 &
 (*)
 \end{tabular}
+\vspace{-2ex}
 
 \subsection{Streams}
 
@@ -231,17 +229,18 @@ The core notion of \dbsp is the \textbf{stream}.  Given a set $A$, a
 values from $A$.  $\stream{A}$ denotes the set of all streams with
 values from $A$.  We write $s[t]$ for the $t$-th element of the stream
 $s$.  Think of $t$ as the ``time'' and of $s[t]\in A$ as the value of
-the stream $s$ ``at time'' $t$.  In examples we show streams as a
-sequence of boxes, where time goes from \emph{right to left}: e.g.,
-the stream $s[t] = t$ is:
-
+the stream $s$ ``at time'' $t$.  We show streams as a sequence of
+boxes, with time from \emph{right to left}: e.g., the stream $s[t] =
+t$ is:
+%
 \begin{center}
 \begin{tabular}{cc}
   \sv{0 1 2 3 4} \\
   $\xleftarrow[\hspace{1cm}\mathrm{time}\hspace{1cm}]{}$
 \end{tabular}
 \end{center}
-
+\vspace{-1ex}
+%
 %\begin{definition}[stream operator]
 A \defined{stream operator} is a function that computes on streams and
 produces streams.
@@ -249,13 +248,10 @@ produces streams.
 In general we use ``operator'' for streams, and ``function'' for
 computations on ``scalar'' values.
 
-To make figures easier to interpret, we use arrows with a double head
-to depict streams.  Note that this notation differs from the one in
-the original paper~\cite{budiu-vldb23}, where we used single arrows
-for streams in most cases.  The following diagram shows a stream
-operator $T$ consuming two input streams $s_0$ and $s_1$ and producing
-one output stream $s$:
-
+We use arrows with a double head to depict streams.  The following
+diagram shows a stream operator $T$ consuming two input streams $s_0$
+and $s_1$, producing one output stream $s$:
+%
 \begin{center}
 \begin{tikzpicture}[auto,>=latex,inner sep=0mm]
   \node[block, minimum height=.7cm, minimum width=.5cm] (function) {$T$};
@@ -268,8 +264,9 @@ one output stream $s$:
   \draw[->>] (input1) -- (1);
   \draw[->>] (function) -- (output);
 \end{tikzpicture}
+\vspace{-1ex}
 \end{center}
-
+%
 We write $s = T(s_0, s_1)$.
 %\begin{definition}(lifting)
 Given a function $f: A \to B$, we define a stream operator $\lift{f}
@@ -285,11 +282,11 @@ time:
     \draw[->>] (f) -- (output);
   \end{tikzpicture}
 \end{center}
+\vspace{-1ex}
 %\end{definition}
 
-To simplify the notation, we will write $a + b$ for streams $a, b$
-instead of $a (\lift{+}) b$; we will also write $-a$ instead of
-$(\lift{-})a$.
+To simplify the notation, we write $a + b$ for streams $a, b$ instead
+of $a (\lift{+}) b$; we also write $-a$ instead of $(\lift{-})a$.
 
 \subsection{Databases as streams}
 
@@ -333,10 +330,10 @@ $\Delta DB$ and $DB$:
 \end{tikzpicture}
 \end{center}
 
-What is a view in our streaming model?  It is also a stream!  Suppose
-we are given a query $Q$ defining a view $V$.  For each snapshot of
-the database stream we have a snapshot of the view: $V[t] = Q(DB[t])$.
-A view is thus just a lifted query: $V = (\lift{Q})(DB)$.
+A view in our model is also a stream!  Suppose query $Q$ defining a
+view $V$.  For each snapshot of the database stream we have a snapshot
+of the view: $V[t] = Q(DB[t])$.  A view is thus just a lifted query:
+$V = (\lift{Q})(DB)$.
 
 Armed with these basic definitions, we can precisely define IVM.  What
 does it mean to maintain a view incrementally?  A maintenance
@@ -344,6 +341,7 @@ algorithm needs to compute the \emph{changes} to the view given the
 changes to the database. Given a query $Q$, a key contribution of this
 paper is the definition of its \emph{incremental version} $\inc{Q}$,
 using stream integration and differentiation, depicted graphically as:
+\vspace{-1ex}
 %
 \begin{center}
 \begin{tikzpicture}[auto,>=latex,minimum width=.5cm]
@@ -356,23 +354,24 @@ using stream integration and differentiation, depicted graphically as:
   \draw[->>] (I) -- node (db) {$DB$} (Q);
   \draw[->>] (Q) -- node (B) {$V$} (D);
   \draw[->>] (D) -- (output);
-  \draw[decorate, decoration = {brace, raise=13pt}] (input) -- (output)
-  node[pos=.5, above=13pt]{$\inc{Q}$};
+  \draw[decorate, decoration = {brace, raise=10pt}] (input) -- (output)
+  node[pos=.5, above=11pt]{$\inc{Q}$};
 \end{tikzpicture}
 \end{center}
+\vspace{-1ex}
 %
-Mathematically this is written as $\inc{Q} = \D \circ (\lift{Q}) \circ
-\I$.  The incremental version of a query $Q$ is a \emph{streaming
-operator} $\inc{Q}$ which computes directly on changes and produces
-changes.  The incremental version of a query is thus always
-well-defined.  The above definition gives us one way to compute a
-query incrementally, but applying it naively produces an inefficient
-execution, since it reconstructs the database at each step.  It is in
-fact as bad as the naive solution.  In \refsec{sec:incremental} we
-show how we can optimize the implementation of $\inc{Q}$. The key
-property is that the incremental composition of two queries $Q_1$ and
-$Q_2$ is the composition of their incremental versions: $\inc{(Q_1
-  \circ Q_2)} = \inc{Q_1} \circ \inc{Q_2}$.
+Mathematically: $\inc{Q} = \D \circ (\lift{Q}) \circ \I$.  The
+incremental version of a query $Q$ is a \emph{streaming operator}
+$\inc{Q}$ which computes directly on changes and produces changes.
+The incremental version of a query is thus always well-defined.  The
+above definition gives us one way to compute a query incrementally,
+but applying it naively produces an inefficient execution, since it
+reconstructs the database at each step.  It is in fact as bad as the
+naive solution.  In \refsec{sec:incremental} we show how we can
+optimize the implementation of $\inc{Q}$. The key property is that the
+incremental composition of two queries $Q_1$ and $Q_2$ is the
+composition of their incremental versions: $\inc{(Q_1 \circ Q_2)} =
+\inc{Q_1} \circ \inc{Q_2}$.
 
 Armed with this general theory of incremental computation, in
 \secref{sec:relational} we show how to model relational queries in
@@ -388,7 +387,7 @@ closure of a graph as nodes and edges are added and deleted.
 \subsection{Contributions}
 
 This work makes the following contributions:
-\begin{enumerate}
+\begin{enumerate}[nosep, leftmargin=0pt, itemindent=0.5cm, label=\textbf{(\arabic{*})}]
   \item We introduce \dbsp, a simple but expressive language for
     streaming computation. \dbsp gives an elegant formal foundation
     unifying the manipulation of streaming and incremental

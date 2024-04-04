@@ -19,7 +19,7 @@ incremental plan that is ``similar'' to the input plan.
 Standard query planners use cost-based heuristics and data statistics
 to optimize plans.  A generic IVM planner does not have this luxury,
 since the plan must be generated \emph{before} any data has been fed
-to the database.  Nevertheless, all standard query optimization
+to the query.  Nevertheless, all standard query optimization
 techniques, perhaps based on historical statistics, can be used to
 generate the query plan that is supplied to our Algorithm.  The
 question of optimality in the context of IVM plan is a much more
@@ -72,11 +72,11 @@ should offer the following API: users register to receive
 notifications for changes in one or more views.  Then, for any
 transaction committed, each user receives a notification containing
 the list of changes for the all the views they registered.  Databases
-today do not have any mechanism for reporting changes to the outside
-world.  In fact, entire industries have sprung up around the concept
-of Change Data Capture~\cite{cdc}, which is building ad-hoc solutions
-for extracting changes from databases, usually by inspecting the
-write-ahead transaction log.
+today do not have convenient mechanism for reporting changes to the
+outside world.  In fact, entire industries have sprung up around the
+concept of Change Data Capture~\cite{cdc}, which is building ad-hoc
+solutions for extracting changes from databases, usually by inspecting
+the write-ahead transaction log.
 
 %The scope of this paper is the \dbsp theory of IVM, so we only briefly touch upon
 %the implementation aspects.  We defer a full description and evaluation of the

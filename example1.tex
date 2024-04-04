@@ -1,6 +1,6 @@
 \subsection{Relational Query Example}\label{sec:relational-example}
 
-%Let's apply the IVM algorithm to a concrete relational SQL query:
+Let's apply the IVM algorithm to the following SQL query:
 \begin{lstlisting}[language=SQL,basicstyle=\small\ttfamily]
 CREATE VIEW v AS
 SELECT DISTINCT a.x, b.y FROM (
@@ -12,9 +12,9 @@ SELECT DISTINCT a.x, b.y FROM (
 
 \vspace{-1.6ex}
 
-Step 1: Create a \dbsp circuit to represent this query using the
-translation rules from Table~\ref{tab:relational}; notice that
-this circuit is essentially a dataflow implementation of the query:
+Step 1: Create a \dbsp circuit to represent this query using the rules
+in Table~\ref{tab:relational}; this circuit is essentially a dataflow
+implementation of the query:
 
 \noindent
 \begin{tikzpicture}[node distance=1.2cm,>=latex]
@@ -48,9 +48,8 @@ this circuit is essentially a dataflow implementation of the query:
     \draw[->] (d) -- (V);
 \end{tikzpicture}
 
-Step 2: apply rules to eliminate $\distinct$ operators, producing an
-equivalent circuit: (from now on we omit the subscripts to save
-space):
+Step 2: eliminate $\distinct$ operators, producing an equivalent
+circuit: (we omit the subscripts to save space):
 
 %\noindent
 %\begin{tikzpicture}[node distance=1.2cm,>=latex]
@@ -111,23 +110,29 @@ space):
 
 \noindent
 \begin{tikzpicture}[node distance=1cm,>=latex]
-    \node[] (t1) {\code{t1}}; \node[block, right of=t1, node
-      distance=.9cm] (s1) {$\sigma$}; \node[block, right of=s1] (p1)
-         {$\pi$}; \node[below of=t1, node distance=1cm] (t2)
-         {\code{t2}}; \node[block, right of=t2, node distance=.9cm]
-         (s2) {$\sigma$}; \node[block, right of=s2] (p2) {$\pi$};
-         \node[below of=p1, node distance=.5cm] (mid) {}; \node[block,
-           right of=mid, node distance=.8cm] (j) {$\bowtie$};
-         \node[block, right of=j] (p) {$\pi$}; \node[block, right
-           of=p] (d) {$\distinct$}; \node[right of=d, node
-           distance=1cm] (V) {\code{V}}; \draw[->] (t1) -- (s1);
-         \draw[->] (s1) -- (p1); \draw[->] (t2) -- (s2); \draw[->]
-         (s2) -- (p2); \draw[->] (p1) -| (j); \draw[->] (p2) -| (j);
-         \draw[->] (j) -- (p); \draw[->] (p) -- (d); \draw[->] (d) --
-         (V);
+  \node[] (t1) {\code{t1}};
+  \node[block, right of=t1, node distance=.9cm] (s1) {$\sigma$};
+  \node[block, right of=s1] (p1) {$\pi$};
+  \node[below of=t1, node distance=.8cm] (t2) {\code{t2}};
+  \node[block, right of=t2, node distance=.9cm] (s2) {$\sigma$};
+  \node[block, right of=s2] (p2) {$\pi$};
+  \node[below of=p1, node distance=.4cm] (mid) {};
+  \node[block, right of=mid, node distance=.8cm] (j) {$\bowtie$};
+  \node[block, right of=j] (p) {$\pi$};
+  \node[block, right of=p] (d) {$\distinct$};
+  \node[right of=d, node distance=1cm] (V) {\code{V}};
+  \draw[->] (t1) -- (s1);
+  \draw[->] (s1) -- (p1);
+  \draw[->] (t2) -- (s2);
+  \draw[->] (s2) -- (p2);
+  \draw[->] (p1) -| (j);
+  \draw[->] (p2) -| (j);
+  \draw[->] (j) -- (p);
+  \draw[->] (p) -- (d);
+  \draw[->] (d) -- (V);
 \end{tikzpicture}
 
-This step is found in some traditional database optimizers.  Note that
+This step is used in some traditional database optimizers.  Note that
 some arrows that represented sets in the original circuit may
 represent multisets in the optimized circuit.
 

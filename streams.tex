@@ -12,13 +12,11 @@ problem for using \dbsp in the context of databases.
 Stream operators are very powerful mathematically, but in \dbsp we
 restrict ourselves to a very small subset.  All \dbsp computations are
 \emph{causal}~\cite{causal}: the output at time $t$ is produced
-immediately after all inputs at time $t$ have been received; it
-follows that the output at time $t$ cannot depend on inputs arriving
-after $t$.
+immediately after all inputs up at time $t$ have been received; the
+output at time $t$ cannot depend on inputs arriving after $t$.
 
 The following circuit equivalence tells us that we can lift a circuit
-by lifting each of its functions separately (this equivalence is
-related to equation (*) in \refsec{sec:intro-circuits}):
+by lifting each of its functions separately:
 
 \noindent
 \begin{tabular}{m{3cm}m{.3cm}m{3cm}c}
@@ -69,8 +67,7 @@ processing.}:
 A very important property of the delay operator is that it produces
 the first output \emph{before} having received the first input, and it
 produces the second output before having received the second input,
-etc.  The delay operator is similar to a \emph{latch}~\cite{latch} in
-a sequential logic circuit.
+etc.
 
 %\begin{definition}[Time invariance]
 %A stream operator $S: \stream{A} \to \stream{B}$ is \defined{time-invariant} (TI) if
@@ -246,9 +243,10 @@ a sequential logic circuit.
 %\end{proposition}
 
 %\begin{definition}[Differentiation]
-We can define \defined{differentiation operator} as a composition of
+We define the \defined{differentiation operator} as a composition of
 several other operators: $\D(s) \defn s - \zm(s)$, shown as:
 %
+\vspace{-2ex}
 \begin{center}
 \begin{tikzpicture}[auto,>=latex,node distance=1cm]
     \node[] (input) {$s$};
@@ -291,6 +289,7 @@ values in the input.  As an example:
 %\begin{definition}[Integration]
 The \defined{integration operator}
 is given by the following circuit:
+\vspace{-2ex}
 \begin{center}
 \begin{tikzpicture}[auto,>=latex, node distance=1.1cm]
     \node[] (input) {s};
@@ -308,7 +307,7 @@ is given by the following circuit:
 %
 While this definition may seem strange, because the output stream is
 used to compute itself, the use of the delay in the ``feedback'' loop
-ensures that only ``previous'' values of the output are used in
+ensures that only \emph{previous} values of the output are used in
 computing the current one.  Using the notation $o = \I(s)$ to make
 formulas more readable, we can see the contents of stream $o$ is
 produced step by step:
@@ -386,9 +385,8 @@ applied in sequence:
 \section{Incremental view maintenance}\label{sec:incremental}
 
 The results in this section are not specific to databases, they hold
-for any stream computations.  However, for each result we emphasize
-how it applies in the domain of databases.  We tie these results to
-databases in the next section.
+for any stream computations, but we hint about their applicability for
+databases.
 
 %Here we define IVM and analyze its properties.
 
@@ -554,10 +552,10 @@ For a linear operator $S$ we have $\inc{S}=S$.
 %\end{theorem}
 %
 This is very useful because many primitive database operations can be
-implemented as linear operators.  We will see that selection,
-projection, filtering, grouping, parts of aggregation are all linear.
-Moreover, many of the operators we have seen so far are linear: $-$,
-$z^{-1}$, $\I$, $\D$, $\lift{f}$ if $f$ is a linear function.
+implemented as linear operators: selection, projection, filtering,
+grouping, parts of aggregation are all linear.  Moreover, the
+following operators are linear: $-$, $z^{-1}$, $\I$, $\D$, $\lift{f}$
+if $f$ is a linear function.
 
 We call an operator $T$ with two inputs \defined{bilinear} if it
 distributes over stream addition: $T(a+b, c) = T(a, c) + T(b, c)$, and
@@ -653,19 +651,17 @@ $\cong$ &
 
 What is the intuition behind this diagram?  Let us consider the case
 of Cartesian product $a \times b$.  The incremental product has inputs
-$\Delta a = \D(a)$ and $\Delta b = \D(b)$.
-
-What happens when we add a row $x$ to relation $a$ (i.e., $\Delta a =
-x$)?  The new row $x$ will appear in the output change combined with
-every row in the \emph{previous version} of the \emph{full} relation
-$b$.  The operator $\I(\Delta b)$ in fact computes relation $b$ from
-the stream $\Delta b$ of changes, and $\zm$ applied to this value
-gives us its previous version.  So the bottom $\times$ operator
-computes $x \times \zm(b) = \Delta a \times \zm(\I(\Delta b))$, the
-change produced by the new row $x$.  The top $\times$ operator
-performs the symmetric operation for the changes of the $b$ relation.
-The middle $\times$ operator produces results when changes happen to
-both relations.
+$\Delta a = \D(a)$ and $\Delta b = \D(b)$.  What happens when we add a
+row $x$ to relation $a$ (i.e., $\Delta a = x$)?  The new row $x$ will
+appear in the output change combined with every row in the
+\emph{previous version} of the \emph{full} relation $b$.  The operator
+$\I(\Delta b)$ in fact computes relation $b$ from the stream $\Delta
+b$ of changes, and $\zm$ applied to this value gives us its previous
+version.  So the bottom $\times$ operator computes $x \times \zm(b) =
+\Delta a \times \zm(\I(\Delta b))$, the change produced by the new row
+$x$.  The top $\times$ operator performs the symmetric operation for
+the changes of the $b$ relation.  The middle $\times$ operator
+produces the results of changes to both inputs.
 
 %Rewriting this statement using $\Delta a$ for the stream of changes to
 %$a$ we get the familiar formula for incremental equi-joins:

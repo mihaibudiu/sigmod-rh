@@ -232,8 +232,8 @@ indicates \emph{how many times} the row belongs to the table.
 %\fi
 
 The following table shows an example \zr with three rows.  The first
-row has value \texttt{joe} and weight 1.  If a weight is 0 we do not
-show the corresponding row.
+row has value \texttt{joe} and weight 1.  We do not show rows with
+weight 0.
 %
 \begin{center}
 \begin{tabular}{|c|c|}\hline
@@ -251,18 +251,18 @@ show the corresponding row.
 %\forall x \in A$.  For example, $R + R =  \{ \texttt{joe} \mapsto 2, \texttt{anne} \mapsto -2 \}$.
 %Since \zrs form a group, all results from \secref{sec:streams} apply to streams over \zrs.
 
-\zrs are more general than sets and multisets: A set can be
-represented as a \zr by associating a weight of 1 with each row.
-Multisets (also called ``bags'' in the database literature) are \zrs
-where all weights are positive.  Crucially, \zrs can also represent
-arbitrary \emph{changes} to sets and bags.  Negative weights represent
-rows that are being \emph{removed}.
+\zrs generalize sets and multisets: a set can be represented as a \zr
+by associating a weight of 1 with each element.  Multisets (also
+called ``bags'' in the database literature) are \zrs where all weights
+are positive.  Crucially, \zrs can also represent \emph{changes} to
+sets and bags.  Negative weights represent rows that are being
+\emph{removed}.
 
-We can define three operations on \zr of a given type (i.e., where
-the values have a given type): (1) zero (with all weights 0) (2)
-negation: just negate all weights; (3) plus: add up the weights of the
-rows that have the same value.  Using these operations \zrs behave
-like a commutative group.
+We can define three operations on \zrs with values of a given type:
+(1) \textbf{zero} (a \zr with all weights 0) (2) \textbf{negation}:
+just negate all weights; (3) \textbf{plus}: add up the weights of the
+rows that have the same value.  Using these operations \zrs are a
+commutative group.
 
 %\begin{definition}
 %We say that a \zr represents a \defined{set} if the weight of every
@@ -320,8 +320,8 @@ like a commutative group.
 %$$
 %%\end{definition}
 
-We define the function $\distinct$.  This function, applied to a \zr,
-returns another \zr where all rows with negative weights are removed,
+We define the function $\distinct$ on \zrs. This function's output is
+a \zr where all rows of the input with negative weights are removed,
 and all positive weights are changed to 1.  For example, the
 $\distinct$ of the above \zr is:
 %
@@ -338,8 +338,6 @@ rows with negative weights.
 %\ifzsetexamples
 %$\distinct(R) = \{ \texttt{joe} \mapsto 1 \}$.
 %\fi
-This definition will enable us to implement set or multiset database
-computations in terms of computations on \zrs.
 
 \subsection{Implementing relational operators}\label{sec:relational-operators}
 
@@ -348,7 +346,7 @@ The fact that relational algebra can be implemented by computations on
 of the relational operators to functions computing on \zrs is shown in
 Table~\ref{tab:relational}.  The functions ($\pi$, $\sigma$,
 $\bowtie$, $\times$) are the standard relational operators projection,
-selection, join, C artesian product.  The first row of the table shows
+selection, join, Cartesian product.  The first row of the table shows
 that a composite query is translated recursively: implement the
 sub-queries, and connect them with an arrow.  This gives us a recipe
 for translating an arbitrary relational query plan into a circuit.
@@ -398,22 +396,22 @@ This is a faithful implementation of the relational algebra --- the
 underlying mathematical theory that underlies modern databases ---
 using \zrs.  This implementation produces an abundance of $\distinct$
 operators, but there are known optimizations for removing some of
-them, which can be seen in the full version of this paper.
+them.
 
 The following functions in Table~\ref{tab:relational} are linear:
 $\sigma, \pi, -, +$.  The following functions are bilinear: $\times,
 \bowtie$.  In fact, the only non-linear function is $\distinct$.  In
-consequence, all these functions have very efficient incremental
-versions.
+consequence, all these functions (lifted) have very efficient
+incremental versions.
 
 To explain why these functions are linear, consider the filtering
-query from the introduction (\texttt{WHERE}).  What happens when we
-add a row to the input relation -- what is the change in the output?
-It is sufficient to check the predicate for the new row.  If the
-predicate returns \texttt{true}, the new row is added to the output.
-So the change in the output only depends on the change in the input,
-and not on the actual contents of the input.  This is what makes the
-operation linear.
+query from the introduction (\texttt{WHERE}).  What is the change in
+the output when we add a new row to the input?  It is sufficient to
+check the predicate for the new row.  If the predicate returns
+\texttt{true}, the new row is added to the output.  So the change in
+the output only depends on the change in the input, and not on the
+actual contents of the input.  This is what makes the operation
+linear.
 
 %Prior work (e.g., Proposition 6.13 in~\cite{green-tcs11}) has shown
 %how some invocations of $\distinct$ can be eliminated from query plans
@@ -513,7 +511,7 @@ following algorithm builds a \dbsp circuit for $\inc{Q}$:
 \end{enumerate}
 \end{algorithm}
 
-This algorithm is deterministic; its running time is proportional to
+This algorithm is deterministic; the running time is proportional to
 the number of operators in the query.  Step (2) generates an
 equivalent circuit, with fewer $\distinct$ operators.  Step (3) yields
 a circuit that consumes a \emph{stream} of complete database snapshots
@@ -573,22 +571,16 @@ d$, while the top input is the full set, obtained as an integral of
 the changes.  $H$ detects whether the weight of a row in the full set
 is changing sign (from negative to positive on a row insertion, and
 from positive to negative on a deletion) when the row appears in a new
-change.  A precise definition of $H$ is given in the full paper.  Here
-is the intuition why $\distinct$ is efficiently incrementalizable:
-consider a row that is inserted in the input of a $\distinct$
-operator.  How does the output change?  If the row was not in the
-prior full input table, then it will appear with weight 1 in the
-output change.  Otherwise an empty output is produced.
-
-Only
-tuples that appear in the input change $\Delta d$ can appear in the
-output change $\Delta o$, so the work performed is $O(|\Delta d)|$.
-The implementation needs to maintain the \emph{entire input set}
-(similar to joins) in order to discover whether an item is new or not.
-That is the purpose of the $\I$ operator in the above diagram.
+change.  Here is the intuition why $\distinct$ is efficiently
+incrementalizable: only tuples that appear in the input change $\Delta
+d$ can appear in the output change $\Delta o$, so the work performed
+is $O(|\Delta d)|$.  The implementation needs to maintain the
+\emph{entire input set} (similar to joins) in order to discover
+whether an item is new or not.  That is the purpose of the $\I$
+operator.
 
 The algorithm reduces the problem of incremental execution of a query
-plan to the incremental execution of subplans/primitive operators.
+plan to the incremental execution of sub\-plans/primitive operators.
 However, this algorithm works even if we use a primitive $P$ for which
 no efficient incremental version is known: we can always use the
 inefficient ``brute-force'' implementation given by $\inc{P} = \D
@@ -645,5 +637,5 @@ structures.  Moreover, \texttt{GROUP BY} is a linear operation.  Some
 aggregations are ``almost'' linear, but other, such as \texttt{MIN},
 require maintaining the full input set, similar to $\distinct$, to
 properly handle deletions.  See the full paper and the technical
-report for more details.
+report~\cite{tr} for more details.
 

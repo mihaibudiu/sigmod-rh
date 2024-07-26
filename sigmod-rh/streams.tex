@@ -252,7 +252,7 @@ several other operators: $\D(s) \defn s - \zm(s)$, shown as:
     \node[] (input) {$s$};
     \node[block, shape=circle, right of=input, inner sep=0pt,node distance=2cm] (plus) {$+$};
     \node[right of=plus] (output) {$\D(s)$};
-    \draw[draw,->] (input) -- node (i) {} (plus);
+    \draw[->>] (input) -- node (i) {} (plus);
     \node[block, below of=i, node distance=.8cm] (z) {$\zm$};
     \node[block, shape=circle, right of=z, inner sep=0pt] (minus) {$-$};
     \draw[->>] (plus) -- (output);

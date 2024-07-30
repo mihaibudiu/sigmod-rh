@@ -1,6 +1,7 @@
 \subsection{Example incrementalized recursive query}\label{sec:recursive-incremental-example}
 
-Here we take the \dbsp circuit for the transitive closure of a graph
+The discussion above is very abstract, so let's see a concrete example.
+We take the \dbsp circuit for the transitive closure of a graph
 generated in \refsec{sec:recursive-example} and convert it to an
 incremental circuit using algorithm~\ref{algorithm-inc}.  The
 resulting circuit maintains the transitive closure as edges are
@@ -72,7 +73,7 @@ corresponding changes to relation \code{R}:
   \draw[->>>] (z) -- (j);
 \end{tikzpicture}
 
-We can now apply again the chain and cycle rules to this circuit:
+Apply the chain and cycle rules:
 
 \noindent
 \begin{tikzpicture}[>=latex, node distance=1.6cm]
@@ -102,7 +103,7 @@ We can now apply again the chain and cycle rules to this circuit:
   \draw[->>>] (z) -- (j);
 \end{tikzpicture}
 
-We now take advantage of the linearity of $\lift\delta$, $\lift\int$,
+Use the linearity of $\lift\delta$, $\lift\int$,
 $\lift\zm$, and $\lift\lift\pi$ to simplify the circuit
 by removing some $\inc{\cdot}$ invocations:
 
@@ -179,7 +180,8 @@ $\cong$ &
 \end{tikzpicture}
 \end{tabular}
 
-Now we lift and incrementalize to get the circuit for $\inc{(\lift{\inc{(\lift{\bowtie})}})}$:
+\noindent
+Lift and incrementalize to get the circuit for $\inc{(\lift{\inc{(\lift{\bowtie})}})}$:
 
 \begin{center}
 \begin{tikzpicture}[auto,>=latex]
@@ -327,6 +329,7 @@ Finally, stitching all these pieces together we get the final circuit
 shown in Figure~\ref{fig:recursive-example}.
 
 \begin{figure*}[h]
+  \begin{center}
 \begin{tikzpicture}[>=latex]
   \node[] (Einput) {$\Delta$\code{E}};
   % generic part
@@ -394,7 +397,7 @@ shown in Figure~\ref{fig:recursive-example}.
     \node[block, right of=distI, node distance=1.2cm] (distLI) {$\lift{\I}$};
     \node[block, right of=distLI, node distance=1.2cm] (distz) {$\lift{\zm}$};
     \node[block, above of=distz, node distance=1cm] (distH) {$\lift{\lift{H}}$};
-    \node[block, right of=distH] (distD) {$\D$};
+    \node[block, right of=distH, node distance=1.2cm] (distD) {$\D$};
     \draw[->>>] (relplus) -- (distI);
     \draw[->>>] (distI) -- node (distmid) {} (distLI);
     \draw[->>>] (distLI) -- (distz);
@@ -411,7 +414,9 @@ shown in Figure~\ref{fig:recursive-example}.
   \draw[->>>] (o.center) |- (z);
   \draw[->>>] (z) -- (a);
 \end{tikzpicture}
-\caption{Final form of circuit from \refsec{sec:recursive-example}\label{fig:recursive-example}
-which is incrementally maintaining the transitive closure of a graph.}
+\caption{Final form of circuit from
+  \refsec{sec:recursive-example}\label{fig:recursive-example} which is
+  incrementally maintaining the transitive closure of a graph.}
+  \end{center}
 \end{figure*}
 

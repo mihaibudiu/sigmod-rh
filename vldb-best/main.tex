@@ -45,6 +45,7 @@
 \numberwithin{equation}{section}
 
 \graphicspath{ {.} }
+\lstset{basicstyle=\ttfamily}
 \lstset{language=Java,
   commentstyle=\color{brown},
   keywordstyle=\color{blue},
@@ -167,20 +168,22 @@
 \begin{abstract}
 Incremental view maintenance (IVM) has long been a central problem in
 database theory and practice.  Many solutions have been proposed for
-restricted classes of database languages, such as the relational
-algebra or Datalog, and for restricted classes of changes.  In this
-paper we give a general, heuristic-free solution to this problem in 4
-steps: (1) we describe a simple but expressive language called \dbsp
-for describing computations over data streams; (2) we give a new
-mathematical definition of IVM; (3) we give a general algorithm for
-converting any \dbsp program into an incremental program.  The
+restricted classes of database languages (such as the relational
+algebra or Datalog), restricted classes of queries, and restricted
+classes of database changes.  In this paper we give a general,
+heuristic-free solution to this problem in 4 steps: (1) we describe a
+simple but expressive language called \dbsp for describing
+computations over data streams; (2) we give a new mathematical
+definition of IVM using \dbsp; (3) we give a general algorithm for
+converting any \dbsp program into an incremental program; this
 algorithm reduces the problem of incrementalizing a complex query to
 the problem of incrementalizing the primitive operations that compose
 the query.  Finally, (4) we show that practical database query
 languages, such as SQL and Datalog, can be directly implemented on top
-of \dbsp, using primitives with efficient incremental implementations.
-As a consequence, we obtain a general recipe for efficient IVM for
-essentially arbitrary queries written in all these languages.
+of \dbsp, using primitives that have efficient incremental
+implementations.  As a consequence, we obtain a general recipe for
+efficient IVM for essentially arbitrary queries written in all these
+languages.
 
 \end{abstract}
 

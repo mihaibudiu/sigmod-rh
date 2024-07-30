@@ -11,9 +11,7 @@ Some SQL queries however produce \emph{multisets}, e.g., \code{UNION ALL}.
 Since \zrs generalize multisets and bags, it is trivial to implement query
 operators on multisets, by just omitting $\distinct$ operator invocations.
 For example, SQL \code{UNION} is \zr addition followed by $\distinct$,
-whereas \code{UNION ALL} is just \zr addition.  Indeed, the SQL to \dbsp compiler
-mentioned in \refsec{sec:implementation} handles full standard SQL, including
-all multiset queries.
+whereas \code{UNION ALL} is just \zr addition.
 
 \subsection{Aggregation}\label{sec:aggregation}
 
@@ -35,8 +33,8 @@ with a linear function is simply function application, and thus linear.
 However, in general, composing multiple queries
 requires the result of an aggregation to be a singleton \zr (containing a single value),
 and not a scalar value.  In this case the aggregation function is implemented in
-\dbsp as the composition of the actual aggregation and the
-$\makeset: A \to \Z[A]$ function,
+\dbsp as the composition of the actual aggregation and a helper function
+$\makeset: A \to \Z[A]$,
 which converts a scalar value of type $A$ to a singleton \zr, defined as follows:
 $\makeset(x) \defn \{ x \mapsto 1 \}$.
 
@@ -87,18 +85,10 @@ invocation, since its input and output are singleton values.
 %  \draw[->] (div) -- (O);
 %\end{tikzpicture}
 
-Finally, some aggregate functions, such as \code{MIN}, are
-\emph{not} linear: for handling deletions
-they need to track the full set.  One way to implement in \dbsp the lifted
-incremental version of such aggregate functions is
-by ``brute force'', using the formula $\inc{(\lift a_\texttt{MIN})}
-= \D \circ \lift{a_\texttt{MIN}} \circ \I$.  Such an implementations performs work
-$O(|DB|)$ at each invocation.  However, schemes
-such as Reactive Aggregator~\cite{tangwongsan-vldb15} can be implemented as custom \dbsp operators to bring
-the amortized cost per update to $O(\log |DB|)$.  This approach is similar to the
-customized implementation of the $\distinct$ operator, and it is another facet of
-the modularity of \dbsp, which allows optimized operator implementations to be
-mixed and matched.
+Finally, some aggregate functions, such as \code{MIN}, are \emph{not}
+linear.  Schemes such as Reactive Aggregator~\cite{tangwongsan-vldb15}
+can be used to implement \code{MIN}, with an amortized cost per update
+to $O(|\Delta DB| \log(|DB|))$.
 
 \subsection{Grouping; indexed relations}\label{sec:grouping}
 
@@ -113,7 +103,8 @@ an abelian group.
 We use this structure to implement the SQL \texttt{GROUP BY} operator in \dbsp.
 Consider a \defined{partitioning function}
 $p: A \to K$ that assigns a key to any value in $A$.  We define the grouping function
-$G_p: \Z[A] \to \Z[A][K]$ as $G_p(a)[k] \defn \sum_{x \in a.p(x)=k}a[x] \cdot x$
+$G_p: \Z[A] \to \Z[A][K]$ as $G_p(a)[k] \defn \sum_{x \in a.p(x)=k}\{
+x \mapsto a[x] \}$
 (just map each element of the input $a$ to the \zr grouping corresponding to its key).
 When applied to a \zr $a$ this function returns a indexed \zr, where each element
 is a \defined{grouping}:\footnote{We use
@@ -122,11 +113,11 @@ grouping is a \zr containing all elements of $a$ that map to $k$
 (as in SQL, groupings are multisets).
 Consider our example \zr $R$ from \refsec{sec:relational},
 and a key function $p(s)$ that returns the first letter of the string
-$s$. Then we have that $G_p(R) = \{ \code{j} \mapsto \{ \code{joe}
+$s$. Then we have $G_p(R) = \{ \code{j} \mapsto \{ \code{joe}
 \mapsto 1 \}, \code{a} \mapsto \{ \code{anne} \mapsto -1 \}, \code{m}
 \mapsto \{ \code{mary} \mapsto 2 \} \}$,
-i.e., grouping with this key function produces an indexed \zr with two groupings, each
-of which contains a \zr with one element.
+i.e., grouping with this key function produces an indexed \zr with three groupings, each
+of which contains a 1-element \zr.
 
 The grouping function $G_p$ is linear for any key function $p$!
 It follows that the group-by implementation in \dbsp is automatically
@@ -152,22 +143,20 @@ Let us consider an aggregation function $a: (K \times \Z[A]) \to B$ that produce
 in some group $B$, and an indexed relation of type $\Z[A][K]$, as defined above in~\refsec{sec:grouping}.
 The nested relation aggregation operator $Agg_a: \Z[A][K] \to B$ applies $a$
 to the contents of each grouping independently and adds the results:
-$Agg_a(g) \defn \sum_{k \in K} a(k, g[k])$.  To apply this
-to our example, let us compute the equivalent of \texttt{GROUP BY-COUNT}; we use
+$Agg_a(g) \defn \sum_{k \in K} a(k, g[k])$.  Let us compute the equivalent of \texttt{GROUP BY-COUNT}; we use
 the following aggregation function $count: K \times \Z[A]$, $count(k, s) =
 \makeset((k, a_\texttt{COUNT}(s)))$, using the \zr counting function $a_\texttt{COUNT}$
 from~\refsec{sec:aggregation}; the notation $(a,b)$ is a pair of values $a$ and $b$.
 Then we have $Agg_{count} (G_p(R)) = \{ (\code{j}, 1) \mapsto 1,
 (\code{a}, -1) \mapsto 1, (\code{m}, 2) \mapsto 2 \}$.
+The incremental $\makeset$ operations on indexed \zrs needs to store state
+proportional to the number of groups.
 
 %\subsection{\texttt{UNNEST} (flatmap)}
 
-A very useful operation on nested relations is \defined{flatmap} (or \code{UNNEST} in SQL), which is
+A useful operation on nested relations is \defined{flatmap} (or \code{UNNEST} in SQL), which is
 essentially the inverse of grouping, converting an indexed
 \zr into a \zr: $\mbox{flatmap}: \Z[A][K] \to \Z[A \times K]$.
-$\mbox{flatmap}$ is in fact a particular instance of aggregation,
-using the aggregation function $a: K \times \Z[A] \to \Z[A \times K]$
-defined by $a(k, s) = \sum_{x \in s[k]} s[k][x] \cdot (k, x).$
 For our previous example, $\mbox{flatmap}(G_p(R)) = \{ (\code{j}, \code{joe}) \mapsto 1,
 (\code{a}, \code{anne}) \mapsto -1, (\code{m}, \code{mary}) \mapsto 2 \}$.
 
@@ -329,12 +318,11 @@ for the time-invariance of the resulting circuits.
 
 \subsection{Relational while queries}
 
-\dbsp can express programs that go beyond Datalog:
-see the non-monotonic semantics for Datalog$^\neg$ and \\
-Datalog$^{\neg\neg}$\cite{Abiteboul-book95}.
-We implement the following
-``while'' program, where $Q$ is an arbitrary query:
-{\small
+\dbsp can express programs that go beyond Datalog: see the
+non-monotonic semantics for Datalog$^\neg$ and
+\\ Datalog$^{\neg\neg}$\cite{Abiteboul-book95}.  For example, to
+illustrate the Turing-completeness of \dbsp, we implement the
+following \\ ``while'' program, where $Q$ is an arbitrary query: {\small
 \begin{lstlisting}[language=Pascal]
 x := i;
 while (x changes)
@@ -352,7 +340,7 @@ The \dbsp implementation of this program is:
   \node[block, right of=Q] (D) {$\D$};
   \node[block, right of=D] (S) {$\int$};
   \node[right of=S] (output)  {$x$};
-  \node[block, below of=p, node distance=.9cm] (z) {$\zm$};
+  \node[block, below of=p, node distance=.8cm] (z) {$\zm$};
   \draw[->] (input) -- (delta);
   \draw[->>] (delta) -- (p);
   \draw[->>] (p) -- (Q);

@@ -19,12 +19,10 @@ Nested streams, or streams of streams, $\stream{\stream{A}} = \N \rightarrow (\N
 \rightarrow A)$, are well defined, since streams form an abelian group.
 Equivalently, a nested stream is a value in $\N \times \N \to A$, i.e., a matrix
 with an infinite number of rows, indexed by two-dimensional time $(t_0, t_1)$.
-where each row is a stream.  Please refer to our companion report for
-example computations on nested streams~\cite{tr}.
+where each row is a stream.
 
-%In the Appendix in
-%\secref{sec:nested-examples} we show a few example nested stream
-%computations.
+The same way we lift functions to produce stream operators, we can
+lift stream operators to produce operators on streams of streams.
 
 Lifting a stream operator $S: \stream{A} \to \stream{B}$ yields an operator over
 nested streams $\lift{S}: \stream{\stream{A}} \to \stream{\stream{B}}$, such
@@ -33,8 +31,27 @@ S(s[t_0])[t_1], \forall t_0, t_1 \in \N$.  In particular, a scalar function $f:
 A \rightarrow B$ can be lifted twice to produce an operator between streams of
 streams: $\lift{\lift{f}}: \stream{\stream{A}} \rightarrow \stream{\stream{B}}$.
 
-To define recursive nested queries, we need a slightly different definition of strictness. If we think of a nested stream $F: \stream{\stream{A}} \to \stream{\stream{B}}$ as a function of timestamps $(i, j)$, then the prior definition of strictness corresponds to strictness in the first dimension $i$, which we extend here to allow $F$ to be strict in its second dimension $j$: for any $s, s' \in \stream{\stream{A}}$ and all times $t \in \N$, $\forall i, j < t.\, s[i][j] = s'[i][j]$ implies $F(s)[i][t] = F(s')[i][t]$.
-Proposition~\ref{prop-unique-fix} holds for this extended notion of strictness, i.e., the fixed point operator $\fix{\alpha}{F(\alpha)}$ is well defined for a strict operator $F$.
+\begin{center}
+\begin{tikzpicture}[>=latex]
+  \node[] (input) {$i$};
+  \node[block, right of=input] (I) {$\lift{\lift{{f}}}$};
+  \node[right of=I] (output)  {$o$};
+  \draw[->>>] (input) -- (I);
+  \draw[->>>] (I) -- (output);
+\end{tikzpicture}
+\end{center}
+
+To define recursive nested queries, we need a slightly different
+definition of strictness. If we think of a nested stream $F:
+\stream{\stream{A}} \to \stream{\stream{B}}$ as a function of
+timestamps $(i, j)$, then the prior definition of strictness
+corresponds to strictness in the first dimension $i$, which we extend
+here to allow $F$ to be strict in its second dimension $j$: for any
+$s, s' \in \stream{\stream{A}}$ and all times $t \in \N$, $\forall i,
+j < t.\, s[i][j] = s'[i][j]$ implies $F(s)[i][t] = F(s')[i][t]$.
+Proposition~\ref{prop-unique-fix} holds for this extended notion of
+strictness, i.e., the fixed point operator $\fix{\alpha}{F(\alpha)}$
+is well defined for a strict operator $F$.
 
 \begin{proposition}\label{prop-liftz}
 The operator $\lift{\zm}: \stream{\stream{A}} \to \stream{\stream{A}}$ is strict (in its second dimension).
@@ -51,8 +68,9 @@ $\lift{\I}: \stream{\stream{A}} \to \stream{\stream{A}}.$
 
 \begin{proposition}[Lifting cycles]
 \label{prop-lift-cycle}
-For a binary, causal $T$ we have:
-$\lift{(\lambda s. \fix{\alpha}{T(s,\zm(\alpha)}))} = \lambda s. \fix{\alpha}{(\lift{T})(s,(\lift{\zm})(\alpha))}$
+For a binary, causal $T$ we have: $\lift{(\lambda
+  s. \fix{\alpha}{T(s,\zm(\alpha)}))} = \\ \lambda
+s. \fix{\alpha}{(\lift{T})(s,(\lift{\zm})(\alpha))}$
 \noindent i.e., lifting a circuit containing a ``cycle'' can be accomplished by
 lifting all operators independently, including the $\zm$ back-edge.
 \end{proposition}
@@ -65,19 +83,19 @@ itself.  For example, we have:
   \node[] (input) {$i$};
   \node[block, right of=input] (I) {$\lift{\I}$};
   \node[right of=I] (output)  {$o$};
-  \draw[->] (input) -- (I);
-  \draw[->] (I) -- (output);
+  \draw[->>>] (input) -- (I);
+  \draw[->>>] (I) -- (output);
 \end{tikzpicture}
 & $\cong$ &
 \begin{tikzpicture}[>=latex]
   \node[] (input) {$i$};
   \node[block, circle, right of=input, inner sep=0cm] (p) {$+$};
-  \node[right of=p, node distance=1.5cm] (output)  {$o$};
-  \node[block, below of=p, node distance=.7cm] (z) {$\lift{\zm}$};
-  \draw[->] (input) -- (p);
-  \draw[->] (p) -- node (mid) {} (output);
-  \draw[->] (z) -- (p);
-  \draw[->] (mid.center) |- (z);
+  \node[right of=p, node distance=1.8cm] (output)  {$o$};
+  \node[block, below of=p, node distance=1cm] (z) {$\lift{\zm}$};
+  \draw[->>>] (input) -- (p);
+  \draw[->>>] (p) -- node (mid) {} (output);
+  \draw[->>>] (z) -- (p);
+  \draw[->>>] (mid.center) |- (z);
 \end{tikzpicture}
 \end{tabular}
 
@@ -87,73 +105,68 @@ which are well-defined, due to Proposition~\ref{prop-liftz}.
 With this machinery we can now apply Algorithm~\ref{algorithm-inc} to arbitrary
 circuits, even circuits built for recursively-defined relations.
 
-\noindent Step 1: Start with the ``semi-naive'' circuit~(\ref{eq:seminaive}):
+\noindent Step 1: Start with the ``semi-naive'' circuit:
 \begin{center}
 \begin{tikzpicture}[>=latex]
-  \node[] (Iinput) {\code{I}};
+  \node[] (Iinput) {$x$};
   \node[block, right of=Iinput] (Idelta) {$\delta_0$};
-  \node[block, right of=Idelta] (f) {$\inc{(\lift{R})}$};
+  \node[block, right of=Idelta, node distance=1.2cm] (f) {$\inc{(\lift{R})}$};
   \node[block, right of=f, node distance=1.5cm] (S) {$\int$};
-  \node[right of=S] (output)  {\code{O}};
-  \draw[->] (f) -- node (o) {} (S);
+  \node[right of=S] (output)  {$O$};
+  \draw[->>] (f) -- node (o) {} (S);
   \node[block, below of=o, node distance=.7cm] (z) {$\zm$};
   \draw[->] (Iinput) -- (Idelta);
   \draw[->] (S) -- (output);
-  \draw[->] (o.center) -- (z);
-  \draw[->] (z) -| (f);
-  \draw[->] (Idelta) -- (f);
+  \draw[->>] (o.center) -- (z);
+  \draw[->>] (z) -| (f);
+  \draw[->>] (Idelta) -- (f);
 \end{tikzpicture}
 \end{center}
-\noindent Step 2: nothing to do (for $\distinct$). \\
-\noindent Steps 3 and 4: Lift the circuit (using~\ref{prop-lift-cycle}) and incrementalize:
+\vspace{-1ex}
+\noindent Step 2: nothing to do for $\distinct$. \\
+\noindent Steps 3 and 4: Lift the circuit and incrementalize:
 \begin{center}
 \begin{tikzpicture}[>=latex]
-  \node[] (Iinput) {$\Delta$\code{I}};
+  \node[] (Iinput) {$\Delta x$};
   \node[block, right of=Iinput] (I) {$\I$};
   \node[block, right of=I] (Idelta) {$\lift{\delta_0}$};
   \node[block, right of=Idelta, node distance=1.5cm] (f) {$\lift{\inc{(\lift{R})}}$};
   \node[block, right of=f, node distance=1.5cm] (S) {$\lift{\int}$};
   \node[block, right of=S] (D) {$\D$};
-  \node[right of=D] (output)  {$\Delta$\code{O}};
-  \draw[->] (f) -- node (o) {} (S);
-  \node[block, below of=o, node distance=.7cm] (z) {$\lift{\zm}$};
-  \draw[->] (Iinput) -- (I);
-  \draw[->] (I) -- (Idelta);
-  \draw[->] (S) -- (D);
-  \draw[->] (D) -- (output);
-  \draw[->] (o.center) -- (z);
-  \draw[->] (z) -| (f);
-  \draw[->] (Idelta) -- (f);
+  \node[right of=D] (output)  {$\Delta O$};
+  \draw[->>>] (f) -- node (o) {} (S);
+  \node[block, below of=o, node distance=.9cm] (z) {$\lift{\zm}$};
+  \draw[->>] (Iinput) -- (I);
+  \draw[->>>] (I) -- (Idelta);
+  \draw[->>>] (S) -- (D);
+  \draw[->>] (D) -- (output);
+  \draw[->>>] (o.center) -- (z);
+  \draw[->>>] (z) -| (f);
+  \draw[->>>] (Idelta) -- (f);
 \end{tikzpicture}
 \end{center}
+\vspace{-1ex}
+\noindent Step 5: use the chain rule and linearity of
+$\lift{\delta_0}$ and $\lift{\int}$:
 
-\noindent Step 5: apply the chain rule and linearity of $\lift{\delta_0}$ and $\lift{\int}$:
-\begin{equation}
-\begin{aligned}
-\label{eq:increcursive}
 \begin{tikzpicture}[>=latex]
-  \node[] (Iinput) {$\Delta$\code{I}};
+  \node[] (Iinput) {$\Delta x$};
   \node[block, right of=Iinput] (Idelta) {$\lift{\delta_0}$};
-  \node[block, right of=Idelta, node distance=2cm] (f) {$\inc{(\lift{\inc{(\lift{R})}})}$};
+  \node[block, right of=Idelta, node distance=1.8cm] (f) {$\inc{(\lift{\inc{(\lift{R})}})}$};
   \node[block, right of=f, node distance=2cm] (S) {$\lift{\int}$};
-  \node[right of=S] (output)  {$\Delta$\code{O}};
-  \draw[->] (f) -- node (o) {} (S);
-  \node[block, below of=o, node distance=.7cm] (z) {$\lift{\zm}$};
-  \draw[->] (Iinput) -- (Idelta);
-  \draw[->] (S) -- (output);
-  \draw[->] (o.center) -- (z);
-  \draw[->] (z) -| (f);
-  \draw[->] (Idelta) -- (f);
+  \node[right of=S] (output)  {$\Delta O$};
+  \draw[->>>] (f) -- node (o) {} (S);
+  \node[block, below of=o, node distance=.9cm] (z) {$\lift{\zm}$};
+  \draw[->>] (Iinput) -- (Idelta);
+  \draw[->>] (S) -- (output);
+  \draw[->>>] (o.center) -- (z);
+  \draw[->>>] (z) -| (f);
+  \draw[->>>] (Idelta) -- (f);
 \end{tikzpicture}
-\end{aligned}
-\end{equation}
 
-This is the incremental version of an arbitrary recursive query.  An
-example for a transitive closure query is in our report~\cite{tr}.
+\noindent This is the incremental version of a recursive query.
 
-%\refsec{sec:recursive-incremental-example} shows how Algorithm~\ref{algorithm-inc} is
-%applied to the \dbsp circuit produced by the example from~\refsec{sec:recursive-example},
-%which implements the recursive query computing the transitive closure of a graph.
+\input{example3}
 
 \subsection{Cost of incremental recursive queries}
 

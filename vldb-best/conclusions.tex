@@ -1,7 +1,30 @@
 \section{Conclusions}\label{sec:conclusions}%\label{sec:ddlog}
 
+\subsection{Adoption}
+
+Traditional databases do not offer efficient IVM implementations for
+arbitrary queries.  Databases could in principle be retrofitted to use
+the algorithms in this paper, but the existing query engines are not
+built around structures that can represent negative changes (like
+\zrs), so this effort will require a significant redesign.
+
+Moreover, we argue that databases should not only compute views
+incrementally, but should use ``changes'' as the fundamental data
+structure to communicate with their environment: a database service
+should offer the following API: users register to receive
+notifications for changes in one or more views.  Then, for any
+transaction committed, each user receives a notification containing
+the list of changes for the all the views they registered.  Databases
+today do not have convenient mechanism for reporting changes to the
+outside world.  In fact, entire industries have sprung up around the
+concept of Change Data Capture~\cite{cdc}, which is building ad-hoc
+solutions for extracting changes from databases, usually by inspecting
+the write-ahead transaction log.
+
+\subsection{Summary}
+
 We have introduced \dbsp, a model of computation based on infinite
-streams over abelian groups.  In this model streams are used for 3
+streams over commutative groups.  In this model streams are used for 3
 purposes: (1) to model consecutive snapshots of a database, (2) to
 model consecutive changes (deltas, or transactions) applied to a
 database and changes of a maintained view, (3) to model consecutive
@@ -15,5 +38,5 @@ some very nice algebraic properties, which gave us a general algorithm
 for incrementalizing many classes of complex queries, including
 arbitrary recursive queries.
 
-We believe that \dbsp can form a solid foundation for a theory and practice of
-streaming incremental computation.
+We believe that \dbsp can form a solid foundation for a theory and
+practice of streaming incremental computation.

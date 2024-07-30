@@ -1,10 +1,18 @@
 \section{Implementation}\label{sec:implementation}
 
-The scope of this paper is the \dbsp theory of IVM, so we only briefly touch upon
-the implementation aspects.  We defer a full description and evaluation of the
-system to a future paper.
+\subsection{Formal verification}
 
-\paragraph{\dbsp Rust library}
+We have formalized and verified all the definitions, lemmas,
+propositions, theorems, and examples in this paper using the Lean theorem prover; we make
+these proofs available at~\cite{dbsp-theory}.
+% This amounted to roughly 5K lines of Lean code.
+The formalization builds on mathlib~\cite{mathlib2020}, which provides
+support for groups and functions with finite support (modeling
+\zrs). We believe the simplicity of \dbsp enabled completing these
+proofs in relatively few lines of Lean code (5K) and keeping a close
+correspondence between the paper proofs in~\cite{tr} and Lean.
+
+\subsection{The \dbsp Rust runtime}
 
 We have built an implementation of \dbsp as part of an
 open-source project with an MIT license:
@@ -35,7 +43,42 @@ also spill internal operator state to persistent storage.  Benchmark
 results (which are very promising) are available in the code
 repository and will be discussed in future work.
 
-\paragraph{SQL compiler}
+\subsection{Parallelization and Scale-out}
+
+\subsection{State management}
+
+\textbf{Tradeoffs.}  Incremental computation is not free.  It is in
+fact a trade-off between time and space.  In the cost analysis we have
+to consider both the time and the space used by each operator.  While
+many incremental database operations can be implemented using work
+proportional to the size of the changes, and no storage overhead,
+several classes of database operations, such as joins, ``distinct'',
+and aggregates can be implemented efficiently only using additional
+storage in the form of \emph{indexes}.  The size of these indexes is
+proportional to the size of the total data in the database (and not
+just to the size of the changes) --- and since some indexes are over
+intermediate relations, they can even exceed the size of the original
+database.  In \dbsp the indexes are represented by delay operators
+$\zm$.  In fact, the delay operator (and its lifted variant
+$\lift{\zm}$) are the only operators that maintains state.  This is
+also the only state that needs to be persisted, checkpointed, or
+migrated to make \dbsp computations fault-tolerant.
+
+\dbsp is an ``eager'' or ``top-down'' execution model: it constantly
+maintains the entire contents of any number of views, even if no one
+really wants to inspect the views.  In contrast, ``lazy'' or
+``bottom-up'' models only build part of the views when the views are
+inspected.  Such models have the potential to be more efficient.
+Eager models can be converted into lazy ones if something is known
+about the class of operations that will be executed against the views.
+
+
+
+TODO: the LSM data structure, storage organization
+
+\subsubsection{Checkpointing and fault-tolerance}
+
+\subsection{SQL compiler}
 
 We have also built a SQL to \dbsp compiler, which translates standard
 SQL queries into \dbsp circuits.  The compiler implements
@@ -51,14 +94,5 @@ queries, etc.  Currently correlated sub-queries and outer joins are
 essentially converted to equivalent relational plans using multiple
 joins.
 
-\paragraph{Formal verification}
+\subsection{Streaming SQL extensions}
 
-We have formalized and verified all the definitions, lemmas,
-propositions, theorems, and examples in this paper using the Lean theorem prover; we make
-these proofs available at~\cite{dbsp-theory}.
-% This amounted to roughly 5K lines of Lean code.
-The formalization builds on mathlib~\cite{mathlib2020}, which provides
-support for groups and functions with finite support (modeling
-\zrs). We believe the simplicity of \dbsp enabled completing these
-proofs in relatively few lines of Lean code (5K) and keeping a close
-correspondence between the paper proofs in~\cite{tr} and Lean.

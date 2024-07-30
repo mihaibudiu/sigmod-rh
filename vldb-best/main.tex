@@ -1,4 +1,6 @@
-\documentclass[twocolumn,draft]{svjour3}
+\documentclass[twocolumn
+  %,draft
+]{svjour3}
 
 %\acmConference[CONF]{Conference}{2022}{USA}
 %\settopmatter{printfolios=true} % print page numbers
@@ -64,7 +66,7 @@
 }
 \hypersetup{final}
 
-\usetikzlibrary{shapes, arrows.meta, positioning}
+\usetikzlibrary{shapes, arrows.meta, positioning, decorations.pathreplacing, matrix}
 \tikzstyle{block}=[draw,fill=white,rectangle]
 \tikzstyle{every node}=[font=\small]
 
@@ -102,7 +104,7 @@
 \newcommand{\D}{\mathit{D}}  % stream derivative
 }
 \newcommand{\inc}[1]{{#1}^{\Delta}}
-\newcommand{\distinct}{\mathit{distinct}}  % distinct operator
+\newcommand{\distinct}{\mathit{dist}}  % distinct operator
 % set with elements of given type
 \newcommand{\secref}[1]{\S\ref{#1}}  % reference to a section
 \newcommand{\refsec}[1]{\secref{#1}}
@@ -123,11 +125,16 @@
 \newcommand{\sv}[1]{ % simple stream value, supplied as a space-separated list of 5 values
 \setsepchar{ }
 \readlist\arg{#1}
-{[}
-\begin{array}{cccccc}
-    \arg[1] & \arg[2] & \arg[3] & \arg[4] & \arg[5] & \cdots
-\end{array}
-{]}
+\begin{tabular}{|c|c|c|c|c|} \hline
+  % notice that this is in reverse
+  \!\ensuremath{\cdots}\! &
+  \!\arg[4]\! &
+  \!\arg[3]\! &
+  \!\arg[2]\! &
+  \!\arg[1]\!
+  % \arg[5] &
+  \\ \hline
+\end{tabular}
 }
 
 \title{\dbsp: Automatic Incremental View Maintenance for Rich Query Languages}
@@ -151,7 +158,7 @@
   Frank McSherry \at Materialize.com
   \and
   Val Tannen \at University of Pennsylvania
-}  
+}
 
 \begin{document}
 
@@ -159,22 +166,22 @@
 
 \begin{abstract}
 Incremental view maintenance (IVM) has long been a central problem in
-database theory.  Many solutions have been proposed for restricted
-classes of database languages, such as the relational algebra, or
-Datalog.  These techniques do not naturally generalize to richer
-languages.  In this paper we give a general, heuristic-free solution
-to this problem in 3 steps: (1) we describe a simple but expressive
-language called \dbsp for describing computations over data streams;
-(2) we give a new mathematical definition of IVM and a general
-algorithm for solving IVM for arbitrary \dbsp programs, and (3) we
-show how to model many rich database query languages using \dbsp
-(including the full relational algebra, queries over sets and
-multisets, arbitrarily nested relations, aggregation, flatmap
-(unnest), monotonic and non-monotonic recursion, streaming
-aggregation, and arbitrary compositions of all of these).  SQL and
-Datalog can both be implemented in \dbsp.  As a consequence, we
-obtain efficient incremental view maintenance algorithms for queries
-written in all these languages.
+database theory and practice.  Many solutions have been proposed for
+restricted classes of database languages, such as the relational
+algebra or Datalog, and for restricted classes of changes.  In this
+paper we give a general, heuristic-free solution to this problem in 4
+steps: (1) we describe a simple but expressive language called \dbsp
+for describing computations over data streams; (2) we give a new
+mathematical definition of IVM; (3) we give a general algorithm for
+converting any \dbsp program into an incremental program.  The
+algorithm reduces the problem of incrementalizing a complex query to
+the problem of incrementalizing the primitive operations that compose
+the query.  Finally, (4) we show that practical database query
+languages, such as SQL and Datalog, can be directly implemented on top
+of \dbsp, using primitives with efficient incremental implementations.
+As a consequence, we obtain a general recipe for efficient IVM for
+essentially arbitrary queries written in all these languages.
+
 \end{abstract}
 
 \input{intro}

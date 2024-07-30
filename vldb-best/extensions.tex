@@ -40,12 +40,12 @@ $\makeset: A \to \Z[A]$ function,
 which converts a scalar value of type $A$ to a singleton \zr, defined as follows:
 $\makeset(x) \defn \{ x \mapsto 1 \}$.
 
-In conclusion, the following SQL query:
+In conclusion, the following SQL query: \\
 \code{SELECT SUM(c) FROM I}
 is implemented as the following circuit:\footnote{The actual SQL \texttt{SUM} aggregate is
 even more complicated, because it needs to skip \texttt{NULL}s,
 and it returns \texttt{NULL} for an empty input set;
-this can be implemented in \dbsp.}
+this can all be accurately modeled.}
 
 \begin{tikzpicture}[auto,>=latex]
   \node[] (I) {\code{I}};
@@ -54,7 +54,7 @@ this can be implemented in \dbsp.}
   \draw[->] (I) -- (pi);
   \draw[->] (pi) -- (a);
   \node[block, right of=a, node distance=1.5cm] (m) {$\makeset$};
-  \node[right of=m] (O) {\code{O}};
+  \node[right of=m, node distance=1.2cm] (O) {\code{O}};
   \draw[->] (a) -- (m);
   \draw[->] (m) -- (O);
 \end{tikzpicture}
@@ -123,7 +123,8 @@ grouping is a \zr containing all elements of $a$ that map to $k$
 Consider our example \zr $R$ from \refsec{sec:relational},
 and a key function $p(s)$ that returns the first letter of the string
 $s$. Then we have that $G_p(R) = \{ \code{j} \mapsto \{ \code{joe}
-\mapsto 1 \}, \code{a} \mapsto \{ \code{anne} \mapsto -1 \} \}$,
+\mapsto 1 \}, \code{a} \mapsto \{ \code{anne} \mapsto -1 \}, \code{m}
+\mapsto \{ \code{mary} \mapsto 2 \} \}$,
 i.e., grouping with this key function produces an indexed \zr with two groupings, each
 of which contains a \zr with one element.
 
@@ -157,7 +158,7 @@ the following aggregation function $count: K \times \Z[A]$, $count(k, s) =
 \makeset((k, a_\texttt{COUNT}(s)))$, using the \zr counting function $a_\texttt{COUNT}$
 from~\refsec{sec:aggregation}; the notation $(a,b)$ is a pair of values $a$ and $b$.
 Then we have $Agg_{count} (G_p(R)) = \{ (\code{j}, 1) \mapsto 1,
-(\code{a}, -1) \mapsto 1 \}$.
+(\code{a}, -1) \mapsto 1, (\code{m}, 2) \mapsto 2 \}$.
 
 %\subsection{\texttt{UNNEST} (flatmap)}
 
@@ -168,7 +169,7 @@ $\mbox{flatmap}$ is in fact a particular instance of aggregation,
 using the aggregation function $a: K \times \Z[A] \to \Z[A \times K]$
 defined by $a(k, s) = \sum_{x \in s[k]} s[k][x] \cdot (k, x).$
 For our previous example, $\mbox{flatmap}(G_p(R)) = \{ (\code{j}, \code{joe}) \mapsto 1,
-(\code{a}, \code{anne}) \mapsto -1 \}$.
+(\code{a}, \code{anne}) \mapsto -1, (\code{m}, \code{mary}) \mapsto 2 \}$.
 
 %If we use an aggregation function $a: K \times Z[A]$ that is linear in its
 %second argument, then the aggregation operator $Agg_a$ is linear, and
@@ -217,6 +218,8 @@ For our previous example, $\mbox{flatmap}(G_p(R)) = \{ (\code{j}, \code{joe}) \m
 %  \draw[->] (distinct) -- (output);
 %\end{tikzpicture}
 %
+
+\begin{comment}
 \subsection{Streaming joins}
 
 Consider a binary query $T(s, t) = \I(s)~~\lift{\bowtie}~~t$.  This is the
@@ -311,7 +314,6 @@ bounded memory to compute a window of an unbounded stream.
 This circuit is a building block of a large family of window queries, including
 window joins and window aggregation (e.g., SQL \texttt{OVER} queries).
 
-\begin{comment}
 \item[Weakening assumptions]
 
 The theory as presented requires streams to be over group elements.  However,
@@ -328,7 +330,7 @@ for the time-invariance of the resulting circuits.
 \subsection{Relational while queries}
 
 \dbsp can express programs that go beyond Datalog:
-see the non-monotonic semantics for Datalog$^\neg$ and
+see the non-monotonic semantics for Datalog$^\neg$ and \\
 Datalog$^{\neg\neg}$\cite{Abiteboul-book95}.
 We implement the following
 ``while'' program, where $Q$ is an arbitrary query:
@@ -340,49 +342,50 @@ while (x changes)
 \end{lstlisting}}
 The \dbsp implementation of this program is:
 
-%$$\lambda i. \int[\D[\fix{\xi}{Q(\delta_0(i)+\zm(\xi))}]]$$
+%$$\lambda i. \int[\D[\fix{\xi}{Q(\delta(i)+\zm(\xi))}]]$$
 \begin{center}
 \begin{tikzpicture}[>=latex]
   \node[] (input) {$i$};
-  \node[block, right of=input] (delta) {$\delta_0$};
+  \node[block, right of=input] (delta) {$\delta$};
   \node[block, circle, right of=delta, inner sep=0cm] (p) {$+$};
   \node[block, right of=p] (Q) {$\lift Q$};
   \node[block, right of=Q] (D) {$\D$};
   \node[block, right of=D] (S) {$\int$};
   \node[right of=S] (output)  {$x$};
-  \node[block, below of=p, node distance=.7cm] (z) {$\zm$};
+  \node[block, below of=p, node distance=.9cm] (z) {$\zm$};
   \draw[->] (input) -- (delta);
-  \draw[->] (delta) -- (p);
-  \draw[->] (p) -- (Q);
-  \draw[->] (Q) -- node (mid) {} (D);
-  \draw[->] (D) -- (S);
-  \draw[->] (mid.center) |- (z);
+  \draw[->>] (delta) -- (p);
+  \draw[->>] (p) -- (Q);
+  \draw[->>] (Q) -- node (mid) {} (D);
+  \draw[->>] (D) -- (S);
+  \draw[->>] (mid.center) |- (z);
   \draw[->] (S) -- (output);
-  \draw[->] (z) -- (p);
+  \draw[->>] (z) -- (p);
 \end{tikzpicture}
 \end{center}
 
 This circuit can be converted to a streaming circuit that computes a stream of values $i$
 by lifting it; it can be incrementalized using Algorithm~\ref{algorithm-inc} to compute on changes of $i$:
 
+\noindent
 \begin{center}
 \begin{tikzpicture}[>=latex]
   \node[] (input) {$\Delta i$};
-  \node[block, right of=input] (delta) {$\lift{\delta_0}$};
+  \node[block, right of=input] (delta) {$\lift{\delta}$};
   \node[block, circle, right of=delta, inner sep=0cm] (p) {$+$};
-  \node[block, right of=p] (Q) {$\inc{(\lift{\lift{Q}})}$};
+  \node[block, right of=p, node distance=1.3cm] (Q) {$\inc{(\lift{\lift{Q}})}$};
   \node[block, right of=Q, node distance=1.5cm] (D) {$\lift{\D}$};
   \node[block, right of=D, node distance=1.1cm] (S) {$\lift{\int}$};
   \node[right of=S, node distance=1.2cm] (output)  {$\Delta x$};
-  \node[block, below of=p, node distance=.7cm] (z) {$\lift{\zm}$};
-  \draw[->] (input) -- (delta);
-  \draw[->] (delta) -- (p);
-  \draw[->] (p) -- (Q);
-  \draw[->] (Q) -- node (mid) {} (D);
-  \draw[->] (D) -- (S);
-  \draw[->] (mid.center) |- (z);
-  \draw[->] (S) -- (output);
-  \draw[->] (z) -- (p);
+  \node[block, below of=p, node distance=.9cm] (z) {$\lift{\zm}$};
+  \draw[->>] (input) -- (delta);
+  \draw[->>>] (delta) -- (p);
+  \draw[->>>] (p) -- (Q);
+  \draw[->>>] (Q) -- node (mid) {} (D);
+  \draw[->>>] (D) -- (S);
+  \draw[->>>] (mid.center) |- (z);
+  \draw[->>] (S) -- (output);
+  \draw[->>>] (z) -- (p);
 \end{tikzpicture}
 \end{center}
 

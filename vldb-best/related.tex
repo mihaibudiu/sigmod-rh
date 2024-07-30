@@ -12,6 +12,22 @@ DBToaster introduced recursive recursive
 IVM~\cite{ahmad-vldb09,koch-pods10}, where the incrementalization
 process is repeated for the delta query.
 
+\dbsp is an ``eager'' or ``top-down'' execution model: it constantly
+maintains the entire contents of any number of views, even if no one
+really wants to inspect the views.  In contrast, ``lazy'' or
+``bottom-up'' models only build part of the views when the views are
+inspected.  Such models have the potential to be more efficient.
+Eager models can be converted into lazy ones if something is known
+about the class of operations that will be executed against the views.
+
+\cite{bengoli-sigmod19} proposes using SQL to express both standard
+database queries and streaming queries and provides an implementation
+for RedShift.  While this is a very nice goal, the \dbsp theory allows
+us to formally argue that there are many classes of queries that
+cannot be expressed in SQL.  So the question becomes perhaps ``what
+are the minimal changes that should be made to SQL to enable enabling
+stream processing?''
+
 Many custom algorithms were published for various classes of queries:
 e.g.~\cite{koch-pods16} handles positive nested relational calculus.
 DYN~\cite{idris-sigmod17,idris-vldb18}~\cite{idris-sigmod19} focus on acyclic
@@ -68,10 +84,10 @@ linear ML models, or conjunctive queries.
 \dbsp does not do anything special for triangle queries~\cite{kara-tds20}.  Are there
 better algorithms for this case?
 
-In \secref{sec:extensions} we have briefly mentioned that \dbsp can easily
-model window and stream database queries~\cite{arasu-tr02,aurora}; it is an
-interesting question whether there are CQL queries that cannot be expressed in \dbsp
-(we conjecture that there aren't any).
+\dbsp can also model window and stream database
+queries~\cite{arasu-tr02,aurora}; it is an interesting question
+whether there are CQL queries that cannot be expressed in \dbsp (we
+conjecture that there aren't any).
 
 \cite{bonifati-iclp2018} implemented a verified IVM algorithm for a particular
 class of graph queries called Regular Datalog, with an implementation machine-checked in the
@@ -81,6 +97,10 @@ in the sense that it works on any query by incrementalizing it recursively). Fur
 for all queries a deletion in the input change stream requires running the non-incremental
 query to recover.  We formally verify the theorems in our paper, which
 are much broader in scope, but not our implementations.
+
+\cite{svingos-amd23} uses foreign key information to optimize query
+plan generation.  These techniques are only sound in the absence of
+updates, so we use them for streaming-only queries.
 
 \dbsp is also related to Differential Dataflow (DD)~\cite{mcsherry-cidr13,murray-sosp13}
 and its theoretical foundations~\cite{abadi-fossacs15} (and recently~\cite{mcsherry-vldb20,chothia-vldb16}).
@@ -101,3 +121,7 @@ express a new operator as a \dbsp circuit, we can (1) define its incremental ver
 (2) apply the incrementalization algorithm to obtain an efficient
 incremental implementation, and (3) be confident that it composes with any
 other operators.
+
+\cite{akidau-amd23,akidau-debs24} describe the Snowflake incremental
+and streaming capabilities.
+

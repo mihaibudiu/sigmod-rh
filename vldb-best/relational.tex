@@ -4,8 +4,8 @@ Results in \secref{sec:streams} and~\secref{sec:incremental}
 apply to streams of arbitrary group values.  In this
 section we apply these results to
 IVM for relational databases.  As explained in the introduction, our goal is to
-efficiently compute the incremental version of any relational query $Q$
-that defines a database view.
+efficiently compute the incremental version of a relational query $Q$
+defining a view.
 
 However, we face a technical problem: the $\I$ and $\D$ operators were
 defined on abelian groups, and relational databases in general are
@@ -14,23 +14,22 @@ there is a well-known tool in the database literature
 which converts set operations into group operations by using \zrs
 (also called z-relations~\cite{green-tcs11}) to represent sets.
 
-We start by defining the \zrs group, and then we review how
-relational queries are converted into \dbsp circuits  over \zrs.
-This translation is efficiently incrementalizable because
-many basic relational queries can be expressed using LTI \zr operators~\refsec{sec:relational-operators}.
+We start by defining the \zrs group, and then we review how relational
+queries are converted into \dbsp circuits over \zrs.  We show
+in~\refsec{sec:relational-operators} that this translation is
+efficiently incrementalizable because many primitive relational
+operations use LTI \zr operators.
 
 \subsection{\zrs as an abelian group}
 
-\zrs generalize database tables: think of a \zr as a table where each
-row has an associated weight, possibly negative.
-
-Given a set $A$, we define \defined{\zrs} over $A$ as functions with
-\emph{finite support} from $A$ to $\Z$.  These are functions $f: A
-\rightarrow \Z$ where $f(x) \not= 0$ for at most a finite number of
-values $x \in A$.  We also write $\Z[A]$ for the type of \zrs with
-elements from $A$.  Values in $\Z[A]$ can be thought of as key-value
-maps with keys in $A$ and values in $\Z$, justifying the array
-indexing notation.  If $m \in \Z[A]$ we write $m[a]$ instead of
+A \zr is a database table where each row has an associated weight,
+possibly negative.  Given a set $A$, we define \defined{\zrs} over $A$
+as functions with \emph{finite support} from $A$ to $\Z$.  These are
+functions $f: A \rightarrow \Z$ where $f(x) \not= 0$ for at most a
+finite number of values $x \in A$.  We also write $\Z[A]$ for the type
+of \zrs with elements from $A$.  Values in $\Z[A]$ can be thought of
+as key-value maps with keys in $A$ and values in $\Z$, justifying the
+array indexing notation.  If $m \in \Z[A]$ we write $m[a]$ instead of
 $m(a)$, again using an indexing notation.
 
 A particular \zr $m \in \Z[A]$ can be denoted by enumerating its
@@ -38,11 +37,10 @@ elements that have non-zero weights and their corresponding weights:
 $m = \{ x_1 \mapsto w_1, \dots, x_n \mapsto w_n \}$.
 We call $w_i \in \Z$ the \defined{weight}
 of $x_i \in A$.  Weights can be negative.
-We write that $x \in m$ iff $m[x] \not= 0$.
-We also write $w \cdot x$ for $\{ x \mapsto w \}$.
+We say that $x \in m$ iff $m[x] \not= 0$.
 
 The following table shows an example \zr with three rows, let's call
-it $R$.  The first row has value \texttt{joe} and weight 1.  We do not
+it $R$.  The first row has value \texttt{joe} and weight 1.  We never
 show rows with weight 0.
 %
 \begin{center}
@@ -56,7 +54,7 @@ show rows with weight 0.
 
 $R$ has three elements in its domain, \texttt{joe} with weight 1 (so
 $R[\texttt{joe}] = 1$), \texttt{mary} with weight 2, and \texttt{anne}
-with weight $-1$.  We say \texttt{joe} $\in R$, \texttt{mary} $\in R$,
+with weight $-1$.  So \texttt{joe} $\in R$, \texttt{mary} $\in R$,
 and \texttt{anne} $\in R$.
 
 Since $\Z$ is an abelian ring, $\Z[A]$ is also an abelian ring, and
@@ -73,6 +71,10 @@ can be represented as a \zr by associating a weight of 1 with each element.
 Bags are \zrs where all weights are positive.  Crucially, \zrs
 can also represent arbitrary \emph{changes} to sets and bags.
 Negative weights in a change represent elements that are being ``removed''.
+
+The remaining definitions in this section will be used to argue that
+circuits based on \zrs can exactly implement the relational algebra
+operators.
 
 \begin{definition}
 We say that a \zr represents a \defined{set} if the weight of every
@@ -104,9 +106,8 @@ $$\ispositive(m) \defn \left\{
 \end{array}
 \right.$$
 \end{definition}
-We have $\forall m \in \Z[A] . \isset(m) \Rightarrow \ispositive(m)$.
-For our example, $\ispositive(R) = \mbox{false}$,
-since $R[\texttt{anne}] = -1$.
+If $\isset(m)$, then $\ispositive(m)$.  For our example \zr, \\
+$\ispositive(R) = \mbox{false}$.
 
 We write $m \geq 0$ when $m$ is positive.  For positive $m, n \in
 \Z[A]$ we write $m \geq n$ for iff $m - n \geq 0$.  $\geq$ is a
@@ -386,8 +387,8 @@ just the positive fragment).
 
 Prior work (e.g., Proposition 6.13 in~\cite{green-tcs11}) has shown
 how some invocations of $\distinct$ can be eliminated from query plans
-without changing the query semantics; we will see that incremental
-versions of $\distinct$ operators incur significant space costs.
+without changing the query semantics; we will see that the incremental
+version of $\distinct$ incurs significant space costs.
 
 \begin{proposition}\label{prop-distinct-delay}
 Let $Q$ be one of the following \zrs operators: filtering $\sigma$,
@@ -458,8 +459,9 @@ $\cong$ \\
 \end{tikzpicture}
 \end{tabular}
 
-These properties allow us to ``consolidate'' distinct operators by performing
-one $\distinct$ at the end of a chain of computations.
+These properties allow us to ``consolidate'' distinct operators by
+performing one $\distinct$ at the end of a chain of computations.
+This optimization is also used in traditional database optimizers.
 
 \subsection{Incremental view maintenance}
 
@@ -471,20 +473,23 @@ mechanical steps:
   \label{algorithm-inc}\quad
 \begin{enumerate}[nosep, leftmargin=\parindent]
     \item Translate $Q$ into a circuit using the rules in Table~\ref{tab:relational}.
-    \item Apply $\distinct$ elimination rules (\ref{prop-distinct-delay}, \ref{prop-distinct-once}) until convergence\footnote{The
-    order in which the rules are applied does not matter, since the algorithm is
-    confluent: it always produces the same final result.}.
+    \item Apply $\distinct$ elimination rules
+      (\ref{prop-distinct-delay},
+      \ref{prop-distinct-once})\footnote{If the rules are applied
+      until convergence, the order in which the rules
+      are applied does not matter, since the algorithm is confluent:
+      it always produces the same final result.}.
     \item Lift the whole circuit, by applying Proposition~\ref{prop:distributivity},
     converting it to a circuit operating on streams.
     \item Incrementalize the whole circuit ``surrounding'' it with $\I$ and $\D$.
-    \item Apply the chain rule
-    from Proposition~\ref{prop-inc-properties} recursively on the query structure
-    to obtain an incremental implementation.
+    \item Apply the chain rule from
+      Proposition~\ref{prop-inc-properties} on the circuit to optimize
+      the implementation.
 \end{enumerate}
 \end{algorithm}
 
 This algorithm is deterministic and its running time
-is proportional to the number of operators in the query.
+is given by the number of operators in the query.
 Step (2) generates an equivalent circuit, with possibly fewer
 $\distinct$ operators.  Step (3) yields a circuit that consumes a
 \emph{stream} of complete database snapshots and outputs a stream of
@@ -503,11 +508,13 @@ next proposition shows that the incremental version of $\distinct$ is
 also efficient, and it can be computed by doing work proportional to
 the size of the input change:
 
-\begin{proposition}\label{prop-inc_distinct}
-The following circuit implements \\ $\inc{(\lift{\distinct})}$: \\
+\begin{proposition}
+[Incremental $\distinct$]
+\label{prop-inc_distinct} \\
+
 \noindent
-\begin{tabular}{m{3.9cm}m{0cm}m{5cm}}
-\begin{tikzpicture}[auto,node distance=1.7cm,>=latex]
+\begin{tabular}{m{3.4cm}m{0cm}m{5cm}}
+\begin{tikzpicture}[auto,node distance=1.4cm,>=latex]
     \node[] (input) {$\Delta d$};
     \node[block, right of=input] (d) {$\inc{(\lift{\distinct})}$};
     \node[right of=d] (output) {$\Delta o$};
@@ -541,26 +548,34 @@ $$
 \end{proposition}
 
 This incremental implementation of $\distinct$ has been known for a
-long; for example, it is called the $\exists$ operator
-in~\cite{nikolic-icmd18}.  The function $H$ has two inputs: the left
-input is the change $\Delta d$, while the top input is the full set,
-obtained as an integral of the changes.  $H$ detects whether the
-weight of a row in the full set is changing sign (from negative to
-positive on a row insertion, and from positive to negative on a
-deletion) when the row appears in a new change.  Here is the intuition
-why $\distinct$ is efficiently incrementalizable: only tuples that
-appear in the input change $\Delta d$ can appear in the output change
-$\Delta o$, so the work performed is $O(|\Delta d)|$.  The
-implementation needs to maintain the \emph{entire input set} (similar
-to joins) in order to discover whether an item is new or not.  That is
-the purpose of the $\I$ operator.
+long time; for example, it is called the $\exists$ operator
+in~\cite{nikolic-icmd18}.  This implementation has several interesting
+features:
 
-The algorithm reduces the problem of incremental execution of a query
-plan to the incremental execution of sub\-plans/primitive operators.
-However, this algorithm works even if we use a primitive $P$ for which
-no efficient incremental version is known: we can always use the
-inefficient ``brute-force'' implementation given by $\inc{P} = \D
-\circ \lift{P} \circ \I$.
+\begin{itemize}
+  \item The implementation uses an integral operator $\I$ to
+    reconstitute the \emph{entire input set} of the distinct operator
+    from the set of changes.  This is the ``top'' input of the $H$
+    function.  The implementation needs to maintain the \emph{entire
+    input set} (similar to joins) in order to discover whether an item
+    is new or not.
+  \item Despite this fact, the result of $\distinct$ for an input
+    change can still be computed with work proportional to the size of
+    the change.  $H$ detects whether the weight of a row in the full
+    set is changing sign (from negative to positive on a row
+    insertion, and from positive to negative on a deletion) when the
+    row appears in a new change.  Only tuples that appear in
+    the input change $\Delta d$ can appear in the output change
+    $\Delta o$, so the work performed is $O(|\Delta d)|$.
+\end{itemize}
+
+The algorithm~\ref{algorithm-inc} reduces the problem of incremental
+execution of a query plan to the incremental execution of
+sub\-plans/primitive operators.  However, this algorithm can be
+applied even if we use a primitive $P$ for which no efficient
+incremental version is known: we can always use the inefficient
+``brute-force'' implementation given by $\inc{P} = \D \circ \lift{P}
+\circ \I$.
 
 \input{example1}
 
@@ -570,14 +585,20 @@ Incremental circuits are efficient.  We evaluate the cost of a circuit
 while processing the $t$-th input change.  Even if $Q$ is a pure
 function, $\inc{Q}$ is actually a streaming system, with internal
 state.  This state is stored entirely in the delay operators $\zm$,
-some of which appear in $\I$ and $\D$ operators.  The result produced
-by $\inc{Q}$ on the $t$-th input depends in general not only on the
-new $t$-th input, but also on all prior inputs it has received.
+some of which appear in $\I$ and $\D$ operators\footnote{For 
+standard relational queries, after applying step 5 of the algorithm
+there will be no $\D$ operators left in the circuit.}.  The result
+produced by $\inc{Q}$ on the $t$-th input depends in general not only
+on the new $t$-th input, but also on all prior inputs it has received.
 
 We argue that each operator in the incremental version of a circuit is
 efficient in terms of work and space.  We make the standard IVM
 assumption that the input changes \emph{of each operator} are small:
-$|\Delta DB[t]| \ll |DB[t]| = |(\I(\Delta DB))[t]|$.
+$|\Delta DB[t]| \ll |DB[t]| = |(\I(\Delta DB))[t]|$\footnote{One can
+write SQL programs where each output row can change even for very
+small input changes, so this assumption does not always hold in
+practice, but even in this case, the asymptotic work performed by the
+incremental query is not worse than the work of the original query.}.
 
 An unoptimized incremental operator $\inc{Q} = \D \circ Q \circ \I$
 evaluates query $Q$ on the whole database $DB$, the integral of the input stream:
@@ -604,7 +625,8 @@ data persistently.  The space complexity of operators such as $\inc{(\lift{\dist
 $\inc{(\lift{\bowtie})}$, $\I$, and $\D$ is $O(|DB[t]|)$.  They need
 to store their input or output relations in full.
 
-\subsubsection{IVM query plans and optimality}
+\begin{comment}
+\subsubsection{Discussion}
 
 Let us look again at what we achieved using
 Algorithm~\ref{algorithm-inc}.  A relational algebra query can be
@@ -618,7 +640,7 @@ input plan.
 Standard query planners use cost-based heuristics and data statistics
 to optimize plans.  A generic IVM planner does not have this luxury,
 since the plan must be generated \emph{before} any data has been fed
-to the database.  Nevertheless, all standard query optimization
+to the data\-base.  Nevertheless, all standard query optimization
 techniques, perhaps based on historical statistics, can be used to
 generate the query plan that is supplied to
 Algorithm~\ref{algorithm-inc}.  The question of optimality in the
@@ -626,11 +648,12 @@ context of IVM plan is a much more difficult topic than optimization
 of ad-hoc queries, since the chosen IVM plan will execute for
 \emph{all future database updates}.
 
-Moreover, since incremental computations maintain internal state, it
-follows that incremental plans cannot be simply changed in-flight,
-like we can change ad-hoc queries based on current data statistics:
-deploying a new plan requires in general constructing its internal
-state, which is produced by entire history of prior updates.
-Fortunately, there is a trivial, but somewhat expensive, recipe for
-installing a new incremental plan: feed the entire current state of
-the database, as one big change.
+Since incremental computations maintain internal state, it follows
+that incremental plans cannot be simply changed in-flight, like we can
+change ad-hoc queries based on current data statistics: deploying a
+new plan requires in general constructing its internal state, which is
+produced from the prior updates.  Fortunately, there is a trivial, but
+somewhat expensive, recipe for installing a new incremental plan: feed
+the entire current state of the database tables as inputs, in one big
+change.
+\end{comment}

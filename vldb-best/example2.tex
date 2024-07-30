@@ -1,10 +1,9 @@
 \subsection{Example recursive query}\label{sec:recursive-example}
 
-Let us apply the algorithm~\ref{algorithm-rec}, that converts a
-recursive query into a DBSP circuit, to a concrete Datalog program,
-which computes the transitive closure of a directed graph:
+Let us apply the algorithm~\ref{algorithm-rec} to a concrete Datalog
+program, which computes the transitive closure of a directed graph:
 
-\begin{lstlisting}[language=ddlog,basicstyle=\small]
+\begin{lstlisting}[language=ddlog,basicstyle=\small\ttfamily]
 // Edge relation with head and tail
 input relation E(h: Node, t: Node)
 // Reach relation with source s and sink t
@@ -17,15 +16,15 @@ Step 1: we ignore the fact that R is both an input and an output and we implemen
 the \dbsp circuit corresponding to the body of the query.  This query could be expressed
 in SQL as:
 
-\begin{lstlisting}[language=SQL,basicstyle=\small]
-( SELECT * FROM E)
+\begin{lstlisting}[language=SQL,basicstyle=\small\ttfamily]
+( SELECT * FROM E )
 UNION
 ( SELECT E.h , R.t
-  FROM E JOIN R
-  ON E.t = R.s )
+  FROM E JOIN R ON E.t = R.s )
 \end{lstlisting}
 
-This query generates a \dbsp circuit with inputs \code{E} and \code{R}:
+\noindent Step 1:
+This generates a circuit with inputs \code{E} and \code{R}:
 
 \begin{tikzpicture}[>=latex, node distance=1.2cm]
   \node[] (E) {\code{E}};
@@ -44,14 +43,14 @@ This query generates a \dbsp circuit with inputs \code{E} and \code{R}:
   \draw[->] (d) -- (R);
 \end{tikzpicture}
 
-Step 2: Lift the circuit by lifting each operator pointwise:
+\noindent Step 2: Lift the circuit by lifting each operator:
 
 \begin{tikzpicture}[>=latex, node distance=1.4cm]
   \node[] (E) {\code{E}};
   \node[above of=E, node distance=.6cm] (R1) {\code{R}};
   \node[block, right of=R1] (j) {$\lift{\bowtie_{t=s}}$};
   \node[block, right of=j] (pj) {$\lift{\pi_{h, t}}$};
-  \node[block, circle, below of=pj, node distance=1cm, inner sep=0cm] (plus) {$+$};
+  \node[block, circle, below of=pj, node distance=.8cm, inner sep=0cm] (plus) {$+$};
   \node[block, right of=plus] (d) {$\lift{\distinct}$};
   \node[right of=d] (R) {\code{R}};
   \draw[->>] (R1) -- (j);
@@ -63,7 +62,7 @@ Step 2: Lift the circuit by lifting each operator pointwise:
   \draw[->>] (d) -- (R);
 \end{tikzpicture}
 
-Step 3: Connect the feedback loop implied by relation \code{R}:
+\noindent Step 3: Connect the feedback loop:
 
 \begin{tikzpicture}[>=latex]
   \node[] (E) {\code{E}};
@@ -86,7 +85,7 @@ Step 3: Connect the feedback loop implied by relation \code{R}:
   \draw[->>] (z) -- (j);
 \end{tikzpicture}
 
-Step 4: ``bracket'' the circuit, first with $\I$-$\D$, then with $\delta$-$\int$:
+\noindent Step 4: ``bracket'' the circuit with $\I$-$\D$, and with $\delta$-$\int$:
 
 \noindent
 \begin{tikzpicture}[>=latex, node distance=1.3cm]
@@ -96,9 +95,9 @@ Step 4: ``bracket'' the circuit, first with $\I$-$\D$, then with $\delta$-$\int$
   \node[block, right of=ID, node distance=.8cm] (E) {$\I$};
 
   % relational query
-  \node[block, above of=E, node distance=1cm] (j) {$\lift{\bowtie_{t=s}}$};
+  \node[block, above of=E, node distance=.8cm] (j) {$\lift{\bowtie_{t=s}}$};
   \node[block, right of=j, node distance=1.4cm] (pj) {$\lift{\pi_{h, t}}$};
-  \node[block, circle, below of=pj, node distance=1cm, inner sep=0cm] (plus) {$+$};
+  \node[block, circle, below of=pj, node distance=.8cm, inner sep=0cm] (plus) {$+$};
   \node[block, right of=plus] (d) {$\lift{\distinct}$};
   \draw[->>] (E) -- (j);
   \draw[->>] (j) -- (pj);
@@ -122,11 +121,10 @@ Step 4: ``bracket'' the circuit, first with $\I$-$\D$, then with $\delta$-$\int$
 
 The above circuit is a complete implementation of the non-streaming
 recursive query; given an input relation \code{E} it will produce
-its transitive closure \code{R} at the output.
+its transitive closure \code{R} as output.
 
 Now we use semina\"ive evaluation to rewrite the circuit (to save
-space in the figures we will omit the indices from $\pi$ and $\sigma$
-in the subsequent figures):
+space we omit the indices from $\pi$ and $\sigma$):
 
 \noindent
 \begin{tikzpicture}[>=latex, node distance=1.4cm]
@@ -135,9 +133,9 @@ in the subsequent figures):
   \node[block, right of=Einput, node distance=.8cm] (E) {$\delta$};
 
   % relational query
-  \node[block, above of=E, node distance=1cm] (j) {$\inc{(\lift{\bowtie})}$};
+  \node[block, above of=E, node distance=.8cm] (j) {$\inc{(\lift{\bowtie})}$};
   \node[block, right of=j, node distance=1.5cm] (pj) {$\inc{(\lift{\pi})}$};
-  \node[block, circle, below of=pj, node distance=1cm, inner sep=0cm] (plus) {$+$};
+  \node[block, circle, below of=pj, node distance=.8cm, inner sep=0cm] (plus) {$+$};
   \node[block, right of=plus] (d) {$\inc{(\lift{\distinct})}$};
   \draw[->>] (E) -- (j);
   \draw[->>] (j) -- (pj);
@@ -151,7 +149,7 @@ in the subsequent figures):
   \draw[->] (Einput) -- (E);
   \draw[->>] (d) -- node (o) {} (S);
   \draw[->] (S) -- (output);
-  \node[block, above of=j, node distance=1cm] (z) {$\zm$};
+  \node[block, above of=j, node distance=.9cm] (z) {$\zm$};
   \draw[->>] (o.center) |- (z);
   \draw[->>] (z) -- (j);
 \end{tikzpicture}
@@ -165,9 +163,9 @@ Using the linearity of $\lift\pi$, this can be rewritten as:
   \node[block, right of=Einput, node distance=.8cm] (E) {$\delta$};
 
   % relational query
-  \node[block, above of=E, node distance=1cm] (j) {$\inc{(\lift{\bowtie})}$};
+  \node[block, above of=E, node distance=.8cm] (j) {$\inc{(\lift{\bowtie})}$};
   \node[block, right of=j] (pj) {$\lift{\pi}$};
-  \node[block, circle, below of=pj, node distance=1cm, inner sep=0cm] (plus) {$+$};
+  \node[block, circle, below of=pj, node distance=.8cm, inner sep=0cm] (plus) {$+$};
   \node[block, right of=plus] (d) {$\inc{(\lift{\distinct})}$};
   \draw[->>] (E) -- (j);
   \draw[->>] (j) -- (pj);
@@ -181,7 +179,7 @@ Using the linearity of $\lift\pi$, this can be rewritten as:
   \draw[->] (Einput) -- (E);
   \draw[->>] (d) -- node (o) {} (S);
   \draw[->] (S) -- (output);
-  \node[block, above of=j, node distance=1cm] (z) {$\zm$};
+  \node[block, above of=j, node distance=.8cm] (z) {$\zm$};
   \draw[->>] (o.center) |- (z);
   \draw[->>] (z) -- (j);
 \end{tikzpicture}

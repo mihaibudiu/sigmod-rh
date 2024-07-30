@@ -19,7 +19,8 @@ Nested streams, or streams of streams, $\stream{\stream{A}} = \N \rightarrow (\N
 \rightarrow A)$, are well defined, since streams form an abelian group.
 Equivalently, a nested stream is a value in $\N \times \N \to A$, i.e., a matrix
 with an infinite number of rows, indexed by two-dimensional time $(t_0, t_1)$.
-where each row is a stream.
+where each row is a stream.  In circuits we show nested streams with
+arrows with \emph{triple} heads.
 
 The same way we lift functions to produce stream operators, we can
 lift stream operators to produce operators on streams of streams.
@@ -32,7 +33,7 @@ A \rightarrow B$ can be lifted twice to produce an operator between streams of
 streams: $\lift{\lift{f}}: \stream{\stream{A}} \rightarrow \stream{\stream{B}}$.
 
 \begin{center}
-\begin{tikzpicture}[>=latex]
+\begin{tikzpicture}[>=latex, node distance=1.2cm]
   \node[] (input) {$i$};
   \node[block, right of=input] (I) {$\lift{\lift{{f}}}$};
   \node[right of=I] (output)  {$o$};
@@ -42,7 +43,7 @@ streams: $\lift{\lift{f}}: \stream{\stream{A}} \rightarrow \stream{\stream{B}}$.
 \end{center}
 
 To define recursive nested queries, we need a slightly different
-definition of strictness. If we think of a nested stream $F:
+definition of strictness.  If we think of a nested stream $F:
 \stream{\stream{A}} \to \stream{\stream{B}}$ as a function of
 timestamps $(i, j)$, then the prior definition of strictness
 corresponds to strictness in the first dimension $i$, which we extend
@@ -164,7 +165,7 @@ $\lift{\delta_0}$ and $\lift{\int}$:
   \draw[->>>] (Idelta) -- (f);
 \end{tikzpicture}
 
-\noindent This is the incremental version of a recursive query.
+\noindent This is the incremental version of a recursive query!
 
 \input{example3}
 
@@ -172,12 +173,13 @@ $\lift{\delta_0}$ and $\lift{\int}$:
 
 \paragraph{Time complexity}
 
-The time complexity of an incremental recursive query can be estimated as a product of
-the number of fixed point iterations and the complexity of each iteration. The
-incrementalized circuit (\ref{eq:increcursive}) never performs more
-iterations than the non-incremental circuit (\ref{eq:seminaive}):
-once the non-incremental circuit reaches the fixed point, its output is constant,
-and the derivative of corresponding value in the incrementalized circuit becomes 0.
+The time complexity of an incremental recursive query can be estimated
+as a product of the number of fixed point iterations and the
+complexity of each iteration. The incrementalized circuit never
+performs more iterations than the non-incremental circuit: once the
+non-incremental circuit reaches the fixed point, its output is
+constant, and the derivative of corresponding value in the
+incrementalized circuit is 0.
 
 Moreover, the work performed by each operator in the incremental
 circuit is asymptotically less than the non-incremental one.  A

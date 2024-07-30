@@ -1,20 +1,22 @@
 \section{Introduction}\label{sec:introduction}
 
-This paper is an extended version of~\cite{budiu-vldb23}, adopting the
-notations from~\cite{budiu-sigmod24}.  The major additions are a
-couple of examples:
-(\refsec{sec:recursive-example},\refsec{sec:recursive-incremental-example}),
-an expanded implementation section~\refsec{sec:implementation}, and an
-experimental evaluation~\refsec{sec:experiments}.  This paper omits
-most of the proofs to the theorems; the proofs can be found in an
-extended technical report~\cite{tr}, and have also been formalized and
-verified in the Lean proof assistant~\cite{dbsp-theory}.
+This paper is an extended version of a VLDB 2023
+publication~\cite{budiu-vldb23}, adopting the notations
+from~\cite{budiu-sigmod24}.  The major changes are: adding new
+incremental program examples (\refsec{sec:recursive-example},
+\refsec{sec:recursive-incremental-example}), an expanded
+implementation section~\refsec{sec:implementation}, and an
+experimental evaluation~\refsec{sec:experiments}.  This paper includes
+only a few short proofs of some theorems; all the proofs can be found
+in an extended technical report~\cite{tr}; the proofs have also been
+formalized and verified in the Lean proof
+assistant~\cite{dbsp-theory}.
 
 \subsection{Problem and Solution Overview}\label{sec:intro-incremental}
 
 Incremental view maintenance (IVM) is an important and well-studied
 problem in databases~\cite{gupta-idb95}.  The IVM problem can be
-stated as follows: we are given a large database $DB$ and a view $V$,
+stated as follows: we are given a database $DB$ and a view $V$,
 described by a query $Q$.  The goal of IVM is to keep the contents of
 $V$ up-to-date in response to changes of the database.
 
@@ -23,13 +25,12 @@ view in SQL:
 
 \begin{lstlisting}[language=SQL]
 CREATE VIEW V AS
-SELECT * FROM T
-WHERE Age >=  10
+SELECT * FROM T WHERE Age >= 10
 \end{lstlisting}
 
-In this example the query $Q$ defining the view $V$ is \texttt{SELECT
-  * FROM T WHERE Age >= 10}.  The view \code{V} always contains all
-the rows of table \code{T} whose value for the column \code{Age} is
+In this example the query $Q$ defining the view $V$ is the
+\code{SELECT} statement.  The view \code{V} always contains all the
+rows of table \code{T} whose value for the column \code{Age} is
 greater than or equal to 10.
 
 In general a query is a function applied to the contents of a
@@ -51,9 +52,9 @@ change of the view from the change of the database:
 
 \noindent \includegraphics[trim={0 5.2in 4.1in 0},clip,scale=.35]{incview.pdf}
 
-We call $\inc{Q}$ the \emph{incremental} version of $Q$.  If one
-thinks of $\inc{Q}$ as a function of $\Delta DB$, one can show that
-the ideal solution as described above is impossible to reach.
+We call $\inc{Q}$ the \emph{incremental} version of $Q$.  If we want
+$\inc{Q}$ to be a function of $\Delta DB$, one can show that the ideal
+solution as described above is impossible to reach.
 
 In this paper we propose a new way to define $\inc{Q}$, as a form of
 \emph{computation on streams}.  Our model is inspired by Digital
@@ -66,10 +67,11 @@ than $Q$ by a factor of $O(|DB| / |\Delta DB|)$.  In practice this may
 be an improvement of several orders of magnitude.
 
 Instead of treating the database as a large changing object, we model
-it as a \emph{sequence} or \emph{stream} of database snapshots.
-Similarly, consecutive view snapshots form a stream.  \dbsp is a
-simple programming language computing on streams; inputs and outputs
-are streams of arbitrary values.
+it as a \emph{sequence} or \emph{stream} of database snapshots, shown
+as $DB[1], DB[2], \ldots$ in the previous diagrams.  Similarly,
+consecutive view snapshots form a stream.  \dbsp is a simple
+programming language computing on streams; inputs and outputs are
+streams of arbitrary values.
 
 The \dbsp language has only 4 operators.  However, it can express a
 rich set of computations on streams, including repeated computations
@@ -140,7 +142,7 @@ labels, showing the circuit above as:
 
 %
 Functions, and their circuits, can be composed, as in the following
-example for the function $o = g(s) + (f(s) \times s)$:
+example showing $o = g(s) + (f(s) \times s)$:
 %
 \begin{center}
 \begin{tikzpicture}[auto,>=latex]
@@ -169,8 +171,8 @@ values from $A$.  $\stream{A}$ denotes the set of all streams with
 values from $A$.  We write $s[t]$ for the $t$-th element of the stream
 $s$.  Think of $t$ as the ``time'' and of $s[t]\in A$ as the value of
 the stream $s$ ``at time'' $t$.  We show streams as a sequence of
-boxes, with time from \emph{right to left}: e.g., the stream $s[t] =
-t$ is:
+boxes, with time from \emph{right to left}: e.g., the stream $id[t]
+\defn t$ is:
 %
 \begin{center}
 \begin{tabular}{cc}
@@ -180,12 +182,11 @@ t$ is:
 \end{center}
 
 A \defined{stream operator} is a function that computes on streams and
-produces streams.  In general we use ``operator'' for streams, and
-``function'' for computations on ``scalar'' values.
-
-We use arrows with a double head to depict streams.  The following
-diagram shows a stream operator $T$ consuming two input streams $s_0$
-and $s_1$, producing one output stream $s$:
+produces streams.  We use ``operator'' for streams, and ``function''
+for computations on ``scalar'' values.  In circuits we use arrows with
+a double head to depict streams.  The following diagram shows a stream
+operator $T$ consuming two input streams $s_0$ and $s_1$, producing
+one output stream $s$:
 %
 \begin{center}
 \begin{tikzpicture}[auto,>=latex,inner sep=0mm]
@@ -217,19 +218,16 @@ function $f$ to each input value independently:
 \end{center}
 %\end{definition}
 
-To simplify the notation, we write $a + b$ for streams $a, b$ instead
-of $a (\lift{+}) b$; we also write $-a$ instead of $(\lift{-})a$.
-
 \subsection{Databases as streams}
 
 We generally think of streams as sequences of ``small'' values, such
 as insertions or deletions in a database.  However, we also treat the
 whole database as a \emph{stream of database snapshots}.  We model a
 database as a stream $DB$.  Time is not wall-clock time, but counts
-the transactions applied to the database.  Since transactions are
-linearizable, they have a total order.  $DB[t]$ is the snapshot of the
-database contents after $t$ transactions have been applied.  This
-notation is apparent in the diagrams in \refsec{sec:intro-incremental}.
+the transactions executed.  Since transactions are linearizable, they
+have a total order.  $DB[t]$ is the snapshot of the database contents
+after $t$ transactions have been applied.  We use this notation in the
+diagrams in \refsec{sec:intro-incremental}.
 
 Database transactions also form a stream $\Delta DB$, this time a
 stream of \emph{changes}, or \emph{deltas}, that are applied to the
@@ -262,17 +260,17 @@ DB$ and $DB$:
 \end{tikzpicture}
 \end{center}
 
-A view in this model is also a stream.  Suppose query $Q$ defining a
-view $V$.  For each snapshot of the database stream we have a snapshot
-of the view: $V[t] = Q(DB[t])$.  A view is thus just a lifted query:
-$V = (\lift{Q})(DB)$.
+In this model a database view is also a stream.  Suppose query $Q$
+defining a view $V$.  For each snapshot of the database stream we have
+a snapshot of the view: $V[t] = Q(DB[t])$.  A view is thus just a
+lifted query: $V = (\lift{Q})(DB)$.
 
-Armed with these basic definitions, we can precisely define IVM.  What
-does it mean to maintain a view incrementally?  A maintenance
-algorithm needs to compute the \emph{changes} to the view given the
-changes to the database. Given a query $Q$, a key contribution of this
-paper is the definition of its \emph{incremental version} $\inc{Q}$,
-using stream integration and differentiation, depicted graphically as:
+Armed with these basic definitions, we can precisely define IVM.  A
+maintenance algorithm computes the \emph{changes} to the view given
+the changes to the database. Given a query $Q$, a key contribution of
+this paper is the definition of its \emph{incremental version}
+$\inc{Q}$, using stream integration and differentiation, depicted
+graphically as:
 
 %
 \begin{center}
@@ -308,9 +306,10 @@ Armed with this general theory of incremental computation, in
 \secref{sec:relational} we show how to model relational queries in
 \dbsp.  This immediately gives us a general algorithm to compute the
 incremental version of any relational query.  These results were
-previously known, but they are cleanly modeled by \dbsp.
-\secref{sec:recursion} shows how programs containing recursion can be
-implemented and incrementalized in \dbsp.  For example, given an
+previously known, but they are cleanly modeled by \dbsp.  We show how
+programs containing recursion can be
+implemented~\secref{sec:recursion} and
+incrementalized~\secref{sec:nested} in \dbsp.  For example, given an
 implementation of transitive closure in the natural recursive way, our
 algorithm produces a program that efficiently maintains the transitive
 closure of a graph as nodes and edges are added and deleted.
@@ -323,17 +322,18 @@ This work makes the following contributions:
     streaming computation. \dbsp gives an elegant formal foundation
     unifying the manipulation of streaming and incremental
     computations.
-  \item An algorithm for incrementalizing any streaming computation
-    expressed in \dbsp that handles arbitrary insertions and deletions
-    from any of the data sources.
-  \item An illustration of how \dbsp can model various classes of
-    practical queries, such as relational algebra, nested relations,
+  \item We describe algorithm~\ref{algorithm-inc} for incrementalizing
+    any streaming computation expressed in \dbsp that handles
+    arbitrary insertions and deletions from any of the data sources.
+  \item We describe how \dbsp can model various classes of practical
+    queries, such as relational algebra, nested relations,
     aggregations, and Datalog.
-  \item The first general and machine-checked theory of IVM.  All the
-    theoretical results in this paper~\cite{budiu-vldb23} have been
-    checked~\cite{dbsp-theory} using the Lean proof
-    assistant~\cite{moura-cade15}.
-  \item A practical open-source implementation of this theory as a
-    runtime and a SQL compiler.
-  \item An evaluation of the performance of our implementation.
+  \item We provide the first general and machine-checked theory of
+    IVM.  All the theoretical results in this
+    paper~\cite{budiu-vldb23} have been checked~\cite{dbsp-theory}
+    using the Lean proof assistant~\cite{moura-cade15}.
+  \item We describe a practical open-source implementation of this
+    theory as a runtime and a SQL compiler.
+  \item We give an evaluation of the performance of our
+    implementation.
 \end{enumerate}

@@ -29,10 +29,10 @@ implementation of the query:
     \node[block, right of=d2] (p2) {$\pi_{y, id}$};
     \node[block, right of=p2] (d21) {$\distinct$};
     \node[below of=d11, node distance=.5cm] (mid) {};
-    \node[block, right of=mid, node distance=.8cm] (j) {$\bowtie_{id = id}$};
-    \node[block, right of=j] (p) {$\pi_{x, y}$};
+    \node[block, right of=mid, node distance=.5cm] (j) {$\bowtie_{id = id}$};
+    \node[block, right of=j, node distance=1.3cm] (p) {$\pi_{x, y}$};
     \node[block, right of=p] (d) {$\distinct$};
-    \node[right of=d, node distance=.9cm] (V) {\code{V}};
+    \node[right of=d, node distance=.8cm] (V) {\code{V}};
     \draw[->] (t1) -- (s1);
     \draw[->] (s1) -- (d1);
     \draw[->] (d1) -- (p1);
@@ -132,9 +132,8 @@ circuit: (we omit the subscripts to save space):
   \draw[->] (d) -- (V);
 \end{tikzpicture}
 
-This step is used in some traditional database optimizers.  Note that
-some arrows that represented sets in the original circuit may
-represent multisets in the optimized circuit.
+Note that some arrows that were sets in the original circuit
+may by multisets in the optimized circuit.
 
 Step 3: lift the circuit to compute over streams; all arrows are
 doubled and all functions are lifted:
@@ -180,9 +179,9 @@ such change it produces the corresponding change in the output view \code{V}:
     \node[below of=p1, node distance=.6cm] (mid) {};
     \node[block, right of=mid, node distance=.7cm] (j) {$\lift{\bowtie}$};
     \node[block, right of=j] (p) {$\lift{\pi}$};
-    \node[block, right of=p, node distance=1.4cm] (d) {$\lift{\distinct}$};
-    \node[block, right of=d, node distance=1.3cm] (D) {$\D$};
-    \node[right of=D, node distance=.8cm] (V) {$\Delta$\code{V}};
+    \node[block, right of=p, node distance=1.2cm] (d) {$\lift{\distinct}$};
+    \node[block, right of=d, node distance=1.2cm] (D) {$\D$};
+    \node[right of=D, node distance=1cm] (V) {$\Delta$\code{V}};
     \draw[->>] (t1) -- (I1);
     \draw[->>] (I1) -- (s1);
     \draw[->>] (s1) -- (p1);
@@ -210,10 +209,10 @@ operators:
     \node[block, right of=t2, node distance=1.2cm] (s2) {$\inc{(\lift{\sigma})}$};
     \node[block, right of=s2, node distance=1.4cm] (p2) {$\inc{(\lift{\pi})}$};
     \node[below of=p1, node distance=.6cm] (mid) {};
-    \node[block, right of=mid, node distance=.6cm] (j) {$\inc{(\lift{\bowtie})}$};
-    \node[block, right of=j,node distance=1.4cm] (p) {$\inc{(\lift{\pi})}$};
-    \node[block, right of=p,node distance=1.7cm] (d) {$\inc{(\lift{\distinct})}$};
-    \node[right of=d, node distance=1.5cm] (V) {$\Delta$\code{V}};
+    \node[block, right of=mid, node distance=.7cm] (j) {$\inc{(\lift{\bowtie})}$};
+    \node[block, right of=j,node distance=1.5cm] (p) {$\inc{(\lift{\pi})}$};
+    \node[block, right of=p,node distance=1.6cm] (d) {$\inc{(\lift{\distinct})}$};
+    \node[right of=d, node distance=1.4cm] (V) {$\Delta$\code{V}};
     \draw[->>] (t1) -- (s1);
     \draw[->>] (s1) -- (p1);
     \draw[->>] (t2) -- (s2);

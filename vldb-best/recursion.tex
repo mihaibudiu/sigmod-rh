@@ -8,6 +8,8 @@ We introduce two simple \dbsp stream operators that are used for
 expressing recursive query evaluation.  These operators allow us
 to build circuits implementing looping constructs, which
 are used to iterate computations until a fixed-point is reached.
+The following definition allows us to describe what a fixed point is
+in terms of streams:
 
 \begin{definition}\label{def:zae}
 We say that a stream $s \in \stream{A}$ is \defined{zero almost-everywhere} if it has a finite
@@ -44,19 +46,21 @@ double arrow.  For example:
 
 \paragraph{Stream elimination}
 
-We define the function $\int : \streamf{A} \rightarrow
-A$, over streams that are zero almost everywhere, as
-$\int(s) \defn \sum_{t \geq 0} s[t]$.
-$\int$ is closely related to $\I$; if $\I$ is the
-indefinite (discrete) integral, $\int$ is the definite (discrete) integral on the
-interval $0 - \infty$.  For example, $\int(\sv{1 2 3 0 0}) = 6$.
+We define the function $\int : \streamf{A} \rightarrow A$, over
+streams that are zero almost everywhere, as $\int(s) \defn \sum_{t
+  \geq 0} s[t]$.  $\int$ simply adds up all values in the input stream
+and produces a scalar result with the sum.  $\int$ is closely related
+to $\I$; if $\I$ is the indefinite (discrete) integral, $\int$ is the
+definite (discrete) integral on the interval $0 - \infty$.  For
+example, $\int(\sv{1 2 3 0 0}) = 6$.
 
-For many classes of queries (including relational and Datalog queries
-given below) the $\int$ operator can be ``approximated'' without loss
-of precision by integrating until the first 0 value encountered.
+In circuits constructed for many classes of queries, including
+relational and Datalog queries given below, the $\int$ operator can be
+``approximated'' without loss of precision by integrating until it
+encounters the first 0.
 
-Notice that the input is a double arrow, while the output is a single
-arrow.  E.g.,:
+Notice that the input of $\int$ is a double arrow, while the output is
+a single arrow.  E.g.,:
 
 \begin{center}
 \begin{tikzpicture}[auto,node distance=1cm,>=latex]
@@ -99,8 +103,9 @@ and an $\int$ operator:
 \end{tikzpicture}
 \end{center}
 
-While $Q$ is a streaming operator, the entire circuit is a scalar
-function.
+In the above circuit $Q$ is a streaming operator, but the entire
+circuit is a scalar function, shown by the single input and output
+arrows.
 
 Algorithm~\ref{algorithm-rec} below, which translates recursive queries to
 \dbsp circuits, always produces well-formed circuits.
@@ -116,19 +121,18 @@ stratified Datalog.
 In general, a recursive Datalog program defines a set of
 mutually recursive relations $O_1,..,O_n$ as an equation
 $(O_1,..,O_n)=R(I_1,..,I_m, O_1,..,O_n)$, where $I_1,..,I_m$ are
-input relations and $R$ is a relational (non-recursive) query.
+input relations and $R$ is a non-recursive query.
 
-We describe the algorithm for
-the simpler case of a single-input, single-output query\footnote{The general case
-in the companion technical report~\cite{tr} is only
-slightly more involved.}.  The input of our algorithm is a Datalog query of the form
-$O = R(I, O)$, where $R$ is a relational, non-recursive query,
-producing a set as a result, but whose output $O$ is also an input.
-The output of the algorithm is a \dbsp circuit which evaluates this
-recursive query producing output $O$ when given the input $I$.  Here we build
-a non-incremental circuit, which evaluates the Datalog query;
-in \refsec{sec:nested} we derive the incremental version
-of this circuit.
+We describe here the algorithm for the simpler case of a single-input,
+single-output query\footnote{The general case in the companion
+technical report~\cite{tr} is only slightly more involved.}.  The
+input of our algorithm is a Datalog query of the form $O = R(I, O)$,
+where $R$ is a relational, non-recursive query, producing a set as a
+result, but whose output $O$ is also an input.  The output of the
+algorithm is a \dbsp circuit which evaluates this recursive query
+producing output $O$ when given the input $I$.  In this section we
+build a non-incremental circuit, which evaluates the Datalog query; in
+\refsec{sec:nested} we incrementalize this circuit.
 
 \begin{algorithm}%[recursive queries]
   \label{algorithm-rec}
@@ -136,7 +140,7 @@ of this circuit.
 \begin{enumerate}[nosep, leftmargin=\parindent]
 \item Implement the non-recursive relational query $R$ as described in
     \secref{sec:relational} and Table~\ref{tab:relational}; this produces
-    an acyclic circuit whose inputs and outputs are a \zrs:
+    an acyclic circuit whose inputs and outputs are \zrs:
     \begin{center}
     \begin{tikzpicture}[auto,>=latex]
       \node[] (I) {\code{I}};
@@ -155,8 +159,8 @@ input 1 on the bottom.
 \item Lift this circuit to operate on streams:
     \begin{center}
     \begin{tikzpicture}[auto,>=latex]
-      \node[] (I) {$x$};
-      \node[below of=I, node distance=.7cm] (O) {$O$};
+      \node[] (I) {\code{I}};
+      \node[below of=I, node distance=.7cm] (O) {\code{O}};
       \node[block, right of=I] (R) {$\lift R$};
       \node[right of=R] (o) {$O$};
       \draw[->>] (I) -- (R);
@@ -173,9 +177,9 @@ recursive input via a delay:
 
  \begin{center}
 \begin{tikzpicture}[auto,>=latex, node distance=.8cm]
-  \node[] (I) {$x$};
+  \node[] (I) {\code{I}};
   \node[block, right of=I, node distance=1cm] (R) {$\lift R$};
-  \node[right of=R, node distance=1.5cm] (O) {$O$};
+  \node[right of=R, node distance=1.5cm] (O) {\code{O}};
   \node[block, below of=R, node distance=.8cm] (z) {$\zm$};
   \draw[->>] (I) -- (R);
   \draw[->>] (R) -- node(o) {} (O);
@@ -184,21 +188,22 @@ recursive input via a delay:
  \end{tikzpicture}
  \end{center}
 
-\item ``Bracket'' the circuit in $\I$ and $\D$ nodes, and then in $\delta$ and $\int$:
+\item ``Bracket'' the circuit, first with $\I$ and $\D$ nodes, and
+  then in $\delta$ and $\int$:
 
 \begin{center}
 \begin{tikzpicture}[auto,>=latex, node distance=.8cm]
-  \node[] (Iinput) {$x$};
+  \node[] (Iinput) {\code{I}};
   \node[block, right of=Iinput] (ID) {$\delta$};
   \node[block, right of=ID] (II) {$\I$};
   \node[block, right of=II, node distance=1cm] (f) {$\lift{R}$};
   \node[block, right of=f, node distance=1.5cm] (D) {$\D$};
   \node[block, right of=D] (S) {$\int$};
-  \node[right of=S] (output)  {$O$};
+  \node[right of=S] (output)  {\code{O}};
   \draw[->] (Iinput) -- (ID);
   \draw[->>] (ID) -- (II);
   \draw[->>] (II) -- (f);
-  \draw[->>] (f) -- node (o) {} (D);
+  \draw[->>] (f) -- node (o) {$o$} (D);
   \draw[->>] (D) -- (S);
   \draw[->] (S) -- (output);
   \node[block, below of=f, node distance=.8cm] (z) {$\zm$};
@@ -223,8 +228,7 @@ $R$ as a function of the input relation \code{I}.
 
 \begin{proof}
 Let us compute the contents of the $o$ stream, produced at the output
-of $R$.  We will show that this stream is composed
-of increasing approximations of the value of \code{O}.
+of $R$.  We show that this stream contains increasing approximations of the value of \code{O}.
 
 Define the following one-argument function: $S(x) = \lambda x . R(\code{I}, x)$.
 Notice that the left input of the $\lift{R}$ block is a constant stream
@@ -240,12 +244,12 @@ $$
 So, by induction on $t$ we have $o[t] = S^t(0)$, where by
 $S^t$ we mean $\underbrace{S \circ S \circ \ldots \circ S}_{t}$.
 $S$ is monotone; thus, if there is a time $k$ such that $S^k(0) = S^{k+1}(0)$, we have
-$\forall j \in \N . S^{k+j}(0) = S^k(0)$.  Applying a $\D$ to this stream
+$\forall j . S^{k+j}(0) = S^k(0)$.  Applying a $\D$ to this stream
 will then produce a stream that is zero almost everywhere, and integrating
 this result will return the last distinct value in the stream $o$.
 
 This is essentially the definition of the semantics of a recursive Datalog relation:
-$\code{O} = \fix{x}{R(\code{I}, x)}$.
+$\code{O} = \fix{x}{R(\code{I}, x)}$.\qed
 \end{proof}
 
 Note that if the query $R$ computes over unbounded data domains (e.g.,

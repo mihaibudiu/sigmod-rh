@@ -2622,7 +2622,7 @@
 @inproceedings{idris-sigmod17,
   author =       {Idris, Muhammad and Ugarte, Martin and Vansummeren,
                   Stijn},
-  title =        {The Dynamic Yannakakis Algorithm: Compact and
+  title =        {The Dynamic {Yannakakis} Algorithm: Compact and
                   Efficient Query Processing Under Updates},
   year =         2017,
   url =          {https://doi.org/10.1145/3035918.3064027},
@@ -3068,15 +3068,15 @@
   note =         {Retrieved March 2024.}}
 
 @article{oneil-ai96,
-  title =	 {The log-structured merge-tree ({LSM}-tree)},
-  author =	 {O’Neil, Patrick and Cheng, Edward and Gawlick,
+  title =        {The log-structured merge-tree ({LSM}-tree)},
+  author =       {O’Neil, Patrick and Cheng, Edward and Gawlick,
                   Dieter and O’Neil, Elizabeth},
-  journal =	 {Acta Informatica},
-  volume =	 33,
-  pages =	 {351--385},
-  year =	 1996,
-  publisher =	 {Springer},
-  abstract =	 {High-performance transaction system applications
+  journal =      {Acta Informatica},
+  volume =       33,
+  pages =        {351--385},
+  year =         1996,
+  publisher =    {Springer},
+  abstract =     {High-performance transaction system applications
                   typically insert rows in a History table to provide
                   an activity trace; at the same time the transaction
                   system generates log records for purposes of system
@@ -3125,17 +3125,17 @@
 }
 
 @article{svingos-amd23,
-  author =	 {Svingos, Christoforos and Hernich, Andre and
+  author =       {Svingos, Christoforos and Hernich, Andre and
                   Gildhoff, Hinnerk and Papakonstantinou, Yannis and
                   Ioannidis, Yannis},
-  title =	 {Foreign Keys Open the Door for Faster Incremental
+  title =        {Foreign Keys Open the Door for Faster Incremental
                   View Maintenance},
-  year =	 2023,
-  volume =	 1,
-  number =	 1,
-  url =		 {https://doi.org/10.1145/3588720},
-  doi =		 {10.1145/3588720},
-  abstract =	 {Serverless cloud-based warehousing systems enable
+  year =         2023,
+  volume =       1,
+  number =       1,
+  url =          {https://doi.org/10.1145/3588720},
+  doi =          {10.1145/3588720},
+  abstract =     {Serverless cloud-based warehousing systems enable
                   users to create materialized views in order to speed
                   up predictable and repeated query
                   workloads. Incremental view maintenance (IVM)
@@ -3165,25 +3165,27 @@
                   2.7 times the process of calculating the necessary
                   changes that will be applied into the materialized
                   view.},
-  journal =	 {Proc. ACM Manag. Data},
-  month =	 {may},
-  articleno =	 40,
-  numpages =	 25,
-  keywords =	 {foreign key constraints, incrementally updated
-                  materialized views, relational databases}
+  journal =      {Proc. ACM Manag. Data},
+  month =        {may},
+  articleno =    40,
+  numpages =     25,
+  keywords =     {foreign key constraints, incrementally updated
+                  materialized views, relational databases},
+  comments =     {Use foreign key information to improve IVM
+                  computation.  Sound only for insertions.}
 }
 
 @inproceedings{bengoli-sigmod19,
-  author =	 {Begoli, Edmon and Akidau, Tyler and Hueske, Fabian
+  author =       {Begoli, Edmon and Akidau, Tyler and Hueske, Fabian
                   and Hyde, Julian and Knight, Kathryn and Knowles,
                   Kenneth},
-  title =	 {One {SQL} to Rule Them All - an Efficient and
+  title =        {One {SQL} to Rule Them All - an Efficient and
                   Syntactically Idiomatic Approach to Management of
                   Streams and Tables},
-  year =	 2019,
-  url =		 {https://doi.org/10.1145/3299869.3314040},
-  doi =		 {10.1145/3299869.3314040},
-  abstract =	 {Real-time data analysis and management are
+  year =         2019,
+  url =          {https://doi.org/10.1145/3299869.3314040},
+  doi =          {10.1145/3299869.3314040},
+  abstract =     {Real-time data analysis and management are
                   increasingly critical for today's businesses. SQL is
                   the de facto lingua franca for these endeavors, yet
                   support for robust streaming analysis and management
@@ -3210,30 +3212,30 @@
                   syntax and semantics of a concrete proposal for
                   extensions of the SQL standard and note further
                   areas of exploration.},
-  booktitle =	 {Proceedings of the 2019 International Conference on
+  booktitle =    {Proceedings of the 2019 International Conference on
                   Management of Data},
-  pages =	 {1757–1772},
-  numpages =	 16,
-  keywords =	 {data management, query processing, stream
+  pages =        {1757–1772},
+  numpages =     16,
+  keywords =     {data management, query processing, stream
                   processing},
-  location =	 {Amsterdam, Netherlands},
-  series =	 {SIGMOD '19}
+  location =     {Amsterdam, Netherlands},
+  series =       {SIGMOD '19}
 }
 
 @article{akidau-amd23,
-  author =	 {Akidau, Tyler and Barbier, Paul and Cseri, Istvan
+  author =       {Akidau, Tyler and Barbier, Paul and Cseri, Istvan
                   and Hueske, Fabian and Jones, Tyler and Lionheart,
                   Sasha and Mills, Daniel and Pauliukevich, Dzmitry
                   and Probst, Lukas and Semmler, Niklas and Sotolongo,
                   Dan and Zhang, Boyuan},
-  title =	 {What's the Difference? Incremental Processing with
+  title =        {What's the Difference? Incremental Processing with
                   Change Queries in Snowflake},
-  year =	 2023,
-  volume =	 1,
-  number =	 2,
-  url =		 {https://doi.org/10.1145/3589776},
-  doi =		 {10.1145/3589776},
-  abstract =	 {Incremental algorithms are the heart and soul of
+  year =         2023,
+  volume =       1,
+  number =       2,
+  url =          {https://doi.org/10.1145/3589776},
+  doi =          {10.1145/3589776},
+  abstract =     {Incremental algorithms are the heart and soul of
                   stream processing. Low latency results depend on the
                   ability to react to the subset of changes in a
                   dataset over time rather than reprocessing the
@@ -3252,24 +3254,24 @@
                   the implementation challenges, present an analysis
                   of their usage at Snowflake, and contrast with other
                   offerings.},
-  journal =	 {Proc. ACM Manag. Data},
-  month =	 {jun},
-  articleno =	 196,
-  numpages =	 27,
-  keywords =	 {CDC, IVM, changelogs, query differentiation,
+  journal =      {Proc. ACM Manag. Data},
+  month =        {jun},
+  articleno =    196,
+  numpages =     27,
+  keywords =     {CDC, IVM, changelogs, query differentiation,
                   streaming SQL}
 }
 
 @inproceedings{akidau-debs24,
-  author =	 {Akidau, Tyler and Hueske, Fabian and Kloudas,
+  author =       {Akidau, Tyler and Hueske, Fabian and Kloudas,
                   Konstantinos and Papke, Leon and Semmler, Niklas and
                   Sommerfeld, Jan},
-  title =	 {Continuous Data Ingestion and Transformation in
+  title =        {Continuous Data Ingestion and Transformation in
                   Snowflake},
-  year =	 2024,
-  url =		 {https://doi.org/10.1145/3629104.3672430},
-  doi =		 {10.1145/3629104.3672430},
-  abstract =	 {Continuous data growth and the need for close-to-now
+  year =         2024,
+  url =          {https://doi.org/10.1145/3629104.3672430},
+  doi =          {10.1145/3629104.3672430},
+  abstract =     {Continuous data growth and the need for close-to-now
                   analytics challenge today's data loading patterns
                   for data warehouses. Traditionally, data is ingested
                   into data warehouses with batch-style loading
@@ -3303,13 +3305,545 @@
                   continuous operation, and leverage Snowflake's UI to
                   dig into details such as query plans for incremental
                   result maintenance.},
-  booktitle =	 {Proceedings of the 18th ACM International Conference
+  booktitle =    {Proceedings of the 18th ACM International Conference
                   on Distributed and Event-Based Systems},
-  pages =	 {195–198},
-  numpages =	 4,
-  keywords =	 {Snowflake, data ingestion, data pipeline, data
+  pages =        {195–198},
+  numpages =     4,
+  keywords =     {Snowflake, data ingestion, data pipeline, data
                   transformation, data warehouse, dynamic table,
                   incremental maintenance, stream},
-  location =	 {Villeurbanne, France},
-  series =	 {DEBS '24}
+  location =     {Villeurbanne, France},
+  series =       {DEBS '24}
+}
+
+@Misc{dbsp-python,
+  author =    {Bruno Rucy Carneiro Alves de Lima},
+  title =     {{PyDBSP}},
+  howpublished = {https://github.com/brurucy/pydbsp},
+  month =     {September},
+  year =      2024}
+
+@inproceedings{bello-vldb98,
+  author       = {Randall G. Bello and
+                  Karl Dias and
+                  Alan Downing and
+                  James J. Feenan Jr. and
+                  James L. Finnerty and
+                  William D. Norcott and
+                  Harry Sun and
+                  Andrew Witkowski and
+                  Mohamed Ziauddin},
+  title        = {Materialized Views in Oracle},
+  booktitle    = {Proceedings of 24rd International Conference on Very Large
+                  Data Bases (VLDB'98)},
+  month =        {August 24-27},
+  location =     {New York City, New York},
+  pages        = {659--664},
+  publisher    = {Morgan Kaufmann},
+  year         = 1998,
+  url          = {http://www.vldb.org/conf/1998/p659.pdf},
+  abstract     = {Oracle Materialized Views (MVs) are designed for
+                  data warehousing and replication. For data
+                  warehousing, MVs based on inner/outer equijoins with
+                  optional aggregation, can be refreshed on
+                  transaction boundaries, on demand, or periodically.
+                  Refreshes are optimized for bulk loads and can use a
+                  multi-MV scheduler. MVs based on subqueries on
+                  remote tables support bidirectional
+                  replication. Optimization with MVs includes
+                  transparent query rewrite based on cost-based
+                  selection method. The ability to rewrite a large
+                  class of queries based on a small set of MVs is
+                  supported by using Dimensions (new Oracle object),
+                  losslessness of joins, functional dependency, column
+                  equivalence, join derivability, joinback and
+                  aggregate rollup.},
+  comments      = {"Oracle 8.1 will support three classes of
+                  incrementally maintained MVs: Materialized Join View
+                  (MJV), which is a materialization a of a query with
+                  inner and outer equi-joins, a Materialized Aggregate
+                  View (MAV), which is an MJV with aggregation, and a
+                  Materialized Subquery View (MSV), which materializes
+                  EXISTS subqueries. In addition, Oracle allows
+                  creation of any other MV as defined by an arbitrary
+                  complex query; however, in this case only full
+                  refresh mode (i.e., complete recomputation) is
+                  supported."  Periodic refresh or on transaction
+                  boundaries. "The deltas for the incremental
+                  maintenance of MVs are obtained from two sources:
+                  row-DML logs and direct- loader logs."  A refresh of
+                  many views can be split among multiple transactions.
+                  Oracle allows some views to be updated! (for
+                  restricted queries).  This is also about using the
+                  existing views to optimize new queries.}
+}
+
+@inproceedings{blakeley-sigmod86,
+  author =       {Blakeley, Jose A. and Larson, Per-Ake and Tompa,
+                  Frank Wm},
+  title =        {Efficiently updating materialized views},
+  year =         1986,
+  url =          {https://doi.org/10.1145/16894.16861},
+  doi =          {10.1145/16894.16861},
+  abstract =     {Query processing can be sped up by keeping
+                  frequently accessed users' views
+                  materialized. However, the need to access base
+                  relations in response to queries can be avoided only
+                  if the materialized view is adequately
+                  maintained. We propose a method in which all
+                  database updates to base relations are first
+                  filtered to remove from consideration those that
+                  cannot possibly affect the view. The conditions
+                  given for the detection of updates of this type,
+                  called irrelevant updates, are necessary and
+                  sufficient and are independent of the database
+                  state. For the remaining database updates, a
+                  differential algorithm can be applied to re-evaluate
+                  the view expression. The algorithm proposed exploits
+                  the knowledge provided by both the view definition
+                  expression and the database update operations.},
+  booktitle =    SIGMOD,
+  pages =        {61–71},
+  numpages =     11,
+  location =     {Washington, D.C., USA},
+  series =       {SIGMOD '86},
+  comments =     {Only SPJ queries.  Filter irrelevant tuples early by
+                  deriving a predicate to discover them.  Generates a
+                  SAT formula.  Algorithm for computing deltas
+                  directly, using weights attached to tuples (but
+                  always positive).}
+}
+
+@article{buneman-actd79,
+  author =       {Buneman, O. Peter and Clemons, Eric K.},
+  title =        {Efficiently monitoring relational databases},
+  year =         1979,
+  issue_date =   {Sept. 1979},
+  volume =       4,
+  number =       3,
+  issn =         {0362-5915},
+  url =          {https://doi.org/10.1145/320083.320099},
+  doi =          {10.1145/320083.320099},
+  abstract =     {An alerter is a program which monitors a database
+                  and reports to some user or program when a specified
+                  condition occurs. It may be that the condition is a
+                  complicated expression involving several entities in
+                  the database; in this case the evaluation of the
+                  expression may be computationally expensive. A
+                  scheme is presented in which alerters may be placed
+                  on a complex query involving a relational database,
+                  and a method is demonstrated for reducing the amount
+                  of computation involved in checking whether an
+                  alerter should be triggered.},
+  journal =      {ACM Trans. Database Syst.},
+  month =        {sep},
+  pages =        {368–382},
+  numpages =     15,
+  keywords =     {relational databases, programming techniques,
+                  integrity constraints, exception reporting,
+                  alerters},
+  comments =     {Explains why triggers are not enough.  Use the
+                  schema to filter some irrelevant updates.  Cute
+                  circuit diagrams.}
+}
+
+@inproceedings{10.1145/253260.253353,
+author = {Colby, Latha S. and Kawaguchi, Akira and Lieuwen, Daniel F. and Mumick, Inderpal Singh and Ross, Kenneth A.},
+title = {Supporting multiple view maintenance policies},
+year = {1997},
+isbn = {0897919114},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/253260.253353},
+doi = {10.1145/253260.253353},
+abstract = {Materialized views and view maintenance are becoming increasingly important in practice. In order to satisfy different data currency and performance requirements, a number of view maintenance policies have been proposed. Immediate maintenance involves a potential refresh of the view after every update to the deriving tables. When staleness of views can be tolerated, a view may be refreshed periodically or (on-demand) when it is queried. The maintenance policies that are chosen for views have implications on the validity of the results of queries and affect the performance of queries and updates. In this paper, we investigate a number of issues related to supporting multiple views with different maintenance policies.We develop formal notions of consistency for views with different maintenance policies. We then introduce a model based on view groupings for view maintenance policy assignment, and provide algorithms, based on the viewgroup model, that allow consistency of views to be guaranteed. Next, we conduct a detailed study of the performance aspects of view maintenance policies based on an actual implementation of our model. The performance study investigates the trade-offs between different maintenance policy assignments. Our analysis of both the consistency and performance aspects of various view maintenance policies are important in making correct maintenance policy assignments.},
+booktitle = {Proceedings of the 1997 ACM SIGMOD International Conference on Management of Data},
+pages = {405–416},
+numpages = {12},
+location = {Tucson, Arizona, USA},
+series = {SIGMOD '97}
+}
+
+@article{colby-sigmod97,
+  author =       {Colby, Latha S. and Kawaguchi, Akira and Lieuwen,
+                  Daniel F. and Mumick, Inderpal Singh and Ross,
+                  Kenneth A.},
+  title =        {Supporting multiple view maintenance policies},
+  year =         1997,
+  issue_date =   {June 1997},
+  volume =       26,
+  number =       2,
+  url =          {https://doi.org/10.1145/253262.253353},
+  doi =          {10.1145/253262.253353},
+  abstract =     {Materialized views and view maintenance are becoming
+                  increasingly important in practice. In order to
+                  satisfy different data currency and performance
+                  requirements, a number of view maintenance policies
+                  have been proposed. Immediate maintenance involves a
+                  potential refresh of the view after every update to
+                  the deriving tables. When staleness of views can be
+                  tolerated, a view may be refreshed periodically or
+                  (on-demand) when it is queried. The maintenance
+                  policies that are chosen for views have implications
+                  on the validity of the results of queries and affect
+                  the performance of queries and updates. In this
+                  paper, we investigate a number of issues related to
+                  supporting multiple views with different maintenance
+                  policies.We develop formal notions of consistency
+                  for views with different maintenance policies. We
+                  then introduce a model based on view groupings for
+                  view maintenance policy assignment, and provide
+                  algorithms, based on the viewgroup model, that allow
+                  consistency of views to be guaranteed. Next, we
+                  conduct a detailed study of the performance aspects
+                  of view maintenance policies based on an actual
+                  implementation of our model. The performance study
+                  investigates the trade-offs between different
+                  maintenance policy assignments. Our analysis of both
+                  the consistency and performance aspects of various
+                  view maintenance policies are important in making
+                  correct maintenance policy assignments.},
+  journal =      {SIGMOD Rec.},
+  month =        {jun},
+  pages =        {405–416},
+  numpages =     12
+}
+
+@article{griffin-sigmod98,
+  author =       {Griffin, Timothy and Kumar, Bharat},
+  title =        {Algebraic change propagation for semijoin and
+                  outerjoin queries},
+  year =         1998,
+  issue_date =   {Sept. 1, 1998},
+  publisher =    {Association for Computing Machinery},
+  address =      {New York, NY, USA},
+  volume =       27,
+  number =       3,
+  issn =         {0163-5808},
+  url =          {https://doi.org/10.1145/290593.290597},
+  doi =          {10.1145/290593.290597},
+  abstract =     {Many interesting examples in view maintenance
+                  involve semijoin and outerjoin queries. In this
+                  paper we develop algebraic change propagation
+                  algorithms for the following operators: semijoin,
+                  anti-semijoin, left outerjoin, right outerjoin, and
+                  full outerjoin.},
+  journal =      {SIGMOD Rec.},
+  month =        {sep},
+  pages =        {22–27},
+  numpages =     6,
+  abstract =     {Relational algebra.  Again separate insert and
+                  delete sets.  Computes on sets.  The rules obtained
+                  look quite complicated.}
+}
+
+@article{griffin-tkde97,
+  author =       {Timothy Griffin and Leonid Libkin and Howard
+                  Trickey},
+  title =        {An Improved Algorithm for the Incremental
+                  Recomputation of Active Relational Expressions},
+  journal =      {{IEEE} Trans. Knowl. Data Eng.},
+  volume =       9,
+  number =       3,
+  pages =        {508--511},
+  year =         1997,
+  url =          {https://doi.org/10.1109/69.599937},
+  doi =          {10.1109/69.599937},
+  abstract =     {Qian and Wiederhold (1991) presented an algorithm
+                  for the incremental recomputation of relational
+                  algebra expressions that was claimed to preserve a
+                  certain minimality condition. This condition
+                  guarantees that the incremental change sets do not
+                  contain any unnecessary tuples; so, redundant
+                  computations are not performed. We show that, in
+                  fact, their algorithm violates this condition. We
+                  present an improved algorithm that does preserve
+                  this notion of minimality.},
+  comments =     {About how to compute the minimal insertions and
+                  deletions for an arbitrary change.  Computing the
+                  minimal change seems to entail solving a system of
+                  equations.}
+}
+
+@article{gupta-infsys06,
+  author =       {Gupta, Himanshu and Mumick, Inderpal Singh},
+  title =        {Incremental maintenance of aggregate and outerjoin
+                  expressions},
+  year =         2006,
+  issue_date =   {September 2006},
+  publisher =    {Elsevier Science Ltd.},
+  volume =       31,
+  number =       6,
+  issn =         {0306-4379},
+  url =          {https://doi.org/10.1016/j.is.2004.11.011},
+  doi =          {10.1016/j.is.2004.11.011},
+  abstract =     {Views stored in a data warehouse need to be kept
+                  current. As recomputing the views is very expensive,
+                  incremental maintenance algorithms are
+                  required. Over recent years, several incremental
+                  maintenance algorithms have been proposed. None of
+                  the proposed algorithms handle the general case of
+                  relational expressions involving aggregate and
+                  outerjoin operators efficiently.In this article, we
+                  develop the change-table technique for incrementally
+                  maintaining general view expressions involving
+                  relational and aggregate operators. We show that the
+                  change-table technique outperforms the previously
+                  proposed techniques by orders of magnitude. The
+                  developed framework easily extends to efficiently
+                  maintaining view expressions containing outerjoin
+                  operators. We prove that the developed change-table
+                  technique is an optimal incremental maintenance
+                  scheme for a given view expression tree under some
+                  reasonable assumptions.},
+  journal =      {Inf. Syst.},
+  month =        {sep},
+  pages =        {435–464},
+  numpages =     30,
+  keywords =     {view maintenance, outerjoin views, incremental
+                  maintenance, aggregate views},
+  url =          {https://www3.cs.stonybrook.edu/~hgupta/ps/aggr-is.pdf},
+  comments =     {Instead of handling individual inserts and deletes
+                  they use "change-tables."  Use bag semantics.
+                  Change tables are like Z-sets, and the "refresh"
+                  operator is like Z-set addition.  Non-linear
+                  aggregates such as MAX rerun a full non-incremental
+                  query to compute the base relation.  Not a modular
+                  theory.}
+}
+
+@article{hanson-sigmod87,
+  author =       {Hanson, Eric N.},
+  title =        {A performance analysis of view materialization
+                  strategies},
+  year =         1987,
+  issue_date =   {Dec. 1987},
+  volume =       16,
+  number =       3,
+  issn =         {0163-5808},
+  url =          {https://doi.org/10.1145/38714.38759},
+  doi =          {10.1145/38714.38759},
+  abstract =     {The conventional way to process commands for
+                  relational views is to use query modification to
+                  translate the commands into ones on the base
+                  relations. An alternative approach has been proposed
+                  recently, whereby materialized copies of views are
+                  kept, and incrementally updated immediately after
+                  each modification of the database. A related scheme
+                  exists, in which update of materialized views is
+                  deferred until just before data is retrieved from
+                  the view. A performance analysis is presented
+                  comparing the cost of query modification, immediate
+                  view maintenance, and deferred view
+                  maintenance. Three different models of the structure
+                  of views are given a simple selection and projection
+                  of one relation, the natural join of two relations,
+                  and an aggregate (e.g. the sum of values in a
+                  column) over a selection-projection view. The
+                  results show that the choice of the most efficient
+                  view maintenance method depends heavily on the
+                  structure of the database, the view definition, and
+                  the type of query and update activity present.},
+  journal =      {SIGMOD Rec.},
+  month =        {dec},
+  pages =        {440–453},
+  numpages =     14,
+  comments =     {About lazy versus eager views.  Evaluation seems to
+                  be on paper, using analytical formulas.}
+}
+
+@inproceedings{katsis-sigmod15,
+  author =       {Katsis, Yannis and Ong, Kian Win and
+                  Papakonstantinou, Yannis and Zhao, Kevin Keliang},
+  title =        {Utilizing IDs to Accelerate Incremental View
+                  Maintenance},
+  year =         2015,
+  url =          {https://doi.org/10.1145/2723372.2750546},
+  doi =          {10.1145/2723372.2750546},
+  abstract =     {Prior Incremental View Maintenance (IVM) algorithms
+                  specify the view tuples that need to be modified by
+                  computing diff sets, which we call tuple-based diffs
+                  since a diff set contains one diff tuple for each
+                  to-be-modified view tuple. idIVM assumes the base
+                  tables have keys and performs IVM by computing
+                  ID-based diff sets that compactly identify the
+                  to-be-modified tuples through their IDs.This work
+                  makes the following contributions: (a) An ID-based
+                  IVM system for a large subset of SQL that includes
+                  the algebraic operators selection, join, grouping
+                  and aggregation, generalized projection involving
+                  functions, antisemijoin (and therefore
+                  negation/difference) and union. The system is based
+                  on a modular approach, allowing one to extend the
+                  supported language simply by adding one algebraic
+                  operator at-a-time, along with equations describing
+                  how ID-based changes are propagated through the
+                  operator. (b) An efficient algorithm that creates an
+                  IVM plan for a given view in four passes that are
+                  polynomial in the size of the view expression. (c) A
+                  formal analysis comparing the ID-based IVM algorithm
+                  to prior IVM approaches and analytically showing
+                  when one outperforms the other. (d) An experimental
+                  comparison of the ID-based IVM algorithm to prior
+                  IVM algorithms showing the superiority of the former
+                  in common use cases.},
+  booktitle =    {Proceedings of the 2015 ACM SIGMOD International
+                  Conference on Management of Data},
+  pages =        {1985–2000},
+  numpages =     16,
+  keywords =     {materialized views, incremental view maintenance},
+  location =     {Melbourne, Victoria, Australia},
+  series =       {SIGMOD '15},
+  url =          {http://cseweb.ucsd.edu/~ikatsis/publications/sigmod15.pdf},
+  comments =     {The core idea seems to be to use use primary key
+                  information to compress delta representations.  The
+                  delta representation is a key, plus a "before" and
+                  an "after" value.  If the schema does not include
+                  the key attributes, they are inserted by the
+                  rewriter.  "Before" is not needed for deletions, and
+                  "after" is not needed for inserts.  They have an
+                  "update" operator that is similar to a DBSP upsert.
+                  Applies when view contains some of the key
+                  attributes.  Covers a relatively rich subset of SQL:
+                  " algebraic operators select, project, join,
+                  grouping and aggregation with associative functions,
+                  generalized projection involving functions,
+                  antisemijoin1 and union." Uses as a benchmark
+                  Benchmark for Social Media Analytics (BSMA), a
+                  selected set of queries.  Implemented as query
+                  rewrite algorithm that introduces a preprocessing
+                  step.  Not clear it can handle "distinct".}
+}
+
+@inproceedings{begoli-sigmod19,
+  author =       {Begoli, Edmon and Akidau, Tyler and Hueske, Fabian
+                  and Hyde, Julian and Knight, Kathryn and Knowles,
+                  Kenneth},
+  title =        {One {SQL} to Rule Them All - an Efficient and
+                  Syntactically Idiomatic Approach to Management of
+                  Streams and Tables},
+  year =         2019,
+  isbn =         9781450356435,
+  url =          {https://doi.org/10.1145/3299869.3314040},
+  doi =          {10.1145/3299869.3314040},
+  abstract =     {Real-time data analysis and management are
+                  increasingly critical for today's businesses. SQL is
+                  the de facto lingua franca for these endeavors, yet
+                  support for robust streaming analysis and management
+                  with SQL remains limited. Many approaches restrict
+                  semantics to a reduced subset of features and/or
+                  require a suite of non-standard
+                  constructs. Additionally, use of event timestamps to
+                  provide native support for analyzing events
+                  according to when they actually occurred is not
+                  pervasive, and often comes with important
+                  limitations. We present a three-part proposal for
+                  integrating robust streaming into SQL, namely: (1)
+                  time-varying relations as a foundation for classical
+                  tables as well as streaming data, (2) event time
+                  semantics, (3) a limited set of optional keyword
+                  extensions to control the materialization of
+                  time-varying query results. We show how with these
+                  minimal additions it is possible to utilize the
+                  complete suite of standard SQL semantics to perform
+                  robust stream processing. We motivate and illustrate
+                  these concepts using examples and describe lessons
+                  learned from implementations in Apache Calcite,
+                  Apache Flink, and Apache Beam. We conclude with
+                  syntax and semantics of a concrete proposal for
+                  extensions of the SQL standard and note further
+                  areas of exploration.},
+  booktitle =    {Proceedings of the 2019 International Conference on
+                  Management of Data},
+  pages =        {1757–1772},
+  numpages =     16,
+  keywords =     {stream processing, query processing, data
+                  management},
+  location =     {Amsterdam, Netherlands},
+  series =       {SIGMOD '19},
+  comments =     {}
+}
+
+@inproceedings{labio-vldb00,
+  author =       {Labio, Wilburt and Yang, Jun and Cui, Yingwei and
+                  Garcia-Molina, Hector and Widom, Jennifer},
+  title =        {Performance Issues in Incremental Warehouse
+                  Maintenance},
+  year =         2000,
+  isbn =         1558607153,
+  publisher =    {Morgan Kaufmann Publishers Inc.},
+  address =      {San Francisco, CA, USA},
+  booktitle =    {Proceedings of the 26th International Conference on
+                  Very Large Data Bases},
+  pages =        {461–472},
+  numpages =     12,
+  series =       {VLDB '00},
+  abstract =     {A well-known challenge in data warehousing is the
+                  efficient incremental maintenance of warehouse data
+                  in the presence of source data updates. In this
+                  paper, we identify several critical data
+                  representation and algorithmic choices that must be
+                  made when developing the machinery of an
+                  incrementally maintained data warehouse. For each
+                  decision area, we identify various alternatives and
+                  evaluate them through extensive experiments. We show
+                  that the right alternative leads to dramatic
+                  performance gains, and we propose guidelines for
+                  making the right decisions under different
+                  scenarios. All of the issues addressed in this paper
+                  arose in our development of WHIPS, a prototype data
+                  warehousing system supporting incremental
+                  maintenance.},
+  comments =     {Questions addressed: how to represent bags?  Points
+                  out that deletion cannot be expressed in SQL.
+                  Alternatives: using a cursor, or using a count.
+                  They claim that views over base tables have special
+                  consistency requirements, so they don't allow a view
+                  to depend both on base tables and on other views.
+                  Seems they support a relatively limited language.
+                  Built as a layer over an existing DBMS.  Extractors
+                  are like DBSP input adapters.  Integrators compute
+                  the views, but they also may issue additional
+                  queries.  Maintainer is like an output adapter.
+                  Experiments based on TPC-D, with very simple
+                  queries.  Efficient deletion requires the views to
+                  be indexed.  A Z-set representation is better when
+                  data has multiplicities, both for updating the DB
+                  and for computing the views themselves.}
+
+@INPROCEEDINGS{larson-icde07,
+  author =       {Larson, Per-Ake and Zhou, Jingren},
+  booktitle =    ICDE,
+  title =        {Efficient Maintenance of Materialized Outer-Join
+                  Views},
+  year =         2007,
+  location =     {Istanbul, Turkey },
+  pages =        {56-65},
+  keywords =     {Warehousing;Databases;XML;Query processing},
+  doi =          {10.1109/ICDE.2007.367851},
+  abstract =     {Queries containing outer joins are common in data
+                  warehousing applications. Materialized outer-join
+                  views could greatly speed up many such queries but
+                  most database systems do not allow outer joins in
+                  materialized views. In part, this is because
+                  outer-join views could not previously be maintained
+                  efficiently when base tables are updated. In this
+                  paper we show how to efficiently maintain general
+                  outer-join views, that is, views composed of
+                  selection, projection, inner and outer
+                  joins. Foreign-key constraints are exploited to
+                  reduce maintenance overhead. Experimental results
+                  show that maintaining an outer-join view need not be
+                  more expensive than maintaining an inner-join view.},
+  url =          {http://www.cs.columbia.edu/~jrzhou/pub/OJViewMaintenance.pdf},
+  comments =     {Lots of restrictions: "We assume that base tables
+                  and views satisfy the following restrictions: every
+                  base table has a unique key that does not contain
+                  nulls; a view can reference the same table only once
+                  (no self-joins); every view outputs a unique key (no
+                  duplicates); and all predicates of a view are
+                  null-rejecting (defined below)." "All queries were
+                  against a 10GB version (SF=1) of TPC-H database.
+                  View maintenance was implemented using insert and
+                  delete triggers that called stored procedures."}
 }

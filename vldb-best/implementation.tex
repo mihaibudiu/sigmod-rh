@@ -44,6 +44,8 @@ The library also provides many ``helper'' operators that are used by
 the query optimizer in the implementation of some classes of streaming
 queries, e.g., for state garbage-collection.
 
+Upsert operators.
+
 \subsection{Parallelization and Scale-out}
 
 The library supports data-parallel multicore evaluation of circuits
@@ -127,6 +129,8 @@ TODO?
 
 \subsection{Interacting with the outside world}
 
+As it was pointed out many years ago~\cite{labio-vldb00}, database
+systems are not designed to interact well with external IVM systems.
 We provide a a variety of adapters for interacting with external data
 sources, both as inputs and outputs (e.g., Kafka, CSV, JSON,
 DataFrames, Delta Lake, Debezium, etc.).  The input adapters receive

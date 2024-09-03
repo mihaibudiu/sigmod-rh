@@ -37,8 +37,7 @@ In general a query is a function applied to the contents of a
 database: $V = Q(DB)$.  A na\"ive solution re-executes query $Q$ every
 time the database changes, as illustrated in the following diagram.
 Time is the horizontal axis; the horizontal arrows labeled with
-$\Delta$ depict changes to the database, which we assume are much
-smaller than the database itself.  The ``up'' arrows show the
+$\Delta$ depict changes to the database.  The ``up'' arrows show the
 re-evaluation of $Q$ for each database snapshot.
 
 \noindent \includegraphics[trim={0 4.8in 3.7in 0},clip,scale=.34]{view.pdf}
@@ -59,12 +58,15 @@ solution as described above is impossible to reach.
 In this paper we propose a new way to define $\inc{Q}$, as a form of
 \emph{computation on streams}.  Our model is inspired by Digital
 Signal Processing DSP~\cite{rabiner-book75}, applied to databases,
-hence the name \dbsp.  $\inc{Q}$ can be very efficient.  As for
-traditional database queries, the performance of $\inc{Q}$ depends
-both on the query $Q$ but also on the actual data that the query is
-applied to.  Informally, $\inc{Q}$ built by our algorithm, is faster
-than $Q$ by a factor of $O(|DB| / |\Delta DB|)$.  In practice this may
-be an improvement of several orders of magnitude.
+hence the name \dbsp.
+
+The evaluation of $\inc{Q}$ can be significantly more efficient than
+the na\"ive solution.  As is the case for traditional database
+queries, the performance of $\inc{Q}$ depends both on the query $Q$
+but also on the actual data that the query is applied to.  Informally,
+$\inc{Q}$ built by our algorithm, is faster than $Q$ by a factor of
+$O(|DB| / |\Delta DB|)$.  In practice this may be an improvement of
+several orders of magnitude.
 
 Instead of treating the database as a large changing object, we model
 it as a \emph{sequence} or \emph{stream} of database snapshots, shown
@@ -80,9 +82,10 @@ that compute fixed points (like Datalog programs), streaming
 computations, and incremental computations (which we define shortly).
 
 The central result of this paper is Algorithm~\ref{algorithm-inc}
-which, given a \dbsp program that computes on a stream of values,
-mechanically transforms it into an incremental \dbsp program that
-computes on a stream of changes.
+in~\refsec{sec:relational}.  The input to the algorithm is a \dbsp
+program that computes on a stream of data; the algorithm mechanically
+transforms it into an incremental \dbsp program that computes on a
+stream of changes.
 
 \dbsp is not tied to databases in any way; it is in fact a
 Turing-complete language that can be used for many other purposes.
@@ -186,7 +189,8 @@ produces streams.  We use ``operator'' for streams, and ``function''
 for computations on ``scalar'' values.  In circuits we use arrows with
 a double head to depict streams.  The following diagram shows a stream
 operator $T$ consuming two input streams $s_0$ and $s_1$, producing
-one output stream $s$:
+one output stream $s$; the difference from the previous figure is in
+the use of double arrows.
 %
 \begin{center}
 \begin{tikzpicture}[auto,>=latex,inner sep=0mm]

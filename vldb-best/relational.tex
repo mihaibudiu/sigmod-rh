@@ -60,7 +60,7 @@ and \texttt{anne} $\in R$.
 Since $\Z$ is an abelian ring, $\Z[A]$ is also an abelian ring, and
 thus a group $(\Z[A], +_{\Z[A]}, 0_{\Z[A]}, -_{\Z{A}})$.  Addition and
 subtraction are defined pointwise: $(f +_{\Z[A]} g)(x) = f(x) + g(x)
-. \forall x \in A.$ The $0$ element of $\Z[A]$ is the function
+\forall x \in A.$ The $0$ element of $\Z[A]$ is the function
 $0_{\Z[A]}$ defined by $0_{\Z[A]}(x) = 0 .  \forall x \in A$.  For
 example, $R + R = \{ \texttt{joe} \mapsto 2, \texttt{mary} \mapsto 4,
 \texttt{anne} \mapsto -2 \}$.  Since \zrs form a group, all results
@@ -115,7 +115,7 @@ partial order.
 
 We call a function $f : \Z[A] \rightarrow \Z[B]$ \defined{positive} if it maps
 positive values to positive values:
-$\forall x \in \Z[A], x \geq 0_{\Z[A]} \Rightarrow f(x) \geq 0_{\Z[B]}$.
+$\forall x \in \Z[A]~.~x \geq 0_{\Z[A]} \Rightarrow f(x) \geq 0_{\Z[B]}$.
 We use the same notation for functions: $\ispositive(f)$.
 
 \begin{definition}[distinct]
@@ -169,12 +169,13 @@ translating an arbitrary relational query plan into a \dbsp circuit.
 Operation & SQL example & \dbsp circuit & Details \\ \hline
 Composition &
  \begin{lstlisting}[language=SQL]
-SELECT ... FROM
-(SELECT ... FROM I)
+SELECT ... AS O FROM
+(SELECT ... AS I
+ FROM I0)
 \end{lstlisting}
  &
  \begin{tikzpicture}[auto,>=latex]
-  \node[] (I) {\code{I}};
+  \node[] (I) {\code{I0}};
   \node[block, right of=I] (CI) {$C_I$};
   \draw[->] (I) -- (CI);
   \node[block, right of=CI] (CO) {$C_O$};
@@ -393,7 +394,7 @@ version of $\distinct$ incurs significant space costs.
 \begin{proposition}\label{prop-distinct-delay}
 Let $Q$ be one of the following \zrs operators: filtering $\sigma$,
 join $\bowtie$, or Cartesian product $\times$.
-Then we have $\forall i \in \Z[I], \ispositive(i) \Rightarrow Q(\distinct(i)) = \distinct(Q(i))$.
+Then we have $\forall i \in \Z[A]~.~\ispositive(i) \Rightarrow Q(\distinct(i)) = \distinct(Q(i))$.
 \end{proposition}
 
 \noindent
@@ -585,7 +586,7 @@ Incremental circuits are efficient.  We evaluate the cost of a circuit
 while processing the $t$-th input change.  Even if $Q$ is a pure
 function, $\inc{Q}$ is actually a streaming system, with internal
 state.  This state is stored entirely in the delay operators $\zm$,
-some of which appear in $\I$ and $\D$ operators\footnote{For 
+some of which appear in $\I$ and $\D$ operators\footnote{For
 standard relational queries, after applying step 5 of the algorithm
 there will be no $\D$ operators left in the circuit.}.  The result
 produced by $\inc{Q}$ on the $t$-th input depends in general not only

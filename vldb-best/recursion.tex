@@ -14,7 +14,7 @@ in terms of streams:
 \begin{definition}\label{def:zae}
 We say that a stream $s \in \stream{A}$ is \defined{zero almost-everywhere} if it has a finite
 number of non-zero values, i.e., there exists a time $t_0 \in \N$
-s.t. $\forall t \geq t_0 . s[t] = 0$.
+s.t. $\forall t \geq t_0~.~s[t] = 0$.
 \noindent Denote the set of streams that are zero almost everywhere
 by $\streamf{A} \subset \stream{A}$.
 \end{definition}
@@ -233,7 +233,7 @@ of $R$.  We show that this stream contains increasing approximations of the valu
 Define the following one-argument function: $S(x) = \lambda x . R(\code{I}, x)$.
 Notice that the left input of the $\lift{R}$ block is a constant stream
 with the value \code{I}.  Due to the stratified nature of the language,
-we must have $\ispositive(S)$, so $\forall x . S(x) \geq x$.
+we must have $\ispositive(S)$, so $\forall x~.~S(x) \geq x$.
 We get the following system of equations:
 $$
 \begin{aligned}
@@ -244,7 +244,7 @@ $$
 So, by induction on $t$ we have $o[t] = S^t(0)$, where by
 $S^t$ we mean $\underbrace{S \circ S \circ \ldots \circ S}_{t}$.
 $S$ is monotone; thus, if there is a time $k$ such that $S^k(0) = S^{k+1}(0)$, we have
-$\forall j . S^{k+j}(0) = S^k(0)$.  Applying a $\D$ to this stream
+$\forall j~.~S^{k+j}(0) = S^k(0)$.  Applying a $\D$ to this stream
 will then produce a stream that is zero almost everywhere, and integrating
 this result will return the last distinct value in the stream $o$.
 

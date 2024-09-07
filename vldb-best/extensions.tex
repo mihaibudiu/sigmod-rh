@@ -90,6 +90,10 @@ linear.  Schemes such as Reactive Aggregator~\cite{tangwongsan-vldb15}
 can be used to implement \code{MIN}, with an amortized cost per update
 to $O(|\Delta DB| \log(|DB|))$.
 
+We use the strategy described by Mumick~\cite{mumick-sigmod97} of
+using an extra \texttt{COUNT(*)} aggregate to handle empty groups for
+linear functions in the presence of \texttt{NULL} values.
+
 \subsection{Grouping; indexed relations}\label{sec:grouping}
 
 Let $K$ be a set of ``key values.''

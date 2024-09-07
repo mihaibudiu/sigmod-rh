@@ -1206,8 +1206,8 @@
 @Misc{aurora,
   title =        {The {Aurora} Project},
   howpublished = {\url{http://cs.brown.edu/research/aurora/}},
-  month =        {December},
-  note =         {Last accessed November 2022},
+  year =         {2004},
+  note =         {Retrieved September 2024},
   abstract =     {Applications that deal with continuous data streams
                   are becoming increasingly important primarily due to
                   the emergence of sensors and similar small-scale
@@ -2881,7 +2881,8 @@
   journal =      {Proc. VLDB Endow.},
   month =        {February},
   pages =        {702–713},
-  numpages =     12
+  numpages =     12,
+  url =          {http://www.vldb.org/pvldb/vol8/p702-tangwongsan.pdf}
 }
 
 @article{bonifati-iclp2018,
@@ -3034,6 +3035,13 @@
    video =      {https://1drv.ms/v/s!AlywK8G1COQ_lfR6Ry6jtRIMJRhi0g?e=bKP1Kp}
 }
 
+@misc{dd-crate,
+    title = {Differential Dataflow},
+    author = {Frank McSherry},
+    howpublished = {\url{https://github.com/TimelyDataflow/differential-dataflow}},
+    note = {Retrieved September 2024}
+}
+
 @misc{dbsp-crate,
     title = {{DBSP} {Rust} Crate},
     author = {{Feldera Inc.}},
@@ -3175,61 +3183,14 @@
                   computation.  Sound only for insertions.}
 }
 
-@inproceedings{bengoli-sigmod19,
-  author =       {Begoli, Edmon and Akidau, Tyler and Hueske, Fabian
-                  and Hyde, Julian and Knight, Kathryn and Knowles,
-                  Kenneth},
-  title =        {One {SQL} to Rule Them All - an Efficient and
-                  Syntactically Idiomatic Approach to Management of
-                  Streams and Tables},
-  year =         2019,
-  url =          {https://doi.org/10.1145/3299869.3314040},
-  doi =          {10.1145/3299869.3314040},
-  abstract =     {Real-time data analysis and management are
-                  increasingly critical for today's businesses. SQL is
-                  the de facto lingua franca for these endeavors, yet
-                  support for robust streaming analysis and management
-                  with SQL remains limited. Many approaches restrict
-                  semantics to a reduced subset of features and/or
-                  require a suite of non-standard
-                  constructs. Additionally, use of event timestamps to
-                  provide native support for analyzing events
-                  according to when they actually occurred is not
-                  pervasive, and often comes with important
-                  limitations. We present a three-part proposal for
-                  integrating robust streaming into SQL, namely: (1)
-                  time-varying relations as a foundation for classical
-                  tables as well as streaming data, (2) event time
-                  semantics, (3) a limited set of optional keyword
-                  extensions to control the materialization of
-                  time-varying query results. We show how with these
-                  minimal additions it is possible to utilize the
-                  complete suite of standard SQL semantics to perform
-                  robust stream processing. We motivate and illustrate
-                  these concepts using examples and describe lessons
-                  learned from implementations in Apache Calcite,
-                  Apache Flink, and Apache Beam. We conclude with
-                  syntax and semantics of a concrete proposal for
-                  extensions of the SQL standard and note further
-                  areas of exploration.},
-  booktitle =    {Proceedings of the 2019 International Conference on
-                  Management of Data},
-  pages =        {1757–1772},
-  numpages =     16,
-  keywords =     {data management, query processing, stream
-                  processing},
-  location =     {Amsterdam, Netherlands},
-  series =       {SIGMOD '19}
-}
-
 @article{akidau-amd23,
   author =       {Akidau, Tyler and Barbier, Paul and Cseri, Istvan
                   and Hueske, Fabian and Jones, Tyler and Lionheart,
                   Sasha and Mills, Daniel and Pauliukevich, Dzmitry
                   and Probst, Lukas and Semmler, Niklas and Sotolongo,
                   Dan and Zhang, Boyuan},
-  title =        {What's the Difference? Incremental Processing with
-                  Change Queries in Snowflake},
+  title =        {What's the Difference? {Incremental} Processing with
+                  Change Queries in {Snowflake}},
   year =         2023,
   volume =       1,
   number =       2,
@@ -3267,7 +3228,7 @@
                   Konstantinos and Papke, Leon and Semmler, Niklas and
                   Sommerfeld, Jan},
   title =        {Continuous Data Ingestion and Transformation in
-                  Snowflake},
+                  {Snowflake}},
   year =         2024,
   url =          {https://doi.org/10.1145/3629104.3672430},
   doi =          {10.1145/3629104.3672430},
@@ -3319,7 +3280,7 @@
 @Misc{dbsp-python,
   author =    {Bruno Rucy Carneiro Alves de Lima},
   title =     {{PyDBSP}},
-  howpublished = {https://github.com/brurucy/pydbsp},
+  howpublished = {\url{https://github.com/brurucy/pydbsp}},
   month =     {September},
   year =      2024}
 
@@ -3810,6 +3771,7 @@ series = {SIGMOD '97}
                   be indexed.  A Z-set representation is better when
                   data has multiplicities, both for updating the DB
                   and for computing the views themselves.}
+}
 
 @INPROCEEDINGS{larson-icde07,
   author =       {Larson, Per-Ake and Zhou, Jingren},
@@ -3846,4 +3808,250 @@ series = {SIGMOD '97}
                   against a 10GB version (SF=1) of TPC-H database.
                   View maintenance was implemented using insert and
                   delete triggers that called stored procedures."}
+}
+
+@inproceedings{mumick-sigmod97,
+  author =       {Mumick, Inderpal Singh and Quass, Dallan and Mumick,
+                  Barinderpal Singh},
+  title =        {Maintenance of data cubes and summary tables in a
+                  warehouse},
+  year =         1997,
+  url =          {https://doi.org/10.1145/253260.253277},
+  doi =          {10.1145/253260.253277},
+  abstract =     {Data warehouses contain large amounts of
+                  information, often collected from a variety of
+                  independent sources. Decision-support functions in a
+                  warehouse, such as on-line analytical processing
+                  (OLAP), involve hundreds of complex aggregate
+                  queries over large volumes of data. It is not
+                  feasible to compute these queries by scanning the
+                  data sets each time. Warehouse applications
+                  therefore build a large number of summary tables, or
+                  materialized aggregate views, to help them increase
+                  the system performance.As changes, most notably new
+                  transactional data, are collected at the data
+                  sources, all summary tables at the warehouse that
+                  depend upon this data need to be updated. Usually,
+                  source changes are loaded into the warehouse at
+                  regular intervals, usually once a day, in a batch
+                  window, and the warehouse is made unavailable for
+                  querying while it is updated. Since the number of
+                  summary tables that need to be maintained is often
+                  large, a critical issue for data warehousing is how
+                  to maintain the summary tables efficiently.In this
+                  paper we propose a method of maintaining aggregate
+                  views (the summary-delta table method), and use it
+                  to solve two problems in maintaining summary tables
+                  in a warehouse: (1) how to efficiently maintain a
+                  summary table while minimizing the batch window
+                  needed for maintenance, and (2) how to maintain a
+                  large set of summary tables defined over the same
+                  base tables.While several papers have addressed the
+                  issues relating to choosing and materializing a set
+                  of summary tables, this is the first paper to
+                  address maintaining summary tables efficiently.},
+  booktitle =    {Proceedings of the 1997 ACM SIGMOD International
+                  Conference on Management of Data},
+  pages =        {100–111},
+  numpages =     12,
+  location =     {Tucson, Arizona, USA},
+  series =       {SIGMOD '97},
+  comments =     {Assumes two tables storing deltas: insertions and
+                  deletions.  Uses aggregates to combine them into a
+                  "Z-set".  These Z-sets can be computed without
+                  locking the database (the "propagate" phase.
+                  Updating the views ("refresh" phase) requires
+                  locking the databse.  Refresh uses a cursor and a
+                  loop, seems quite inefficient.  They seem to compute
+                  the queries that apply the deltas manually from the
+                  original queries.  They have the same problem as
+                  DBSP with empty groups, and use COUNT(*) to detect
+                  them.}
+}
+
+@inproceedings{nikolic-sigmod16,
+  author =       {Nikolic, Milos and Dashti, Mohammad and Koch,
+                  Christoph},
+  title =        {How to Win a Hot Dog Eating Contest: Distributed
+                  Incremental View Maintenance with Batch Updates},
+  year =         2016,
+  url =          {https://doi.org/10.1145/2882903.2915246},
+  doi =          {10.1145/2882903.2915246},
+  abstract =     {In the quest for valuable information, modern big
+                  data applications continuously monitor streams of
+                  data. These applications demand low latency stream
+                  processing even when faced with high volume and
+                  velocity of incoming changes and the user's desire
+                  to ask complex queries. In this paper, we study
+                  low-latency incremental computation of complex SQL
+                  queries in both local and distributed streaming
+                  environments. We develop a technique for the
+                  efficient incrementalization of queries with nested
+                  aggregates for batch updates. We identify the cases
+                  in which batch processing can boost the performance
+                  of incremental view maintenance but also demonstrate
+                  that tuple-at-a-time processing often can achieve
+                  better performance in local mode. Batch updates are
+                  essential for enabling distributed incremental view
+                  maintenance and amortizing the cost of network
+                  communication and synchronization. We show how to
+                  derive incremental programs optimized for running on
+                  large-scale processing platforms. Our implementation
+                  of distributed incremental view maintenance can
+                  process tens of million of tuples with few-second
+                  latency using hundreds of nodes.},
+  booktitle =    {Proceedings of the 2016 International Conference on
+                  Management of Data},
+  pages =        {511–526},
+  numpages =     16,
+  keywords =     {batch processing, distributed query processing,
+                  query compilation, query optimization, recursive
+                  incremental view maintenance, stream management
+                  system},
+  location =     {San Francisco, California, USA},
+  series =       {SIGMOD '16},
+  comments =     {About tuple vs. batch updates and distributed
+                  implementations.  Seems to introduce the incremental
+                  version of distinct, called Exists.  Uses proper
+                  Z-set representations.  Uses some algebra to control
+                  distribution.  There is a sweet-spot for the batch
+                  size, somewhere between 1K and 10K records.  They
+                  use TPC-H for evaluation.}
+}
+
+@inproceedings{palpanas-vldb02,
+  author =       {Palpanas, Themistoklis and Sidle, Richard and
+                  Cochrane, Roberta and Pirahesh, Hamid},
+  title =        {Incremental maintenance for non-distributive
+                  aggregate functions},
+  year =         2002,
+  publisher =    {VLDB Endowment},
+  abstract =     {Incremental view maintenance is a well-known topic
+                  that has been addressed in the literature as well as
+                  implemented in database products. Yet, incremental
+                  refresh has been studied in depth only for a subset
+                  of the aggregate functions. In this paper we propose
+                  a general incremental maintenance mechanism that
+                  applies to all aggregate functions, including those
+                  that are not distributive over all operations. This
+                  class of functions is of great interest, and
+                  includes MIN/MAX, STDDEV, correlation, regression,
+                  XML constructor, and user defined functions. We
+                  optimize the maintenance of such views in two
+                  ways. First, by only recomputing the set of affected
+                  groups. Second, we extend the incremental
+                  infrastructure with work areas to support the
+                  maintenance of functions that are algebraic. We
+                  further optimize computation when multiple
+                  dissimilar aggregate functions are computed in the
+                  same view, and for special cases such as the
+                  maintenance of MIN/MAX, which are incrementally
+                  maintainable over insertions. We also address the
+                  important problem of incremental maintenance of
+                  views containing super-aggregates, including
+                  materialized OLAP cubes. We have implemented our
+                  algorithm on a prototype version of IBM DB2 UDB, and
+                  an experimental evaluation proves the validity of
+                  our approach.},
+  booktitle =    {Proceedings of the 28th International Conference on
+                  Very Large Data Bases},
+  pages =        {802–813},
+  numpages =     12,
+  location =     {Hong Kong, China},
+  series =       {VLDB '02},
+  comments =     {Use update tables with deltas which are applied by
+                  SQL programs.  Does not seem to be a particularly
+                  interesting paper.  Handles rollups and grouping
+                  sets (called "superaggregates").  Evaluate two
+                  custom queries they chose.}
+}
+
+@article{zhan-vldb19,
+  author =       {Zhan, Chaoqun and Su, Maomeng and Wei, Chuangxian
+                  and Peng, Xiaoqiang and Lin, Liang and Wang, Sheng
+                  and Chen, Zhe and Li, Feifei and Pan, Yue and Zheng,
+                  Fang and Chai, Chengliang},
+  title =        {{AnalyticDB}: real-time {OLAP} database system at
+                  {Alibaba Cloud}},
+  year =         2019,
+  issue_date =   {August 2019},
+  volume =       12,
+  number =       12,
+  url =          {https://doi.org/10.14778/3352063.3352124},
+  doi =          {10.14778/3352063.3352124},
+  abstract =     {With data explosion in scale and variety, OLAP
+                  databases play an increasingly important role in
+                  serving real-time analysis with low latency (e.g.,
+                  hundreds of milliseconds), especially when incoming
+                  queries are complex and ad hoc in nature. Moreover,
+                  these systems are expected to provide high query
+                  concurrency and write throughput, and support
+                  queries over structured and complex data types
+                  (e.g., JSON, vector and texts). In this paper, we
+                  introduce AnalyticDB, a real-time OLAP database
+                  system developed at Alibaba. AnalyticDB maintains
+                  all-column indexes in an asynchronous manner with
+                  acceptable overhead, which provides low latency for
+                  complex ad-hoc queries. Its storage engine extends
+                  hybrid row-column layout for fast retrieval of both
+                  structured data and data of complex types. To handle
+                  large-scale data with high query concurrency and
+                  write throughput, AnalyticDB decouples read and
+                  write access paths. To further reduce query latency,
+                  novel storage-aware SQL optimizer and execution
+                  engine are developed to fully utilize the advantages
+                  of the underlying storage and indexes. AnalyticDB
+                  has been successfully deployed on Alibaba Cloud to
+                  serve numerous customers (both large and small). It
+                  is capable of holding 100 trillion rows of records,
+                  i.e., 10PB+ in size. At the same time, it is able to
+                  serve 10m+ writes and 100k+ queries per second,
+                  while completing complex queries within hundreds of
+                  milliseconds.},
+  journal =      {Proc. VLDB Endow.},
+  month =        {aug},
+  pages =        {2059–2070},
+  numpages =     12,
+  comments =     {Not about IVM}
+}
+
+@inproceedings{Graefe-sigmod90,
+  author =       {Graefe, Goetz},
+  title =        {Encapsulation of parallelism in the Volcano query
+                  processing system},
+  year =         1990,
+  url =          {https://doi.org/10.1145/93597.98720},
+  doi =          {10.1145/93597.98720},
+  abstract =     {Volcano is a new dataflow query processing system we
+                  have developed for database systems research and
+                  education. The uniform interface between operators
+                  makes Volcano extensible by new operators. All
+                  operators are designed and coded as if they were
+                  meant for a single-process system only. When
+                  attempting to parallelize Volcano, we had to choose
+                  between two models of parallelization, called here
+                  the bracket and operator models. We describe the
+                  reasons for not choosing the bracket model,
+                  introduce the novel operator model, and provide
+                  details of Volcano's exchange operator that
+                  parallelizes all other operators. It allows
+                  intra-operator parallelism on partitioned datasets
+                  and both vertical and horizontal inter-operator
+                  parallelism. The exchange operator encapsulates all
+                  parallelism issues and therefore makes
+                  implementation of parallel database algorithms
+                  significantly easier and more robust. Included in
+                  this encapsulation is the translation between
+                  demand-driven dataflow within processes and
+                  data-driven dataflow between processes. Since the
+                  interface between Volcano operators is similar to
+                  the one used in “real,” commercial systems, the
+                  techniques described here can be used to parallelize
+                  other query processing engines.},
+  booktitle =    {Proceedings of the 1990 ACM SIGMOD International
+                  Conference on Management of Data},
+  pages =        {102–111},
+  numpages =     10,
+  location =     {Atlantic City, New Jersey, USA},
+  series =       {SIGMOD '90}
 }

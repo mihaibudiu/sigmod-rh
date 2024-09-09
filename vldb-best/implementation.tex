@@ -94,11 +94,11 @@ our Rust SQL runtime (described in Section~\refsec{sec:runtime})
 nullable types are represented using Rust \texttt{Option<>} types, and
 SQL \code{NULL} is the value \code{None}.  Some care is required in
 implementing the unusual semantics of \code{NULL} (e.g., in SQL two
-\code{NULL} values not equal nor different).
+\code{NULL} values are neither equal nor different).
 
 \paragraph{Primary keys}
 
-Primary keys on a table change it's behavior on insertion: inserting a
+Primary keys on a table change its behavior on insertion: inserting a
 tuple can cause another tuple to be deleted.  This behavior looks
 roughly like a modified $\distinct$ operator, and can be implemented
 in a similar way as described in Proposition~\ref{prop-inc_distinct}.
@@ -139,7 +139,7 @@ $s$.  The resulting indexed \zr is shown in the following diagram:
   \includegraphics[trim={0 4.2in 7.5in 0},clip,scale=.34]{indexed.pdf}
 \end{center}
 
-The operation building an indexed \zr from a \zr is linear for any key
+The operation building an indexed \zr from a \zr is linear for any constant-time key
 function!  It follows that group-by is incremental: given some changes
 to the input relation we can apply the partitioning function to each
 row in the input separately to compute how each grouping changes.
@@ -169,7 +169,7 @@ Aggregation in SQL applies a function $a$ to a set of values of type
 $A$ producing a ``scalar'' result with some result type $B$.  In \dbsp
 an aggregation function has a signature $a: \Z[A] \to B$.  When
 operating on \zrs, aggregation functions have to multiply the
-contribution of each value by it's associated weight.
+contribution of each value by its associated weight.
 
 Distributive (e.g. \code{SUM}) and some algebraic aggregation
 (\code{AVG}) functions map can be implemented by a pair of linear
@@ -552,23 +552,21 @@ implementation for indexes is essentially a Log-Structured Merge
 Tree~\cite{oneil-ai96} which can be spilled to secondary storage.
 
 Each index is represented as a sequence of sorted immutable lists, of
-exponentially increasing sizes (1, 2, 4, 8, etc).  The lists are
+exponentially increasing sizes (1, 2, 4, 8, etc.).  The lists are
 sorted lexicographically, first on the index key, then on the value.
-Each sorted list is an independent fragment of and indexed \zr; the
+Each sorted list is an independent fragment of an indexed \zr; the
 same tuple can appear in different lists with different weights, but
 appears at most once in each list.  The full \zr represented is the
 sum of all component lists.  Since addition is commutative and
 associative, parts can be added in any order and at any time.
 
 Each change is represented as a single sorted list, using the same
-order as the index.  When the index ingests a new change, the change
-is combined (using merge-sort) with the list of the closest size,
-consuming the original lists, and producing a new list.  The result of
-merging may be smaller than the original lists (when deletions
-cancel-out insertions), larger (at most double), or similar (when
-insertions augment existing key weights) in size.  If the result is
-smaller or larger, it is recursively merged with the previous or next
-list element.  The merging can be done lazily over many circuit steps.
+order as the index.  When the index ingests a new change, it is added
+into the index as a new list.  As the index grows, lists of similar
+size are lazily merged, sometimes across multiple circuit steps for
+large merges.  The result of merging lists with \(n_1\) and \(n_2\)
+tuples never has more than \(n_1 + n_2\) tuples and can even be an
+empty list if all weights add to 0.
 
 To lookup the values in a change inside an index, binary search is
 performed for each value, starting from the previous position in the

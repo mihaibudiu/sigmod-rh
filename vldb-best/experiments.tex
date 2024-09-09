@@ -1,17 +1,34 @@
 \section{Experimental Evaluation}\label{sec:experiments}
 
-Desired evaluation:
+We provide results for microbenchmarks and macrobenchmarks with our
+implementation of DBSP.
+
+Both kinds of benchmarks focus on performance in
+Nexmark~\cite{tucker2008nexmark}, which specifies a synthetic data
+stream generation scheme for an online auction site along with a suite
+of queries against the streams.  Nexmark is a natural choice for
+evaluating DBSP because it is already implemented for other streaming
+database systems, notably for Flink~\cite{carbone-ieee15,
+  nexmark-flink}, a widely used stream processing system.
+
+\subsection{Microbenchmarks}
+
+Desired microbenchmarks:
 
 \begin{itemize}
-\item Microbenchmarks, such as time to insert or delete a tuple given
-  various operators (especially ones that require integration).
+\item Time to insert or delete a tuple given various operators
+  (especially ones that require integration).  We might be able to use
+  some of the Nexmark queries, or write simple ones.
 
 \item Batch size performance, like the memory experiment
   \url{https://github.com/feldera/feldera/discussions/2314#discussioncomment-10433354}.
 
-\item Macrobenchmark comparison against Flink like
-  \url{https://www.feldera.com/blog/nexmark-vs-flink/}.
-
 \item Storage engine performance like
   \url{https://www.feldera.com/blog/feldera-storage/}.
 \end{itemize}
+
+\subsection{Macrobenchmarks}
+
+Macrobenchmark comparison against Flink like
+\url{https://www.feldera.com/blog/nexmark-vs-flink/}.
+

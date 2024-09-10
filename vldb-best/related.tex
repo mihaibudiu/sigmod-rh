@@ -1,7 +1,7 @@
 \section{Related work}\label{sec:related}
 
 Incremental view
-maintenance~\cite{gupta-sigmod93,griffin-sigmod95,chaudhuri-icde95,gupta-idb95,chirkova-book12}
+maintenance~\cite{buneman-actd79,blakeley-sigmod86,gupta-sigmod93,chaudhuri-icde95,gupta-idb95,chirkova-book12}
 is a much studied problem in databases.  A survey of results for
 Datalog queries is present in~\cite{motik-ai19}.  The standard
 approach is as follows: given a query $Q$, discover a ``delta query'',
@@ -9,52 +9,69 @@ a ``differential'' version $\Delta Q$ that satisfies the equation:
 $Q(d+\Delta d)=Q(d)+\Delta Q(d,\Delta d)$, and which can be used to
 compute the change for a new input reusing the previous output.
 DBToaster introduced recursive recursive
-IVM~\cite{ahmad-vldb09,koch-pods10}, where the incrementalization
-process is repeated for the delta query.
+IVM~\cite{ahmad-vldb09,koch-pods10,nikolic-sigmod16}, where the
+incrementalization process is repeated for the delta query.  Our
+definition of IVM is subtly different from the above one, as IVM is
+defined as a stream computation, well-defined for any query.
 
-\dbsp is an ``eager'' or ``top-down'' execution model: it constantly
+\cite{bello-vldb98} describes an early implementation in Oracle~8,
+which handles a limited set of queries.  Many custom algorithms were
+published for various classes of queries:
+e.g. \cite{griffin-sigmod98,larson-icde07} for various classes of
+joins, \cite{koch-pods16} for positive nested relational calculus,
+\cite{gupta-infsys06} for relational and aggregate operators;
+\cite{kara-tds20} is optimized for triangle queries;
+DYN~\cite{idris-sigmod17,idris-vldb18,idris-sigmod19} focuses on
+acyclic conjunctive queries: instead of keeping the output view
+materialized they build data structures that allow efficiently
+querying the output views.  PAI maps~\cite{abeysinghe-sigmod22} are
+specially designed for queries with correlated aggregations.
+\cite{palpanas-vldb02} discusses non-distributive aggregate functions.
+\cite{katsis-sigmod15} uses primary key information to compress the
+representation of the deltas, and using an ``update'' operator that is
+similar to our ``upsert'' operator.  AJU~\cite{wang-sigmod20} and
+\cite{svingos-amd23} focus on using foreign key information to
+optimize query plan generation.  These techniques are only sound in
+the absence of deletions and updates; our implementation uses these
+optimizations as well.  Some algorithms apply to sets, some work for
+multisets~\cite{griffin-sigmod95}.  Many of these formalisms look very
+complicated because they deal with ``insertions'', ``deletions'', and
+``update'' changes separately.  \zrs are a much more compact tool for
+describing such algorithms.  In some sense the \dbsp theory, through
+the chain rule, enables us to reuse all of these results (and any
+future schemes designed for particular classes of subqueries): given a
+good implementation strategy for a particular query plan it can be
+reused as a subplan in any query which can be made to use that
+particular plan.
+
+\dbsp as described implies an ``eager'' execution model: it constantly
 maintains the entire contents of any number of views, even if no one
-really wants to inspect the views.  In contrast, ``lazy'' or
-``bottom-up'' models only build part of the views when the views are
-inspected.  Such models have the potential to be more efficient.
-Eager models can be converted into lazy ones if something is known
-about the class of operations that will be executed against the views.
+really wants to inspect the views.  In contrast, ``lazy''
+models~\cite{hanson-sigmod87} only build part of the views when the
+views are inspected.  Such models have the potential to be more
+efficient.  A simple way to implement a ``lazy'' model using \dbsp is
+to essentially accumulate all input changes as \zrs and apply the
+incremental algorithm only when the output view is queried.  Between
+``lazy'' and ``eager'' one can place ``snapshot'' views, which are
+updated periodically~\cite{colby-sigmod97}.  Snowflake offers all
+these models~\cite{akidau-amd23}.
 
-\cite{bengoli-sigmod19} proposes using SQL to express both standard
-database queries and streaming queries and provides an implementation
-for RedShift.  While this is a very nice goal, the \dbsp theory allows
-us to formally argue that there are many classes of queries that
-cannot be expressed in SQL.  So the question becomes perhaps ``what
-are the minimal changes that should be made to SQL to enable enabling
-stream processing?''
-
-Many custom algorithms were published for various classes of queries:
-e.g.~\cite{koch-pods16} handles positive nested relational calculus.
-DYN~\cite{idris-sigmod17,idris-vldb18}~\cite{idris-sigmod19} focus on acyclic
-conjunctive queries.  Instead of keeping the output view materialized
-they build data structures that allow efficiently querying the output
-views.  PAI maps~\cite{abeysinghe-sigmod22} are specially designed for
-queries with correlated aggregations.  AJU~\cite{wang-sigmod20}
-focuses on foreign-key joins.  It is a matter of future work to
-evaluate whether custom \dbsp operators can match the efficiency of
-systems specialized for narrow classes of queries.
-
-\dbsp is a bottom-up system, which always produces eagerly
-the \emph{changes} to the output views.
-Instead of maintaining the output view entirely, \dbsp proposes
-generating deltas as the output of the computation (similar to the kSQL~\cite{jafarpour-edbt19}
-\texttt{EMIT CHANGES} queries).  The idea that both
-inputs and outputs to an IVM system are streams of changes
-seems trivial, but this is key to the symmetry of our solution:
-both in our definition of IVM~(\ref{def:inc}), and the fundamental
-reason that the chain rule exists --- the chain rule is the one that makes our
-structural induction IVM algorithm possible.
+\dbsp is a bottom-up system, which always produces eagerly the
+\emph{changes} to the output views.  Instead of maintaining the output
+view entirely, \dbsp proposes generating deltas as the output of the
+computation (similar to the kSQL~\cite{jafarpour-edbt19} \texttt{EMIT
+  CHANGES} queries).  The idea that both inputs and outputs to an IVM
+system are streams of changes seems trivial, but this is key to the
+symmetry of our solution: both in our definition of
+IVM~(\ref{def:inc}), and the fundamental reason that the chain rule
+exists --- the chain rule is the one that makes our structural
+induction IVM algorithm possible.
 
 Several IVM algorithms for Datalog-like languages use counting based
 approaches~\cite{Dewan-iis92,motik-aaai15} that maintain the number of
 derivations of each output fact: DRed~\cite{gupta-sigmod93} and its
 variants~\cite{Ceri-VLDB91,Wolfson-sigmod91,Staudt-vldb96,Kotowski-rr11,Lu-sigmod95,Apt-sigmod87},
-the backward-forward algorithm and
+the backward-for\-ward algorithm and
 variants~\cite{motik-aaai15,Harrison-wdd92,motik-ai19}.  \dbsp is more
 general, and our incrementalization algorithm handles arbitrary
 recursive queries and generates more efficient plans for recursive
@@ -64,64 +81,85 @@ weights in \dbsp are related to the counting-number-of-derivations
 approaches, but our use of the $\distinct$ operator shows that precise
 counting is not necessary.
 
-Picallo et al.~\cite{picallo-scop19} provide a general solution to IVM for
-rich languages.  \dbsp requires a group structure on the values operated on;
-this assumption has two major practical benefits: it simplifies the mathematics considerably
-(e.g., Picallo uses monoid actions to model changes), and it provides a general, simple
-algorithm (\ref{algorithm-inc}) for incrementalizing arbitrary programs.  The downside of
-\dbsp is that one has to find a suitable group structure (e.g., \zrs for sets) to ``embed''
-the computation.  Picallo's notion of ``derivative'' is not unique: they need creativity to choose
-the right derivative definition, we need creativity to find the right group structure.
+Picallo et al.~\cite{picallo-scop19} provide a general solution to IVM
+for rich languages.  Unlike their proposal, \dbsp requires a group
+structure on the values operated on; this assumption has two major
+practical benefits: it simplifies the mathematics considerably (e.g.,
+Picallo uses monoid actions to model changes), and it provides a
+general, simple algorithm for incrementalizing arbitrary programs.
+The downside of \dbsp is that one has to find a suitable group
+structure (e.g., \zrs for sets) to ``embed'' the computation.
+Picallo's notion of ``derivative'' is not unique: they need creativity
+to choose the right derivative definition, we need creativity to find
+the right group structure.
 
-Finding a suitable group structure has proven easy for relations (both~\cite{koch-pods10}
-and~\cite{green-tcs11} use \zrs to uniformly model data and insertions/deletions), but it is
-not obvious how to do it for other data types, such as sorted collections, or tree-shaped
-collections (e.g., XML or JSON documents)~\cite{foster-planx08}.  An intriguing question
-is ``what other interesting group structures could this be applied to besides \zrs?''
-Papers such as~\cite{nikolic-icmd18} explore other possibilities, such as matrix algebra,
-linear ML models, or conjunctive queries.
-
-\dbsp does not do anything special for triangle queries~\cite{kara-tds20}.  Are there
-better algorithms for this case?
+Finding a suitable group structure has proven easy for relations
+(both~\cite{koch-pods10} and~\cite{green-tcs11} use \zrs to uniformly
+model data and insertions/deletions), but it is not obvious how to do
+it for other data types, such as sorted collections, or tree-shaped
+collections (e.g., XML or JSON documents)~\cite{foster-planx08}.  An
+intriguing question is ``what other interesting group structures could
+this be applied to besides \zrs?''  Papers such
+as~\cite{nikolic-icmd18} explore other possibilities, such as matrix
+algebra, linear ML models, or conjunctive queries.
 
 \dbsp can also model window and stream database
-queries~\cite{arasu-tr02,aurora}; it is an interesting question
-whether there are CQL queries that cannot be expressed in \dbsp (we
-conjecture that there aren't any).
+queries~\cite{arasu-tr02,aurora} such as CQL queries.
+\cite{begoli-sigmod19} proposes using SQL to express both standard
+database queries and streaming queries; it also proposes some
+extensions to SQL specific to streaming systems.  The \dbsp theory
+allows us to more precisely understand the classes of queries that
+cannot be expressed in SQL.  A SQL query is a function of the state of
+the database; in other words, a SQL query cannot provide different
+results based on the order of insertions of tuples in a table.
+Streaming systems however can.  \dbsp also enables us to handle
+generalizations of the proposed concepts -- for example, we believe
+that the ``timestamps'' attached by streaming systems to ``events'' do
+not need any special treatment.
 
-\cite{bonifati-iclp2018} implemented a verified IVM algorithm for a particular
-class of graph queries called Regular Datalog, with an implementation machine-checked in the
-Coq proof assistant. Their focus is on a particular algorithm and the approach does not
-consider other SQL operators, general recursion, or custom operators (although it is modular
-in the sense that it works on any query by incrementalizing it recursively). Furthermore,
-for all queries a deletion in the input change stream requires running the non-incremental
-query to recover.  We formally verify the theorems in our paper, which
-are much broader in scope, but not our implementations.
+\cite{bonifati-iclp2018} implemented a verified IVM algorithm for a
+particular class of graph queries called Regular Datalog, with an
+implementation machine-checked in the Coq proof assistant. Their focus
+is on a particular algorithm and the approach does not consider other
+SQL operators, general recursion, or custom operators (although it is
+modular in the sense that it works on any query by incrementalizing it
+recursively). Furthermore, for all queries a deletion in the input
+change stream requires running the non-incremental query to recover.
+We formally verify the theorems in our paper, which are much broader
+in scope, but not our implementations.
 
-\cite{svingos-amd23} uses foreign key information to optimize query
-plan generation.  These techniques are only sound in the absence of
-updates, so we use them for streaming-only queries.
 
-\dbsp is also related to Differential Dataflow (DD)~\cite{mcsherry-cidr13,murray-sosp13}
-and its theoretical foundations~\cite{abadi-fossacs15} (and recently~\cite{mcsherry-vldb20,chothia-vldb16}).
-DD's computational model is more powerful than
-\dbsp, since it allows time values to be part of an arbitrary lattice.
-In fact, DD is the only other framework which we are aware of that can incrementalize
-recursive queries as efficiently as \dbsp does.
-In contrast, our model uses either ``linear'' times, or nested time dimensions via the modular lifting transformer ($\lift{}$).
-\dbsp can express both
-incremental and non-incremental computations.  Most importantly, \dbsp comes with Algorithm~\ref{algorithm-inc}, a syntax-directed translation that can convert
-any expressible query into an incremental version --- in DD users have
-to assemble incremental queries manually using incremental operators.
-(materialize.com offers a product that automates incrementalization
-for SQL queries based on DD.  Differential Datalog~\cite{ryzhyk-datalog19}
-does it for a Datalog dialect.)  Unlike DD, \dbsp is a modular theory,
-which easily accommodates the addition of new operators:  as long as we can
-express a new operator as a \dbsp circuit, we can (1) define its incremental version,
-(2) apply the incrementalization algorithm to obtain an efficient
-incremental implementation, and (3) be confident that it composes with any
-other operators.
+\dbsp is also related to Differential Dataflow
+(DD)~\cite{mcsherry-cidr13,murray-sosp13,chothia-vldb16} and its
+theoretical foundations~\cite{abadi-fossacs15}.  DD's computational
+model is more powerful than \dbsp, since it models time values as part
+of an arbitrary lattice.  In fact, DD is the only other framework
+which we are aware of that can incrementalize recursive queries as
+efficiently as \dbsp does.  In contrast, our model uses either
+``linear'' times, or nested time dimensions via the modular lifting
+transformer ($\lift{}$).  \dbsp can express both incremental and
+non-incremental computations.  Most importantly, \dbsp comes with
+Algorithm~\ref{algorithm-inc}, a syntax-directed translation that can
+convert any expressible query into an incremental version --- in DD
+users have to assemble incremental queries manually using incremental
+operators.  materialize.com offers a product that automates
+incrementalization for SQL queries based on DD.  The Differential
+Datalog~\cite{ryzhyk-datalog19} project compiles Datalog to DD.
+Unlike DD, \dbsp is a modular theory, which easily accommodates the
+addition of new operators: as long as we can express a new operator as
+a \dbsp circuit, we can (1) define its incremental version, (2) apply
+the incrementalization algorithm to obtain an efficient incremental
+implementation, and (3) be confident that it composes with any other
+operators.
 
 \cite{akidau-amd23,akidau-debs24} describe the Snowflake incremental
-and streaming capabilities.
+and streaming capabilities.  In Showflake ``streams'' are database
+table that store the history of changes to a table.  Dynamic tables
+are views which are periodically refreshed, at user-specified
+intervals.  These can be updated either incrementally or using batch
+recomputation; the system chooses a stragegy based on the refres
+period.  The views provide snapshot isolation, which is similar to the
+DBSP consistency model.
 
+The \dbsp model is simple enough so it can be implemented in a few
+hundred lines of Python~\cite{dbsp-python}.

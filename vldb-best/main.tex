@@ -122,7 +122,7 @@
 \newcommand{\pair}[2]{\ensuremath{\langle #1,#2 \rangle}} % pairing
 \newcommand{\norm}[1]{\| #1 \|} % norm; requires math mode
 %\newcommand{\zpp}[1]{\mbox{zpp}(#1)}
-\newcommand{\makeset}{\ensuremath{\mbox{makeset}}}
+\newcommand{\makeset}{\ensuremath{\mbox{\texttt{UPSERT}}}}
 \newcommand{\sv}[1]{ % simple stream value, supplied as a space-separated list of 5 values
 \setsepchar{ }
 \readlist\arg{#1}
@@ -142,7 +142,7 @@
 
 \author{Mihai Budiu
   \and Leonid Ryzhyk
-  \and Gerd Zelwegger
+  \and Gerd Zellweger
   \and Ben Pfaff
   \and Lalith Suresh
   \and Abhinav Gyawali
@@ -151,7 +151,7 @@
   \and Frank McSherry
   \and Val Tannen}
 
-\institute{Mihai Budiu, Leonid Ryzhyk, Gerd Zelwegger, Ben Pfaff,
+\institute{Mihai Budiu, Leonid Ryzhyk, Gerd Zellweger, Ben Pfaff,
   Lalith Suresh, Abhinav Gyawali, Matei Budiu \at Feldera.com
   \and
   Tej Chajed \at University of Wiconsin-Madison
@@ -192,7 +192,6 @@ languages.
 \input{relational}
 \input{recursion}
 \input{nested}
-\input{extensions}
 \input{implementation}
 \input{experiments}
 \input{related}

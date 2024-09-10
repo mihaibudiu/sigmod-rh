@@ -60,7 +60,7 @@ and \texttt{anne} $\in R$.
 Since $\Z$ is an abelian ring, $\Z[A]$ is also an abelian ring, and
 thus a group $(\Z[A], +_{\Z[A]}, 0_{\Z[A]}, -_{\Z{A}})$.  Addition and
 subtraction are defined pointwise: $(f +_{\Z[A]} g)(x) = f(x) + g(x)
-. \forall x \in A.$ The $0$ element of $\Z[A]$ is the function
+\forall x \in A.$ The $0$ element of $\Z[A]$ is the function
 $0_{\Z[A]}$ defined by $0_{\Z[A]}(x) = 0 .  \forall x \in A$.  For
 example, $R + R = \{ \texttt{joe} \mapsto 2, \texttt{mary} \mapsto 4,
 \texttt{anne} \mapsto -2 \}$.  Since \zrs form a group, all results
@@ -115,7 +115,7 @@ partial order.
 
 We call a function $f : \Z[A] \rightarrow \Z[B]$ \defined{positive} if it maps
 positive values to positive values:
-$\forall x \in \Z[A], x \geq 0_{\Z[A]} \Rightarrow f(x) \geq 0_{\Z[B]}$.
+$\forall x \in \Z[A]~.~x \geq 0_{\Z[A]} \Rightarrow f(x) \geq 0_{\Z[B]}$.
 We use the same notation for functions: $\ispositive(f)$.
 
 \begin{definition}[distinct]
@@ -169,12 +169,13 @@ translating an arbitrary relational query plan into a \dbsp circuit.
 Operation & SQL example & \dbsp circuit & Details \\ \hline
 Composition &
  \begin{lstlisting}[language=SQL]
-SELECT ... FROM
-(SELECT ... FROM I)
+SELECT ... AS O FROM
+(SELECT ... AS I
+ FROM I0)
 \end{lstlisting}
  &
  \begin{tikzpicture}[auto,>=latex]
-  \node[] (I) {\code{I}};
+  \node[] (I) {\code{I0}};
   \node[block, right of=I] (CI) {$C_I$};
   \draw[->] (I) -- (CI);
   \node[block, right of=CI] (CO) {$C_O$};
@@ -393,7 +394,7 @@ version of $\distinct$ incurs significant space costs.
 \begin{proposition}\label{prop-distinct-delay}
 Let $Q$ be one of the following \zrs operators: filtering $\sigma$,
 join $\bowtie$, or Cartesian product $\times$.
-Then we have $\forall i \in \Z[I], \ispositive(i) \Rightarrow Q(\distinct(i)) = \distinct(Q(i))$.
+Then we have $\forall i \in \Z[A]~.~\ispositive(i) \Rightarrow Q(\distinct(i)) = \distinct(Q(i))$.
 \end{proposition}
 
 \noindent
@@ -474,7 +475,7 @@ mechanical steps:
 \begin{enumerate}[nosep, leftmargin=\parindent]
     \item Translate $Q$ into a circuit using the rules in Table~\ref{tab:relational}.
     \item Apply $\distinct$ elimination rules
-      (\ref{prop-distinct-delay},
+      (Propositions~\ref{prop-distinct-delay},
       \ref{prop-distinct-once})\footnote{If the rules are applied
       until convergence, the order in which the rules
       are applied does not matter, since the algorithm is confluent:
@@ -549,8 +550,8 @@ $$
 
 This incremental implementation of $\distinct$ has been known for a
 long time; for example, it is called the $\exists$ operator
-in~\cite{nikolic-icmd18}.  This implementation has several interesting
-features:
+in~\cite{nikolic-sigmod16}.  This implementation has several
+interesting features:
 
 \begin{itemize}
   \item The implementation uses an integral operator $\I$ to
@@ -585,7 +586,7 @@ Incremental circuits are efficient.  We evaluate the cost of a circuit
 while processing the $t$-th input change.  Even if $Q$ is a pure
 function, $\inc{Q}$ is actually a streaming system, with internal
 state.  This state is stored entirely in the delay operators $\zm$,
-some of which appear in $\I$ and $\D$ operators\footnote{For 
+some of which appear in $\I$ and $\D$ operators\footnote{For
 standard relational queries, after applying step 5 of the algorithm
 there will be no $\D$ operators left in the circuit.}.  The result
 produced by $\inc{Q}$ on the $t$-th input depends in general not only
@@ -624,36 +625,3 @@ The space complexity of linear operators is 0 (zero), since they store no
 data persistently.  The space complexity of operators such as $\inc{(\lift{\distinct})}$,
 $\inc{(\lift{\bowtie})}$, $\I$, and $\D$ is $O(|DB[t]|)$.  They need
 to store their input or output relations in full.
-
-\begin{comment}
-\subsubsection{Discussion}
-
-Let us look again at what we achieved using
-Algorithm~\ref{algorithm-inc}.  A relational algebra query can be
-implemented by multiple plans, each with a different data-dependent
-cost\footnote{The optimal plan depends not only on the query, but also
-  on the data.}.  The input of Algorithm~\ref{algorithm-inc} is a
-(relational), non-incremental query plan, produced by a query planner.
-The algorithm produces an incremental plan that is ``similar'' to the
-input plan.
-
-Standard query planners use cost-based heuristics and data statistics
-to optimize plans.  A generic IVM planner does not have this luxury,
-since the plan must be generated \emph{before} any data has been fed
-to the data\-base.  Nevertheless, all standard query optimization
-techniques, perhaps based on historical statistics, can be used to
-generate the query plan that is supplied to
-Algorithm~\ref{algorithm-inc}.  The question of optimality in the
-context of IVM plan is a much more difficult topic than optimization
-of ad-hoc queries, since the chosen IVM plan will execute for
-\emph{all future database updates}.
-
-Since incremental computations maintain internal state, it follows
-that incremental plans cannot be simply changed in-flight, like we can
-change ad-hoc queries based on current data statistics: deploying a
-new plan requires in general constructing its internal state, which is
-produced from the prior updates.  Fortunately, there is a trivial, but
-somewhat expensive, recipe for installing a new incremental plan: feed
-the entire current state of the database tables as inputs, in one big
-change.
-\end{comment}

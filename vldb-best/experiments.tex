@@ -4,7 +4,7 @@
 
 In this section we quantify some aspects of our implementation.
 Looking at Figure~\ref{fig:adapters}, it is clear that data crosses
-many layers.  In this section we strictly evaluate the performance of
+many layers.  In this section we evaluate only the performance of
 the central block, the \dbsp query engine.  However, in most real-life
 application performance will be limited by the adapters and network
 communication.
@@ -23,7 +23,7 @@ order of tens to hundreds of microseconds, proving that our engine can
 be used for very low latency applications.
 
 Throughput is the number of records that can be processed in a time
-unit.  \dbsp is synchronous and blocking model: for every input
+unit.  \dbsp is synchronous and blocking: for every input
 change, the pipeline does not accept any other inputs until it has
 produced the output for all views.  This suggests that latency is the
 inverse of throughput.
@@ -54,7 +54,7 @@ Increasing the batch size further beyond 100K records causes the
 system to enter an unstable state (the crossover point depends on the
 available memory size), in which throughput oscillates, as shown in
 Figure~\ref{fig:oscillation}.  One reason this happens is that some
-activities, such as merging batches, and garbage-collection of useless
+activities, such as merging batches, and garbage collection of useless
 records, only happen between circuit steps.  The right solution to
 smooth these oscillations is probably a dynamic controller for input
 sizes, but also for partitioning resources like memory between \dbsp
@@ -83,7 +83,7 @@ operators and their shards.
 There are no standard benchmark suites for IVM.  In this section we
 use an atypical benchmark suite, Nexmark~\cite{tucker2008nexmark},
 which was designed for benchmarking streaming systems.  The benchmark
-is driven by a synthetic data generator, modeling for an online
+is driven by a synthetic data generator, modeling an online
 auction site along with a suite of queries against the streams.
 Nexmark is already implemented for other streaming database systems,
 notably for Flink~\cite{carbone-ieee15,nexmark-flink}, a widely used
@@ -104,8 +104,8 @@ implementations have in common.  We omitted \query{q6} because there
 was no Flink implementation, and \query{q10} because we could not make
 Flink's implementation for it work.  We omitted \query{q11} and
 \query{q21} because DBSP does not yet fully support session windows
-and user-defined Rust functions\footnote{The latter feature is
-expected to be ready soon.}.
+and user-defined Rust functions.\footnote{The latter feature is
+expected to be ready soon.}
 
 We ran both the Flink and \dbsp implementations on the same machine,
 which has a 64-core, 128-thread Threadripper~3990X CPU and 256~GB RAM,
@@ -116,7 +116,7 @@ number.
 \dbsp runs as a single process with 16~worker threads, and otherwise
 with default settings.  We ran \dbsp both with storage disabled, where
 \dbsp keeps all state in RAM, and with storage enabled, where \dbsp
-flushes state to secondary storage as it gets large
+flushes large batches to secondary storage
 (see~\ref{sec:state-management}).  Enabling storage allows \dbsp to
 work with more state with less memory use, at some cost in throughput.
 
@@ -143,17 +143,17 @@ secondary storage.
 \newcommand{\x}{\(\times\)}
 
 Figure~\ref{fig:macrobenchmark}(a) shows throughput of \dbsp versus
-Flink.  In-memory we are up to 6.2\x{} faster than Flink, with a
+Flink.  With storage disabled, DBSP is up to 6.2\x{} faster than Flink, with a
 geometric mean of 2.2\x{} faster on average.  As queries get more
 complicated, \dbsp's advantage over Flink grows by a much larger
 factor.  For example, \query{q7} is 6.2\x{} faster in \dbsp vs. Flink,
 and q16 and q20 are about 4.5\x{} faster.
 
-\query{q13} is an outlier that performs slightly slower in out system
-than Flink; with storage enabled, it is slower than Flink.  With
-\query{q13} excluded, every remaining query runs at least 1.4\x{}
-faster in Feldera (with or without storage).  We are investigating
-this behavior.
+\query{q13} is an outlier that performs slightly slower in our system
+than Flink; with storage enabled, it is slower than Flink.  We are
+investigating this behavior.  With \query{q13} excluded, every
+remaining query runs at least 1.4\x{} faster in Feldera (with or
+without storage).
 
 Storage generally has a small impact on our throughput, except for
 \query{q13}, where it has about a 4\x{} penalty.  \query{q0} and other
@@ -162,13 +162,13 @@ very simple queries are about 1.5\x{} faster.
 \paragraph{Peak memory.}
 
 Figure~\ref{fig:macrobenchmark}(b) shows peak memory consumption, as
-reported as the operating system RSS (resident set size), for the
-Flink or Feldera processes.  In our case this is a single process; for
+reported as the operating system resident set size (RSS), for the
+Flink or DBSP processes.  In our case this is a single process; for
 Flink, it is the sum of the RSS in the 8 task manager containers.  We
 did not include the control plane in either case (in Feldera's system,
 the pipeline manager; in Flink, the job manager).
 
-We use between 0.03\x{} and 2.6\x{} as much memory of Flink, with a
+DBSP uses between 0.03\x{} and 2.6\x{} as much memory of Flink, with a
 geometric mean of 0.24\x{}.
 
 \query{q0} and several other queries use 2~GiB or less memory with our

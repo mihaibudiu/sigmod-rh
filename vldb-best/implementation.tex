@@ -85,12 +85,12 @@ In \secref{sec:relational} we have shown how to implement the
 relational algebra using \dbsp.  However, the SQL language is
 significantly richer than the relational algebra.
 
-\textbf{Multisets.} SQL operates on \emph{multisets} (or bags), e.g.,
+\paragraph{Multisets.} SQL operates on \emph{multisets} (or bags), e.g.,
 \code{UNION ALL}.  Since \zrs generalize bags, they can model all SQL
 operations. Many queries on multisets can be implemented by just
 omitting $\distinct$ operators.
 
-\textbf{NULLs.} \dbsp says nothing about the data types
+\paragraph{NULLs.} \dbsp says nothing about the data types
 and the functions that are executed by the operators in each node.  In
 our Rust SQL runtime (described in Section~\refsec{sec:runtime})
 nullable types are represented using Rust \texttt{Option<>} types, and
@@ -98,7 +98,7 @@ SQL \code{NULL} is the value \code{None}.  Some care is required in
 implementing the unusual semantics of \code{NULL} (e.g., in SQL two
 \code{NULL} values are neither equal, nor different).
 
-\textbf{Primary keys} in a table change its behavior on insertion:
+\paragraph{Primary keys.} A primary key changes a table's behavior on insertion:
 inserting a tuple can cause another tuple to be deleted.  This
 behavior looks roughly like a modified $\distinct$ operator, and can
 be implemented incrementally similarly:
@@ -123,7 +123,7 @@ insertion with key $k$: $\{ (k, v) \mapsto 1 \}$ to a \zr $\{ (k, v)
 \mapsto 1, (k, v') \mapsto -1 \}$, where $(k, v')$ is the previous
 value of the record, obtained from the $\I$ operator.
 
-\textbf{Constant values.}  One can write in SQL queries that have
+\paragraph{Constant values.}  One can write in SQL queries that have
 constant outputs, e.g., \code{SELECT 2}.  Technically an operator that
 produces a constant result is not TI.  However, constants can be
 accommodated easily by modeling them mathematically as constant input
@@ -386,7 +386,7 @@ or telemetry data points. $T$ discards values from $t$ after matching them again
 %can be applied to streams.  This enables programs that can
 %perform convolutions and time-based window computations over streams:
 
-\textbf{Streaming Window queries}
+\paragraph{Streaming Window queries.}
 
 Streaming databases often organize the contents of streams into windows,
 which store a subset of data points with a predefined range of timestamps.
@@ -508,8 +508,8 @@ indexed \zr''.  This is the most general data structure needed in
 recursive circuits.  It represents a vector (indexed by time) of
 indexed \zrs.  Simple indexed \zrs are represented by a vector with a
 single element, while \zrs are represented as indexed \zrs with an
-empty value\footnote{Rust is very efficient at eliding empty data
-structures.}.  The starting point of this implementation was the
+empty value.\footnote{Rust is very efficient at eliding empty data
+structures.}  The starting point of this implementation was the
 differential dataflow trace data structure~\cite{dd-crate}.
 
 A circuit construction API allows users to create \dbsp circuits by
@@ -561,8 +561,8 @@ including joins, $\distinct$, and group-by-aggregate use $\I$
 operators in their incremental expansion.  This state is kept in
 \emph{indexes} (called ``arrangements'' in~\cite{mcsherry-vldb20}).
 (In the \dbsp theoretical model the state is stored in fact in delay
-operators $\zm$ (and $\lift{\zm}$), but these are always inside
-integrators $\I$.  All other operators are stateless.
+operators $\zm$ and $\lift{\zm}$, but these are always inside
+integrators $\I$.)  All other operators are stateless.
 
 The size of these indexes is proportional to the size of the total
 input data of these operators --- and thus the total state of a
@@ -570,14 +570,14 @@ circuit can even exceed the size of the original database.  (Many
 traditional IVM schemes opt to recompute this state on demand, rather
 than store it permanently; \dbsp can model this strategy.)
 
-At runtime linear operators are essentially free.  The performance of
-a \dbsp program under is given by the cost of maintaining and
+At runtime, linear operators are essentially free.  The performance of
+a \dbsp program is given by the cost of maintaining and
 accessing the indexes.
 
-Indexed provide two essential operations:
+Indexes provide two essential operations:
 \begin{itemize}
-\item merging an existing (large) index with a new (small) change
-\item lookup a (small) set of values
+\item Merging an existing (large) index with a new (small) change.
+\item Looking up a (small) set of values.
 \end{itemize}
 
 Our implementation of indexes performs both these operations in
@@ -609,8 +609,8 @@ using the same order as the index.  When the index ingests a new
 change (left side of Figure~\ref{fig:trace}), the new batch is simply
 appended.  As the index grows, batches of similar size are lazily
 merged.  A merge may require multiple circuit steps.  The result of
-merging 2 batches with \(n_1\) and \(n_2\) tuples has at most \(n_1 +
-n_2\) tuples, and can even be empty if all weights add to 0.
+merging 2 batches with \(n_1\) and \(n_2\) tuples has \(n_1 +
+n_2\) or fewer tuples, and can even be empty if all weights add to 0.
 
 To lookup the tuples of a change inside an index (right side of
 Figure~\ref{fig:trace}), an exponential search~\cite{bentley-ipl76} is
@@ -622,20 +622,20 @@ multiple lists, the corresponding weights are added.
 \subsection{Secondary storage}
 
 Since indexes can be very large, in many applications they need to be
-spilled to disk.  Persistent storage also helps for fault-tolerance.
+spilled to disk.  Persistent storage also helps for fault tolerance.
 
 Initially we considered reusing an existing storage engine for
 persisting state.  Using RocksDB~\cite{dong-ats21} seemed a great
-choice due to its architectural similarities the way we manage state
-in-memory.  RocksDB is mature and widely-used and well-maintained
+choice due to its architectural similarities to the way we manage state
+in-memory.  RocksDB is mature, widely used, and well-maintained
 software.
 
 RocksDB is a generic key-value store that can represent multiple
 indexes using its column family feature, with distinct namespaces for
 keys. It also offers all the APIs we needed: quick value retrieval for
-a given key and iteration over keys and values (both forwards and
-backwards) from a starting point.  RocksDB is also based on an
-LSM-Tree
+a given key and iteration over keys and values (both forward and
+backward) from a starting point.  RocksDB is also based on an
+LSM-Tree.
 
 The mature RocksDB Rust library provides all needed operations,
 including custom comparators for keys, zero-copy get operations, bulk
@@ -646,7 +646,7 @@ Integrating RocksDB into our system was straightforward.  We
 implemented the trace API described in the previous section.
 Unfortunately, we encountered several critical issues:
 
-\textbf{Lack of Scaling} Our implementation utilizes multiple threads
+\paragraph{Lack of Scaling.} Our implementation utilizes multiple threads
 effectively by sharding data, allowing the system to scale well across
 many CPUs.  To avoid contention, we placed each persistent index in a
 separate column family in RocksDB. However, we discovered that RocksDB
@@ -655,7 +655,7 @@ pipelines performed best when limited to a single thread.
 
 Figure~\ref{fig:rocksdb} illustrates the severity of the issue (note
 the log-scale on the y-axis). It shows the performance for a subset of
-the nexmark queries that use indexes, comparing RocksDB with a single
+the Nexmark queries that use indexes, comparing RocksDB with a single
 thread against RocksDB with eight threads. For reference, we also
 include the performance of our system configured to keep everything in
 DRAM data structures (which, as expected, performs much better).
@@ -668,13 +668,13 @@ DRAM data structures (which, as expected, performs much better).
   \end{center}
 \end{figure}
 
-\textbf{Unable to Leverage Zero-Copy Deserialization} Besides the
+\paragraph{Unable to Leverage Zero-Copy Deserialization.} Besides the
 scalability limitations, we also observed significant performance
 overheads even when running on a single thread. This was primarily due
 to the cost of deserializing keys and values from RocksDB (which
 stores data as byte arrays) into the corresponding Rust types.
 
-\textbf{Overwhelming Configuration Complexity.}
+\paragraph{Overwhelming Configuration Complexity.}
 
 RocksDB offers an overwhelming number of configuration options, making
 it nearly impossible for non-experts to ensure optimal settings. The
@@ -686,7 +686,7 @@ Our attempts did not result in substantial improvements in performance
 or scalability. The most effective adjustment was enabling BlobDB,
 which increased throughput by approximately 20\%.
 
-\textbf{Slow Tests Due to Column Families} Our core engine is tested
+\paragraph{Slow Tests Due to Column Families.} Our core engine is tested
 using property-based testing, and therefore runs the same unit-tests
 with thousands of different inputs.  When these tests required an
 index, RocksDB would quickly generate thousands of short-lived column
@@ -701,8 +701,8 @@ remaining option was to build our own. Building a key-value embedded
 database is a substantial endeavor, so we did not make this choice
 lightly.
 
-For this purpose, we implemented our own B-tree like file format. The
-traces write each batch large enough to an individual file.  Batches
+For this purpose, we implemented our own B-tree-like file format. The
+traces write each batch that is large enough to an individual file.  Batches
 are always created in sorted order, which allowed us to write these
 files sequentially without any seeks and with minimal in-memory
 buffering.  Because batches are never modified in-place, the file
@@ -800,7 +800,7 @@ incorrect input data that causes issues.
   \end{center}
 \end{figure}
 
-As it was noticed out many years ago~\cite{labio-vldb00}, database
+As noticed many years ago~\cite{labio-vldb00}, database
 systems are not designed to interact well with external IVM systems.
 We provide a variety of adapters for interacting with external data
 sources, both as inputs and outputs (e.g., Kafka~\cite{kreps-netdb11},

@@ -37,23 +37,23 @@ First we lift the circuit entirely, using Proposition~\ref{prop-lift-cycle}:
   \draw[->>>] (z) -- (j);
 \end{tikzpicture}
 
-We convert this circuit into an incremental circuit, which receives
-in each transaction the changes to relation \code{E} and produces the
-corresponding changes to relation \code{R}:
+We convert this circuit into an incremental circuit, which receives in
+each transaction the changes to relation \code{E} and produces the
+corresponding changes to \code{R}:
 
 \noindent
 \begin{tikzpicture}[>=latex, node distance=1.6cm]
   \node[] (DE) {$\Delta$\code{E}};
-  \node[block, right of=DE, node distance=.7cm] (Einput) {$\I$};
+  \node[block, right of=DE, node distance=.8cm] (Einput) {$\I$};
   \draw[->>] (DE) -- (Einput);
   % generic part
   \node[block, right of=Einput, node distance=.8cm] (E) {$\lift{\delta}$};
 
   % relational query
   \node[block, above of=E, node distance=1cm] (j) {$\lift{\inc{(\lift{\bowtie})}}$};
-  \node[block, right of=j, node distance=1.4cm] (pj) {$\lift{\lift{\pi}}$};
-  \node[block, circle, below of=pj, node distance=1cm, inner sep=0cm] (plus) {$+$};
-  \node[block, right of=plus, node distance=1.3cm] (d) {$\lift{\inc{(\lift{\distinct})}}$};
+  \node[block, right of=j, node distance=1.8cm] (pj) {$\lift{\lift{\pi}}$};
+  \node[block, circle, right of=E, node distance=1cm, inner sep=0cm] (plus) {$+$};
+  \node[block, right of=plus, node distance=1.4cm] (d) {$\lift{\inc{(\lift{\distinct})}}$};
   \draw[->>>] (E) -- (j);
   \draw[->>>] (j) -- (pj);
   \draw[->>>] (E) -- (plus);
@@ -79,13 +79,13 @@ Apply the chain and cycle rules:
 \begin{tikzpicture}[>=latex, node distance=1.6cm]
   \node[] (Einput) {$\Delta$\code{E}};
   % generic part
-  \node[block, right of=Einput, node distance=1cm] (E) {$\inc{(\lift{\delta})}$};
+  \node[block, right of=Einput, node distance=1.1cm] (E) {$\inc{(\lift{\delta})}$};
 
   % relational query
   \node[block, above of=E, node distance=1cm] (j) {$\inc{(\lift{\inc{(\lift{\bowtie})}})}$};
-  \node[block, right of=j, node distance=1.9cm] (pj) {$\inc{(\lift{\lift{\pi}})}$};
-  \node[block, circle, below of=pj, node distance=1cm, inner sep=0cm] (plus) {$+$};
-  \node[block, right of=plus] (d) {$\inc{(\lift{\inc{(\lift{\distinct})}})}$};
+  \node[block, right of=j, node distance=2.1cm] (pj) {$\inc{(\lift{\lift{\pi}})}$};
+  \node[block, circle, right of=E, node distance=1.2cm, inner sep=0cm] (plus) {$+$};
+  \node[block, right of=plus, node distance=2cm] (d) {$\inc{(\lift{\inc{(\lift{\distinct})}})}$};
   \draw[->>>] (E) -- (j);
   \draw[->>>] (j) -- (pj);
   \draw[->>>] (E) -- (plus);

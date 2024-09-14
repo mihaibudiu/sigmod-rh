@@ -126,13 +126,14 @@
 \newcommand{\sv}[1]{ % simple stream value, supplied as a space-separated list of 5 values
 \setsepchar{ }
 \readlist\arg{#1}
+\setlength\tabcolsep{4pt}
 \begin{tabular}{|c|c|c|c|c|} \hline
   % notice that this is in reverse
   \!\ensuremath{\cdots}\! &
-  \!\arg[4]\! &
-  \!\arg[3]\! &
-  \!\arg[2]\! &
-  \!\arg[1]\!
+  \!\ensuremath{\arg[4]}\! &
+  \!\ensuremath{\arg[3]}\! &
+  \!\ensuremath{\arg[2]}\! &
+  \!\ensuremath{\arg[1]}\!
   % \arg[5] &
   \\ \hline
 \end{tabular}
@@ -174,16 +175,15 @@ classes of database changes.  In this paper we give a general,
 heuristic-free solution to this problem in 4 steps: (1) we describe a
 simple but expressive language called \dbsp for describing
 computations over data streams; (2) we give a new mathematical
-definition of IVM using \dbsp; (3) we give a general algorithm for
-converting any \dbsp program into an incremental program; this
-algorithm reduces the problem of incrementalizing a complex query to
-the problem of incrementalizing the primitive operations that compose
-the query.  Finally, (4) we show that practical database query
-languages, such as SQL and Datalog, can be directly implemented on top
-of \dbsp, using primitives that have efficient incremental
-implementations.  As a consequence, we obtain a general recipe for
-efficient IVM for essentially arbitrary queries written in all these
-languages.
+definition of IVM using \dbsp; (3) we give an algorithm for converting
+any \dbsp program into an incremental program; this algorithm reduces
+the problem of incrementalizing a complex query to the problem of
+incrementalizing the primitive operations that compose the query.
+Finally, (4) we show that practical database query languages, such as
+SQL and Datalog, can be directly implemented on top of \dbsp, using
+primitives that have efficient incremental implementations.  As a
+consequence, we obtain a general recipe for efficient IVM for
+essentially arbitrary queries written in all these languages.
 
 \end{abstract}
 

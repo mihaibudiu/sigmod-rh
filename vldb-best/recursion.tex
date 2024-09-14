@@ -19,10 +19,9 @@ s.t. $\forall t \geq t_0~.~s[t] = 0$.
 by $\streamf{A} \subset \stream{A}$.
 \end{definition}
 
-\paragraph{Stream introduction}
-
-The delta function (named from the Dirac delta function) $\delta : A \rightarrow \stream{A}$
-produces a stream from a scalar value:
+\textbf{Stream introduction.}  The delta function (named from the
+Dirac delta function) $\delta : A \rightarrow \stream{A}$ produces a
+stream from a scalar value:
 $$\delta(v)[t] \defn \left\{
 \begin{array}{ll}
   v & \mbox{if } t = 0 \\
@@ -44,8 +43,7 @@ double arrow.  For example:
 \end{tikzpicture}
 \end{center}
 
-\paragraph{Stream elimination}
-
+\textbf{Stream elimination.}
 We define the function $\int : \streamf{A} \rightarrow A$, over
 streams that are zero almost everywhere, as $\int(s) \defn \sum_{t
   \geq 0} s[t]$.  $\int$ simply adds up all values in the input stream
@@ -77,8 +75,7 @@ a single arrow.  E.g.,:
 $\delta$ and $\int$ are LTI.
 \end{proposition}
 
-\paragraph{Nested time domains}
-
+\textbf{Nested time domains.}
 So far we have used a tacit assumption that ``time'' is common for all
 streams in a program.  For example, when we add two streams,
 we assume that they use the same ``clock'' for the time dimension.

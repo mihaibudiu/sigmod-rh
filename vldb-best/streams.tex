@@ -12,9 +12,8 @@ numbers.
 
 \begin{definition}[stream]
 Given a set $A$, a \defined{stream} \emph{of values from $A$}, or an
-\emph{$A$-stream}, is a function $\N \rightarrow A$.  We denote by
-$\stream{A} \defn \{ s \,|\, s : \N \to A \}$ the set of all
-$A$-streams.
+\emph{$A$-stream}, is a function $\N \rightarrow A$.  $\stream{A}
+\defn \{ s \,|\, s : \N \to A \}$ is the set of all $A$-streams.
 \end{definition}
 
 When $s\in\stream{A}$ and $t\in\N$ we
@@ -122,6 +121,7 @@ For example, $\zm(\id) = \sv{0 0 1 2 3}$.
 A stream operator $S: \stream{A} \to \stream{B}$ is \defined{time-invariant} (TI) if
 $S(\zm_A(s)) = \zm_B(S(s))$ for all $s \in \stream{A}$; in other words, if
 the following two circuits are equivalent:
+\end{definition}
 
 \begin{tabular}{m{3cm}m{.5cm}m{3cm}}
 \begin{tikzpicture}[auto,>=latex]
@@ -146,7 +146,6 @@ $\cong$
   \draw[->>] (S) -- (output);
 \end{tikzpicture}
 \end{tabular}
-\end{definition}
 
 The output of a TI operator only depends on its input, but never on
 the ``logical clock'' value.  For example the operator $S(s)[t] = s[t]
@@ -310,11 +309,10 @@ As an example:
 {
 \noindent \small
 \begin{align*}
-  &\D(\sv{0 1 2 1 0}) &= \\
-  &\sv{0 1 2 1 0} - \zm(\sv{0 1 2 1 0}) &=\\
-  &\sv{0 1 2 1 0} - \sv{0 0 1 2 1} &=\\
+  \D(\sv{0 1 2 1 0}) &= \\
+  \sv{0 1 2 1 0} - \zm(\sv{0 1 2 1 0}) &=\\
+  \sv{0 1 2 1 0} - \sv{0 0 1 2 1} &= \sv{0 1 1 -1 -1}
 %  &\sv{0-0 1-0 2-1 1-2 0-1} =\\
-  &\sv{0 1 1 -1 -1}
 \end{align*}
 }
 
@@ -328,8 +326,8 @@ linear:
 
 \begin{proposition}
 \label{prop-rec-linear}
-Let $S$ be a unary, causal, LTI operator. The
-operator $Q(s)=\fix{\alpha}{S(s+\zm(\alpha))}$ is well-defined and LTI:
+Is $S$ is causal and LTI, the operator
+$Q(s)=\fix{\alpha}{S(s+\zm(\alpha))}$ is well-defined and LTI:
 
 \begin{center}
 \begin{tikzpicture}[>=latex]
@@ -473,8 +471,9 @@ The following is one of our central results:
 \begin{proposition}(Properties of the incremental version):
 \label{prop-inc-properties}
 \begin{description}[nosep, leftmargin=\parindent]
-\item[inversion:] $Q\mapsto\inc{Q}$ is bijective; its inverse is $Q\mapsto \I\circ Q\circ\D$.
-\item[invariance:] $\inc{+} = +, \inc{(\zm)} = \zm, \inc{-} = -, \inc{\I}=\I, \inc{\D}=\D$
+\item[inversion:] $Q\mapsto\inc{Q}$ is bijective; $Q\mapsto \I\circ
+  Q\circ\D$ is its inverse
+%\item[invariance:] $\inc{+} = +, \inc{(\zm)} = \zm, \inc{-} = -, \inc{\I}=\I, \inc{\D}=\D$
 \item[push/pull:] \label{prop-part-commutation}
     $Q \circ \I = \I \circ \inc{Q}$; $\D\circ Q = \inc{Q}\circ\D$
 \item[chain:] $\inc{(Q_1\circ Q_2)} = \inc{Q_1}\circ\inc{Q_2}$
@@ -569,14 +568,17 @@ query is just the feedback loop with the incremental query for its
 body.  This result will be used to implement recursive queries
 in~\refsec{sec:recursion}.
 
-To execute incremental queries efficiently, we want to compute directly
-on streams of changes, without integrating them. The invariance property above shows
-that stream operators $+$, $-$, and $\zm$ are identical to their incremental versions.
-The following theorems extend this to linear and bi-linear operators:
+To execute incremental queries efficiently, we want to compute
+directly on streams of changes, without integrating them.  The
+following theorems show how this can be done for linear and bi-linear
+operators:
 
 \begin{theorem}[Linear]\label{linear}
 If $Q$ is LTI, we have $\inc{Q}=Q$.
 \end{theorem}
+
+This implies that stream operators $+$, $-$, $\I$, $\D$, and $\zm$ are
+identical to their incremental versions.
 
 \begin{theorem}[Bilinear]\label{bilinear}
 Using the infix notation: if $\times$ is bilinear TI, we have:

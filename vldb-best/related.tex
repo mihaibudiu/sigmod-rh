@@ -128,7 +128,6 @@ change stream requires running the non-incremental query to recover.
 We formally verify the theorems in our paper, which are much broader
 in scope, but not our implementations.
 
-
 \dbsp is also related to Differential Dataflow
 (DD)~\cite{mcsherry-cidr13,murray-sosp13,chothia-vldb16} and its
 theoretical foundations~\cite{abadi-fossacs15}.  DD's computational
@@ -160,6 +159,10 @@ intervals.  These can be updated either incrementally or using batch
 recomputation; the system chooses a stragegy based on the refres
 period.  The views provide snapshot isolation, which is similar to the
 DBSP consistency model.
+
+The \code{pg\_ivm}~\cite{pgivm} project ofers an open-source Postgres
+module which adds IVM capabilities.  The supported set of queries has
+some significant restrictions.
 
 The \dbsp model is simple enough so it can be implemented in a few
 hundred lines of Python~\cite{dbsp-python}.

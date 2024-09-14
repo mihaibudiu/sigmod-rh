@@ -151,6 +151,19 @@ the incrementalization algorithm to obtain an efficient incremental
 implementation, and (3) be confident that it composes with any other
 operators.
 
+Many custom streaming systems have been implemented:
+Storm~\cite{toshnival-sigmod14}, Spark
+Streaming~\cite{zaharia-sosp13}, Flink~\cite{carbone-ieee15},
+Samza~\cite{noghabi-vldb17}, Beam~\cite{akidau-vldb15}, Kafka
+Streams~\cite{wang-sigmod21}, and many have adopted SQL dialectsL
+Spark Structured Streaming~\cite{armbrust-sigmod18}, Spark SQL,
+KSQL~\cite{jafarpour-edbt19}.  These sytems usually sacrifice some of
+the nice properties of database systems in order to compute
+efficiently over unbounded streams.  These systems may only support
+restricted classes of queries.  We believe that in the future
+databases will incorporate the best features of streaming systems, and
+that \dbsp shows one way this can be achieved.
+
 \cite{akidau-amd23,akidau-debs24} describe the Snowflake incremental
 and streaming capabilities.  In Showflake ``streams'' are database
 table that store the history of changes to a table.  Dynamic tables

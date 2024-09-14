@@ -1,5 +1,7 @@
 \section{Experimental Evaluation}\label{sec:experiments}
 
+\newcommand{\query}[1]{\textsf{#1}}
+
 In this section we quantify some aspects of our implementation.
 Looking at Figure~\ref{fig:adapters}, it is clear that data crosses
 many layers.  In this section we strictly evaluate the performance of
@@ -38,7 +40,7 @@ the throughput, and the size of the input changes.  Nikolic finds that
 in DBToaster the optimal value is somewhere between 1K and 10K tuples.
 Our experiments confirm this.  The exact optimum value depends on the
 query and data distribution.  Figure~\ref{fig:batchsize} shows some
-typical measurements for Nexmark query Q5.  Latency grows
+typical measurements for Nexmark query \query{q5}.  Latency grows
 monotonically with input batch size, but the optimum throughput is
 obtained for batches of 2K-20K records.
 
@@ -78,8 +80,6 @@ operators and their shards.
     100,000,000 events.\label{fig:macrobenchmark}}
 \end{figure*}
 
-\newcommand{\query}[1]{\textsf{#1}}
-
 There are no standard benchmark suites for IVM.  In this section we
 use an atypical benchmark suite, Nexmark~\cite{tucker2008nexmark},
 which was designed for benchmarking streaming systems.  The benchmark
@@ -87,16 +87,25 @@ is driven by a synthetic data generator, modeling for an online
 auction site along with a suite of queries against the streams.
 Nexmark is already implemented for other streaming database systems,
 notably for Flink~\cite{carbone-ieee15,nexmark-flink}, a widely used
-stream processing system.
+stream processing system.  Nexmark is an unusual benchmark, since the
+data is append-only, and thus grows unbounded.  The required internal
+state would also grow unbounded if the input is assumed to be
+arbitrary.  However, given some weak assumptions about the ordering of
+the inputs, these queries \emph{can} be implemented using finite state
+using a garbage-collection mechanism that deletes internal state which
+cannot influence any future outputs.  We leave this subject for a
+future paper.  This kind of benchmarks can only be implemented using a
+\dbsp-like model of computation, where the output is a stream of
+changes (and not the full views, which would also grow unbounded).
 
 We compare \dbsp against Flink on the Nexmark benchmark, which
 consists of 23 queries.  We use the queries that the Flink and \dbsp
 implementations have in common.  We omitted \query{q6} because there
 was no Flink implementation, and \query{q10} because we could not make
 Flink's implementation for it work.  We omitted \query{q11} and
-\query{q21} because DBSP does not yet support session windows and
-user-defined functions\footnote{The latter feature is expected to be
-ready soon.}.
+\query{q21} because DBSP does not yet fully support session windows
+and user-defined Rust functions\footnote{The latter feature is
+expected to be ready soon.}.
 
 We ran both the Flink and \dbsp implementations on the same machine,
 which has a 64-core, 128-thread Threadripper~3990X CPU and 256~GB RAM,

@@ -664,7 +664,7 @@ DRAM data structures (which, as expected, performs much better).
   \begin{center}
   \includegraphics[scale=.43]{graph/rocksdb}
   \caption{Query throughput using RocksDB as a storage layer; higher
-    is better.  Note the logarithmic Y axis.\label{fig:rocksdb}.}
+    is better.  Note the logarithmic Y axis\label{fig:rocksdb}.}
   \end{center}
 \end{figure}
 
@@ -761,13 +761,14 @@ $\inc{Q}$).  The non-incremental circuits are used for validating the
 compiler, because they must have the same semantics as a standard
 ad-hoc SQL query.
 
-The compiler is mature enough to pass all 7 million SQL Logic
-Tests~\cite{sqllogictest}.  The compiler handles all aspects of SQL:
+The compiler supports ``standard'' SQL and is mature enough to pass
+5+million SQL Logic Tests~\cite{sqllogictest}.
 \begin{itemize}
-\item \textbf{types:} NULLs, all standard SQL datatypes (including
-  \code{DATE}/\code{TIME}/\code{TIMESTAMP}), structured and
-  semi-structured types, such as arrays, maps, JSON, the standard SQL
-  ternary logic, multisets.
+\item \textbf{types:} \code{NULL}s using the standard SQL ternary
+  logic, all standard SQL datatypes (including
+  \code{DATE}/\code{TIME}/\\\code{TIMESTAMP}), structured and
+  semi-structured types, such as arrays, maps, JSON, multisets,
+  user-defined functions.
 \item \textbf{operators:} \code{SELECT}, \code{WHERE}, \code{FILTER},
   \code{HAVING}, \code{ORDER} \code{BY}, \code{LIMIT},
   \code{DISTINCT}, \code{EXCEPT}, \code{INTERSECT}, \code{UNION},
@@ -779,6 +780,15 @@ Tests~\cite{sqllogictest}.  The compiler handles all aspects of SQL:
 \end{itemize}
 The compiler does not yet support recursive queries (although the
 runtime does).
+
+SQL has many constructs that may cause runtime exceptions, such as
+arithmetic overflows; in a traditional ad-hoc query system these
+would surface as queries that terminate with an error.  Currently
+these would also cause a running pipeline to fail completely, but this
+solution is unacceptable for a platform for long-running computations.
+We are exploring alternative solutions, where a runtime crash would
+block the pipeline, giving a chance to the operators to remove
+incorrect input data that causes issues.
 
 \subsection{Interacting with the outside world}
 
@@ -807,7 +817,7 @@ to a downstream consumer in a suitable format.
 
 \begin{figure}[h]
   \begin{center}
-  \includegraphics[trim={0 2.5in 4.3in 0},clip,scale=.44]{services.pdf}
+  \includegraphics[trim={0 2.4in 4.3in 0},clip,scale=.44]{services.pdf}
   \caption{\label{fig:service}Feldera Service architecture.}
   \end{center}
 \end{figure}

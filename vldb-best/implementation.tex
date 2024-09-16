@@ -6,7 +6,7 @@ and Datalog$^{\neg\neg}$\cite{Abiteboul-book95}.  \dbsp can model many
 classes of streaming operators and stateful streaming computations.
 
 For example, to illustrate the Turing-completeness of \dbsp, we
-implement the following \\ ``while'' program, where $Q$ is an
+implement the following \emph{while} program, where $Q$ is an
 arbitrary query: {\small
 \begin{lstlisting}[language=Pascal]
 x := i;
@@ -69,12 +69,13 @@ output, i.e., the least fixpoint of $Q$ that includes~$i$.
 \section{Implementation}\label{sec:implementation}
 
 In this section we describe an implementation of a SQL compiler and
-runtime that targets DBSP.  Figure~\ref{fig:tools} shows the workflow.
+runtime that targets DBSP.  Figure~\ref{fig:tools} shows the compiler
+structure.
 
-\begin{figure}
+\begin{figure}[h]
   \begin{center}
-  \includegraphics[trim={0 0in 7.5in 0},clip,scale=.5]{tools.pdf}
-  \caption{\label{fig:tools}Architecture of the SQL compiler.}
+    \includegraphics[trim={0 0in 10in 0},clip,scale=.45]{tools.pdf}
+    \caption{\label{fig:tools}Architecture of the SQL compiler.}
   \end{center}
 \end{figure}
 
@@ -84,36 +85,49 @@ In \secref{sec:relational} we have shown how to implement the
 relational algebra using \dbsp.  However, the SQL language is
 significantly richer than the relational algebra.
 
-\paragraph{Multisets} SQL operates on \emph{multisets} (or bags), e.g., \code{UNION ALL}.
-Since \zrs generalize bags, queries on multisets can be implemented by
-just omitting $\distinct$ operator invocations.
+\paragraph{Multisets.} SQL operates on \emph{multisets} (or bags), e.g.,
+\code{UNION ALL}.  Since \zrs generalize bags, they can model all SQL
+operations. Many queries on multisets can be implemented by just
+omitting $\distinct$ operators.
 
-\paragraph{NULLs} Notice that \dbsp says nothing about the data types
+\paragraph{NULLs.} \dbsp says nothing about the data types
 and the functions that are executed by the operators in each node.  In
 our Rust SQL runtime (described in Section~\refsec{sec:runtime})
 nullable types are represented using Rust \texttt{Option<>} types, and
 SQL \code{NULL} is the value \code{None}.  Some care is required in
 implementing the unusual semantics of \code{NULL} (e.g., in SQL two
-\code{NULL} values are neither equal nor different).
+\code{NULL} values are neither equal, nor different).
 
-\paragraph{Primary keys}
+\paragraph{Primary keys.} A primary key changes a table's behavior on insertion:
+inserting a tuple can cause another tuple to be deleted.  This
+behavior looks roughly like a modified $\distinct$ operator, and can
+be implemented incrementally similarly:
 
-Primary keys on a table change its behavior on insertion: inserting a
-tuple can cause another tuple to be deleted.  This behavior looks
-roughly like a modified $\distinct$ operator, and can be implemented
-in a similar way as described in Proposition~\ref{prop-inc_distinct}.
-We define an \code{UPSERT} operator that maintains the integral of a
-table (indexed by key), and converts every insertion into a \zr that
-contains the insertion and a corresponding deletion if the key was
-already present.
+\begin{center}
+\begin{tikzpicture}[>=latex]
+    \node[] (input) {$\Delta d$};
+    \node[block, right of=input] (I) {$\I$};
+    \node[block, right of=I] (z) {$\zm$};
+    \node[block, below of=z, node distance=.8cm] (H) {\texttt{UPSERT}};
+    \node[right of=H, node distance=1.3cm] (output) {$\Delta o$};
+    \draw[->>] (input) -- node (mid) {} (I);
+    \draw[->>] (I) -- (z);
+    \draw[->>] (mid.center) |- (H);
+    \draw[->>] (z) -- node (i) [right] {} (H);
+    \draw[->>] (H) -- (output);
+\end{tikzpicture}
+\end{center}
 
-\paragraph{Constant values}
+\noindent The \code{UPSERT} operator and converts a \zr describing an
+insertion with key $k$: $\{ (k, v) \mapsto 1 \}$ to a \zr $\{ (k, v)
+\mapsto 1, (k, v') \mapsto -1 \}$, where $(k, v')$ is the previous
+value of the record, obtained from the $\I$ operator.
 
-One can write in SQL queries that have constant outputs, e.g.,
-\code{SELECT 2}.  Technically an operator that produces a constant
-result is not time-invariant.  However, constants can be accommodated
-easily by modeling them mathematically as constant input streams.
-The actual implementation uses ``constant'' nodes in the circuit.
+\paragraph{Constant values.}  One can write in SQL queries that have
+constant outputs, e.g., \code{SELECT 2}.  Technically an operator that
+produces a constant result is not TI.  However, constants can be
+accommodated easily by modeling them mathematically as constant input
+streams.
 
 \subsubsection{Grouping and indexed \zrs}\label{sec:grouping}
 
@@ -121,7 +135,11 @@ Let $K$ be a set of ``key'' values.  The finite maps from $K$ to \zrs
 are functions $K \to \Z[A] = \Z[A][K]$.  We call values $i$ of this
 type \defined{indexed \zrs}: for each key $k \in K$, $i[k]$ is a \zr.
 Because the codomain $\Z[A]$ is an Abelian group, this structure is
-itself an Abelian group.
+itself an Abelian group.  Here is an example indexed \zr:
+
+\begin{center}
+  \includegraphics[trim={0 4.2in 7.5in 0},clip,scale=.34]{indexed.pdf}
+\end{center}
 
 This structure is used to implement the SQL \texttt{GROUP BY} operator
 in \dbsp.  Consider a \defined{partitioning function} $p: A \to K$
@@ -129,34 +147,31 @@ that assigns a key to any value in $A$.  We define the grouping
 function $G_p: \Z[A] \to \Z[A][K]$ as $G_p(a)[k] \defn \sum_{x \in
   a.p(x)=k}\{ x \mapsto a[x] \}$ (just map each element of the input
 $a$ to the \zr grouping corresponding to its key).  When applied to a
-\zr $a$ this function returns an indexed \zr: each key $k$ maps to a
-\zr containing all elements of the group (as in SQL, each group is a
+\zr this function returns an indexed \zr: each key $k$ maps to a \zr
+containing all elements of the group (as in SQL, each group is a
 multiset).  Consider our example \zr $R$ from \refsec{sec:relational},
 and a key function $p(s)$ that returns the first letter of the string
-$s$.  The resulting indexed \zr is shown in the following diagram:
+$s$.  The resulting indexed \zr is shown in the previous diagram.
 
-\begin{center}
-  \includegraphics[trim={0 4.2in 7.5in 0},clip,scale=.34]{indexed.pdf}
-\end{center}
-
-The operation building an indexed \zr from a \zr is linear for any constant-time key
-function!  It follows that group-by is incremental: given some changes
-to the input relation we can apply the partitioning function to each
-row in the input separately to compute how each grouping changes.
+The operation building an indexed \zr from a \zr is linear for any key
+function!  It follows that group-by is incremental: each row changed
+in the input relation produces a row changed in a group, obtained by
+applying the partitioning function.
 
 Notice that, unlike SQL, \dbsp can express naturally computations on
 indexed \zrs, they are just an instance of a group structure.  In
 \dbsp one does not need to follow grouping by aggregation, and \dbsp
 can represent nested groupings of arbitrary depth.  Indeed, our
 compiler can recognize classes of such computations expressed using
-SQL windows, and can optimize them more efficiently.
+SQL windows (e.g., TopK for each group), and can generate efficient
+incremental code.
 
-Please note that our definition of incremental computation is only
-concerned with incrementality in the \emph{outermost} structures.  We
-leave it to future work to explore an appropriate definition of
-incremental computation on the \emph{inner} relations.
+%Please note that our definition of incremental computation is only
+%concerned with incrementality in the \emph{outermost} structures.  We
+%leave it to future work to explore an appropriate definition of
+%incremental computation on the \emph{inner} relations.
 
-\subsection{\texttt{UNNEST} (flatmap)}
+\subsubsection{\texttt{UNNEST} (flatmap)}
 
 A useful operation on nested relations is \defined{flatmap} (or
 \code{UNNEST} in SQL), which one can view as the inverse of grouping,
@@ -170,37 +185,46 @@ $A$ producing a ``scalar'' result with some result type $B$.  In \dbsp
 an aggregation function has a signature $a: \Z[A] \to B$.  When
 operating on \zrs, aggregation functions have to multiply the
 contribution of each value by its associated weight.
+(\texttt{DISTINCT} aggregates have to first apply a \texttt{DISTINCT}
+operator.)
 
 Distributive (e.g. \code{SUM}) and some algebraic aggregation
 (\code{AVG}) functions map can be implemented by a pair of linear
 functions between \zrs and the target group: the actual aggregation
 and the post-processing (e.g., dividing the sum by the counter for
-average).  So apparently they are purely incremental!
+average).  So apparently they are purely incremental.
 
 The subtle point is that in SQL the result of these aggregation must
-be a (singleton) set, and not an element of $B$.  So additional
-machinery is needed to convert the values of $B$ into values of
-$\Z[B]$, and this transformation is \emph{not} linear.  Consider the
-following SQL query: \code{SELECT COUNT(*) FROM I}.  The lifted
-incremental version of this query is the following circuit, where
-$a_\texttt{COUNT}$ is the linear ``count'' aggregation function, which
-just sums up the weights of the input values:
+be a (singleton) set containing an element of $B$, and not a value
+with type $B$.  So additional machinery is needed to convert the
+values of $B$ into values of $\Z[B]$, and this transformation is
+\emph{not} linear.  Consider the following query: \code{SELECT
+  COUNT(*) FROM I}.  The lifted incremental version of this query is
+the following circuit, where $a_\texttt{COUNT}$ is the linear
+``count'' aggregation function, which just sums up the weights of the
+input values:
 
-\begin{tikzpicture}[auto,>=latex, node distance=1.2cm]
-  \node[] (I) {\code{I}};
-  \node[block, right of=I] (pi) {$\pi_\texttt{C}$};
+\begin{tikzpicture}[>=latex, node distance=1.2cm]
+  \node[] (in) {$\Delta$\code{I}};
+  \node[block, right of=in] (pi) {$\pi_\texttt{C}$};
   \node[block, right of=pi] (a) {$a_\texttt{COUNT}$};
   \node[block, right of=a] (inc) {$\mathit{inc}$};
   \node[block, below of=inc, node distance=.7cm] (IN) {$\I$};
-  \node[block, right of=inc, node distance=1.4cm] (u) {$\makeset$};
-  \node[right of=u, node distance=1.2cm] (O) {\code{O}};
-  \draw[->>] (I) -- (pi);
+
+  \node[block, right of=inc] (I) {$\I$};
+  \node[block, right of=I] (z) {$\zm$};
+  \node[block, below of=z, node distance=.8cm] (H) {\texttt{UPSERT}};
+  \node[right of=H, node distance=1.3cm] (output) {$\Delta o$};
+  \draw[->>] (in) -- (pi);
   \draw[->>] (pi) -- (a);
   \draw[->>] (a) |- (IN);
   \draw[->>] (IN) -- (inc);
   \draw[->>] (a) -- (inc);
-  \draw[->>] (inc) -- (u);
-  \draw[->>] (u) -- (O);
+  \draw[->>] (I) -- (z);
+  \draw[->>] (z) -- (H);
+  \draw[->>] (H) -- (output);
+  \draw[->>] (inc) -- node (mm) {} (I);
+  \draw[->>] (mm.center) |- (H);
 \end{tikzpicture}
 
 Let's say the input table \code{I} has 2 elements, and thus the
@@ -242,19 +266,23 @@ similar to the $\distinct$ operator.  They can be implemented
 efficiently by keeping the data organized as a priority heap sorted by
 the value compared.
 
-In SQL \code{NULL} values do not participate in aggregation, so one
+In SQL, \code{NULL} values do not participate in aggregation, so one
 needs two insert two extra operators for collections of nullable
-values: a filtering operator (linear), which eliminates \code{NULL}s
-prior to aggregation, and an operator that counts the number of rows
-aggregated (as described by Mumick~\cite{mumick-sigmod97}), which is
-used to detect empty groups.
+values:
+\begin{itemize}
+  \item an operator that counts the number of rows aggregated (as
+    described by Mumick~\cite{mumick-sigmod97}), which is used to
+    detect empty groups
+  \item a filtering operator (linear), which eliminates \code{NULL}s
+    prior to aggregation
+\end{itemize}
 
-SQL requires a non-empty result when aggregation is performed over an
-empty set.  For many aggregation functions this result is \code{NULL}.
-All aggregation circuits described so far will return an empty \zr for
-an empty input.  Let $z$ be the result expected for the empty input.
-The following circuit applied after aggregation produces the requisite
-result.
+For many SQL aggregation functions aggregating over an empty set
+should produce a \code{NULL} result.  All aggregation circuits
+described so far will return an empty \zr for an empty input.  Let $z$
+be the result expected for the empty input (e.g., \code{NULL}).  The
+following circuit, applied after aggregation, will produce the result
+expected by SQL:
 
 \begin{center}
 \begin{tikzpicture}[auto,>=latex]
@@ -338,11 +366,11 @@ input collection.
 %\end{tikzpicture}
 %
 
-\subsubsection{Group operations}
+\subsubsection{Other operations on SQL groups}
 
 SQL constructs such as \code{PARTITION BY/OVER} make it possible to
 write queries over groups, e.g., TOP-K.  These can be implemented in
-\dbsp as operations over indexed \zrs.
+\dbsp naturally as functions over indexed \zrs.
 
 \begin{comment}
 \subsection{Streaming joins}
@@ -358,7 +386,7 @@ or telemetry data points. $T$ discards values from $t$ after matching them again
 %can be applied to streams.  This enables programs that can
 %perform convolutions and time-based window computations over streams:
 
-\paragraph{Streaming Window queries}
+\paragraph{Streaming Window queries.}
 
 Streaming databases often organize the contents of streams into windows,
 which store a subset of data points with a predefined range of timestamps.
@@ -480,8 +508,8 @@ indexed \zr''.  This is the most general data structure needed in
 recursive circuits.  It represents a vector (indexed by time) of
 indexed \zrs.  Simple indexed \zrs are represented by a vector with a
 single element, while \zrs are represented as indexed \zrs with an
-empty value\footnote{Rust is very efficient at eliding empty data
-structures.}.  The starting point of this implementation was the
+empty value.\footnote{Rust is very efficient at eliding empty data
+structures.}  The starting point of this implementation was the
 differential dataflow trace data structure~\cite{dd-crate}.
 
 A circuit construction API allows users to create \dbsp circuits by
@@ -492,7 +520,11 @@ differentiation, delay, nested integration and differentiation, and
 basic \zr incremental operators, corresponding to plus, negation,
 grouping, joining, semi-joins, anti-joins, temporal joins, primitive
 aggregates, generic aggregates (fold), $\distinct$, flatmap, window
-aggregates, indexing, upsert, etc.
+aggregates, indexing, upsert, etc.  Some operators only exist in an
+pure incremental form (e.g., they only operate correctly when fed
+deltas), and thus, when used in a non-incremental circuit, have to be
+``inverted'' using the inversion property from
+Proposition~\ref{prop-inc-properties}.
 
 For iterative computations the library provides the $\delta$ operator
 and an operator that generalizes $\int$ by terminating iteration when
@@ -503,17 +535,18 @@ non-incremental versions of primitive operators.
 
 The library also provides many ``helper'' operators that are used by
 the code generator in the implementation of some streaming queries,
-e.g., for state garbage-collection.
+e.g., for state garbage-collection (a subject not discussed in this
+paper).
 
 \subsubsection{Parallelization and Scale-out}
 
 Besides computing on streams, \dbsp circuit look very much like other
-dataflow query implementations.  As such, all standard parallelization
+dataflow query engines.  As such, all standard parallelization
 algorithms described in the literature~\cite{Graefe-sigmod90} can be
-applied.  The core library automatically parallelizes each circuit by
-sharding each operators to execute using a specified number of worker
-threads (all operators use the same number of threads, which is
-statically-defined).  The library automatically inserts exchange
+applied.  Our core circuits library automatically parallelizes each
+circuit by sharding each operators to execute using a specified number
+of worker threads (all operators use the same number of threads, which
+is statically-defined).  The library automatically inserts exchange
 operators to re-shard data when necessary (e.g., shard on the common
 key in an equi-join).  The same scheme can be used to implement
 scale-out solutions across multiple machines, but this part of the
@@ -528,64 +561,171 @@ including joins, $\distinct$, and group-by-aggregate use $\I$
 operators in their incremental expansion.  This state is kept in
 \emph{indexes} (called ``arrangements'' in~\cite{mcsherry-vldb20}).
 (In the \dbsp theoretical model the state is stored in fact in delay
-operators $\zm$ (and $\lift{\zm}$, but these always appear inside
-integrators $\I$).  All other operators are stateless.
+operators $\zm$ and $\lift{\zm}$, but these are always inside
+integrators $\I$.)  All other operators are stateless.
 
 The size of these indexes is proportional to the size of the total
-data in the input data of these operators (and not just to the size of
-the changes) --- and thus the total state of a circuit can even exceed
-the size of the original database.
+input data of these operators --- and thus the total state of a
+circuit can even exceed the size of the original database.  (Many
+traditional IVM schemes opt to recompute this state on demand, rather
+than store it permanently; \dbsp can model this strategy.)
 
-When considering performance, linear operators are essentially free.
-The performance of a \dbsp program under high load is bounded by the
-cost of the indexes.
+At runtime, linear operators are essentially free.  The performance of
+a \dbsp program is given by the cost of maintaining and
+accessing the indexes.
 
-Indexed provide two functions:
+Indexes provide two essential operations:
 \begin{itemize}
-\item merging an existing (large) index with a new (small) change
-\item lookup a (small) set of values in the collection
+\item Merging an existing (large) index with a new (small) change.
+\item Looking up a (small) set of values.
 \end{itemize}
 
 Our implementation of indexes performs both these operations in
-amortized time proportional to the size of the changes.  The
-implementation for indexes is essentially a Log-Structured Merge
-Tree~\cite{oneil-ai96} which can be spilled to secondary storage.
+amortized time $O(k \log n)$, where $k$ is the size of the changes,
+and $n$ is the size of the index.  The implementation of indexes is
+essentially a Log-Structured Merge (LSM) Tree~\cite{oneil-ai96}.
 
-Each index is represented as a sequence of sorted immutable lists, of
-exponentially increasing sizes (1, 2, 4, 8, etc.).  The lists are
-sorted lexicographically, first on the index key, then on the value.
-Each sorted list is an independent fragment of an indexed \zr; the
-same tuple can appear in different lists with different weights, but
-appears at most once in each list.  The full \zr represented is the
-sum of all component lists.  Since addition is commutative and
-associative, parts can be added in any order and at any time.
+The data structure used for indexes, (called a \emph{trace} in the
+code), is shown in Figure~\ref{fig:trace}.  Each index is represented
+as a sequence of sorted immutable lists (called \emph{batches}), of
+exponentially increasing sizes (1, 2, 4, 8, etc.) --- a generalization
+of binary signed digits~\cite{signed-digits}.  Any batch is sorted
+lexicographically, first on the index, then on the value.  Each batch
+is a \zr, and a trace represents the \zr that is the sum of all
+component batches.  The same tuple can appear in different batches
+with different weights, but appears at most once in each batch.  Since
+addition is commutative and associative, parts can be added in any
+order.
 
-Each change is represented as a single sorted list, using the same
-order as the index.  When the index ingests a new change, it is added
-into the index as a new list.  As the index grows, lists of similar
-size are lazily merged, sometimes across multiple circuit steps for
-large merges.  The result of merging lists with \(n_1\) and \(n_2\)
-tuples never has more than \(n_1 + n_2\) tuples and can even be an
-empty list if all weights add to 0.
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[trim={0 2.9in 2.1in 0},clip,scale=.27]{trace.pdf}
+    \caption{\label{fig:trace}Index representation and access.}
+  \end{center}
+\end{figure}
 
-To lookup the values in a change inside an index, binary search is
-performed for each value, starting from the previous position in the
-index.  Then a binary search is performed in all lists comprising an
-index; if results are found in multiple lists, they are reduced using
-tuple addition.
+A change added to an index is represented as a single batch, sorted
+using the same order as the index.  When the index ingests a new
+change (left side of Figure~\ref{fig:trace}), the new batch is simply
+appended.  As the index grows, batches of similar size are lazily
+merged.  A merge may require multiple circuit steps.  The result of
+merging 2 batches with \(n_1\) and \(n_2\) tuples has \(n_1 +
+n_2\) or fewer tuples, and can even be empty if all weights add to 0.
+
+To lookup the tuples of a change inside an index (right side of
+Figure~\ref{fig:trace}), an exponential search~\cite{bentley-ipl76} is
+performed to find the first value in each of the trace's batches, and
+then the cursors are advanced on all batches concurrently using binary
+search to find the next element.  When the same tuple is found in
+multiple lists, the corresponding weights are added.
+
+\subsection{Secondary storage}
+
+Since indexes can be very large, in many applications they need to be
+spilled to disk.  Persistent storage also helps for fault tolerance.
+
+Initially we considered reusing an existing storage engine for
+persisting state.  Using RocksDB~\cite{dong-ats21} seemed a great
+choice due to its architectural similarities to the way we manage state
+in-memory.  RocksDB is mature, widely used, and well-maintained
+software.
+
+RocksDB is a generic key-value store that can represent multiple
+indexes using its column family feature, with distinct namespaces for
+keys. It also offers all the APIs we needed: quick value retrieval for
+a given key and iteration over keys and values (both forward and
+backward) from a starting point.  RocksDB is also based on an
+LSM-Tree.
+
+The mature RocksDB Rust library provides all needed operations,
+including custom comparators for keys, zero-copy get operations, bulk
+inserts, and control over merging of entries with the same key during
+LSM compaction.
+
+Integrating RocksDB into our system was straightforward.  We
+implemented the trace API described in the previous section.
+Unfortunately, we encountered several critical issues:
+
+\paragraph{Lack of Scaling.} Our implementation utilizes multiple threads
+effectively by sharding data, allowing the system to scale well across
+many CPUs.  To avoid contention, we placed each persistent index in a
+separate column family in RocksDB. However, we discovered that RocksDB
+doesn't scale well beyond a few threads. In fact, with RocksDB, our
+pipelines performed best when limited to a single thread.
+
+Figure~\ref{fig:rocksdb} illustrates the severity of the issue (note
+the log-scale on the y-axis). It shows the performance for a subset of
+the Nexmark queries that use indexes, comparing RocksDB with a single
+thread against RocksDB with eight threads. For reference, we also
+include the performance of our system configured to keep everything in
+DRAM data structures (which, as expected, performs much better).
+
+\begin{figure}[h]
+  \begin{center}
+  \includegraphics[scale=.43]{graph/rocksdb}
+  \caption{Query throughput using RocksDB as a storage layer; higher
+    is better.  Note the logarithmic Y axis\label{fig:rocksdb}.}
+  \end{center}
+\end{figure}
+
+\paragraph{Unable to Leverage Zero-Copy Deserialization.} Besides the
+scalability limitations, we also observed significant performance
+overheads even when running on a single thread. This was primarily due
+to the cost of deserializing keys and values from RocksDB (which
+stores data as byte arrays) into the corresponding Rust types.
+
+\paragraph{Overwhelming Configuration Complexity.}
+
+RocksDB offers an overwhelming number of configuration options, making
+it nearly impossible for non-experts to ensure optimal settings. The
+complexity is so significant that~\cite{thakkar-hotstorage24} resorted
+to training a large language model (LLM) to identify good
+configurations.
+
+Our attempts did not result in substantial improvements in performance
+or scalability. The most effective adjustment was enabling BlobDB,
+which increased throughput by approximately 20\%.
+
+\paragraph{Slow Tests Due to Column Families.} Our core engine is tested
+using property-based testing, and therefore runs the same unit-tests
+with thousands of different inputs.  When these tests required an
+index, RocksDB would quickly generate thousands of short-lived column
+families (one for each instantiated test).  This caused our test suite
+to slow down significantly, extending the total run time from around 2
+minutes to approximately 30 minutes.  We traced this issue to a known
+performance degradation in RocksDB when creating many column families,
+which is unresolved since 2019.
+
+Since we could not find a suitable pre-existing storage system, the
+remaining option was to build our own. Building a key-value embedded
+database is a substantial endeavor, so we did not make this choice
+lightly.
+
+For this purpose, we implemented our own B-tree-like file format. The
+traces write each batch that is large enough to an individual file.  Batches
+are always created in sorted order, which allowed us to write these
+files sequentially without any seeks and with minimal in-memory
+buffering.  Because batches are never modified in-place, the file
+format and the code that implements it does not need to make
+allowances for adding, removing, or modifying data.
+
+Moreover, the implementation of storage extends the in-memory
+shared-nothing architecture: each worker thread processes an
+independent stream of data, so the storage layer can be per-thread as
+well.
 
 \subsubsection{Checkpointing and fault-tolerance}
 
-The state in delay operators is the only piece of information that
-needs to be persisted, checkpointed, or migrated to make \dbsp
+The state in delay $\zm$ operators is the only piece of information
+that needs to be persisted, checkpointed, or migrated to make \dbsp
 computations fault-tolerant.  Since \dbsp circuits operate
 synchronously in steps, by checkpointing the state between two
 execution steps one obtains a consistent snapshot of the circuit's
 state.  There is no need for a complicated synchronization protocol.
-Since the index data structures are immutable, checkpointing them is
-taking a snapshot can be done atomically using copy-on-write.  To
-complete a checkpoint we just need to ensure that each snapshot is
-written entirely to secondary storage.
+Since the index data structures are immutable, taking a snapshot can
+be done atomically using copy-on-write.  To complete a checkpoint we
+just need to ensure that each snapshot is written on secondary
+storage.
 
 \subsection{SQL compiler}
 
@@ -621,28 +761,71 @@ $\inc{Q}$).  The non-incremental circuits are used for validating the
 compiler, because they must have the same semantics as a standard
 ad-hoc SQL query.
 
-The compiler is mature enough to pass all 7 million SQL Logic
-Tests~\cite{sqllogictest}.  The compiler handles all aspects of SQL,
-including NULLs, all standard SQL datatypes (including DATE/TIME),
-structured and semi-structured types, such as arrays, maps, JSON, the
-standard SQL ternary logic, multisets.  The relational operations
-supported include: distinct, except, intersect, union, grouping,
-aggregation, inner and outer joins, pivots, rollups, data cubes,
-temporal joins, window queries, unnest, table functions, and some
-streaming extensions, like tumbling and hopping windows, etc.  The
-compiler does not yet support recursive queries (although the runtime
-does).
+The compiler supports ``standard'' SQL and is mature enough to pass
+5+million SQL Logic Tests~\cite{sqllogictest}.
+\begin{itemize}
+\item \textbf{types:} \code{NULL}s using the standard SQL ternary
+  logic, all standard SQL datatypes (including
+  \code{DATE}/\code{TIME}/\\\code{TIMESTAMP}), structured and
+  semi-structured types, such as arrays, maps, JSON, multisets,
+  user-defined functions.
+\item \textbf{operators:} \code{SELECT}, \code{WHERE}, \code{FILTER},
+  \code{HAVING}, \code{ORDER} \code{BY}, \code{LIMIT},
+  \code{DISTINCT}, \code{EXCEPT}, \code{INTERSECT}, \code{UNION},
+  \code{GROUP BY}, aggregation, inner and outer \code{JOIN}s,
+  \code{PIVOT}, \code{ROLLUP}, \code{CUBE}, temporal \code{ASOF JOIN},
+  windows \\ (\code{PARTITION BY ... OVER}), \code{UNNEST}, table
+  functions, common table expressions, correlated subqueries, and some
+  streaming extensions, like tumbling and hopping windows, etc.
+\end{itemize}
+The compiler does not yet support recursive queries (although the
+runtime does).
+
+SQL has many constructs that may cause runtime exceptions, such as
+arithmetic overflows; in a traditional ad-hoc query system these
+would surface as queries that terminate with an error.  Currently
+these would also cause a running pipeline to fail completely, but this
+solution is unacceptable for a platform for long-running computations.
+We are exploring alternative solutions, where a runtime crash would
+block the pipeline, giving a chance to the operators to remove
+incorrect input data that causes issues.
 
 \subsection{Interacting with the outside world}
 
-As it was noticed out many years ago~\cite{labio-vldb00}, database
+\begin{figure}[h]
+  \begin{center}
+  \includegraphics[trim={0 2.2inin 3.7in 0},clip,scale=.33]{adapters.pdf}
+  \caption{\label{fig:adapters}Communicating with external data
+    sources and sinks.}
+  \end{center}
+\end{figure}
+
+As noticed many years ago~\cite{labio-vldb00}, database
 systems are not designed to interact well with external IVM systems.
-We provide a a variety of adapters for interacting with external data
-sources, both as inputs and outputs (e.g., Kafka, CSV files, JSON,
-DataFrames, Delta Lake, Debezium, AVRO, etc.).  These are shown at the
-bottom of Figure~\ref{fig:tools}.  The input adapters receive data
-from external sources, buffer it, convert it into \zrs, and feed it to
-the circuits.  The output adapters receive data from the circuit
-outputs in the form of \zrs, and send it to a downstream consumer in a
-suitable format.
+We provide a variety of adapters for interacting with external data
+sources, both as inputs and outputs (e.g., Kafka~\cite{kreps-netdb11},
+Amazon S3~\cite{palankar-dadc08}, Google Pub/Sub~\cite{pubsub},
+DataFrames~\cite{pandas12}, Databricks Delta
+Lake~\cite{armbrust-vldb20}, database CDC streams via
+Debezium~\cite{debezium}, http, etc.), and using many data formats
+(CSV, JSON, Avro, Parquet, etc.).  Figure~\ref{fig:adapters} shows how
+a circuit uses adapters to communicate with the outside world.  The
+input adapters receive data from external sources, buffer it, convert
+it into \zrs, and feed it to the circuits.  The output adapters
+receive data from the circuit outputs in the form of \zrs, and send it
+to a downstream consumer in a suitable format.
+
+\begin{figure}[h]
+  \begin{center}
+  \includegraphics[trim={0 2.4in 4.3in 0},clip,scale=.44]{services.pdf}
+  \caption{\label{fig:service}Feldera Service architecture.}
+  \end{center}
+\end{figure}
+
+Feldera as a company offers IVM as a service.  The service-oriented
+architecture of the company's cloud offering is shown in
+Figure~\ref{fig:service}.  The pipeline manager is the centralized
+control plan, which is responsible for managing the entire life-cycle
+of the IVM programs.  These programs are deployed as \emph{pipelines}
+that run in isolated Docker containers.
 

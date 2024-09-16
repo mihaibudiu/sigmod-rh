@@ -171,8 +171,7 @@ $\lift{\delta_0}$ and $\lift{\int}$:
 
 \subsection{Cost of incremental recursive queries}
 
-\paragraph{Time complexity}
-
+\paragraph{Time complexity.}
 The time complexity of an incremental recursive query can be estimated
 as a product of the number of fixed point iterations and the
 complexity of each iteration. The incrementalized circuit never
@@ -196,7 +195,7 @@ detailed analysis can be found in our companion report~\cite{tr}.
 %and $O(|DB|, 0)$ \leonid{strange notation} respectively (the last operator performs work only in the first iteration),
 %so each of them is asymptotically better than the non-incremental version.
 
-\paragraph{Space complexity} Integration ($\I$) and differentiation ($\D$) of a
+\paragraph{Space complexity.} Integration ($\I$) and differentiation ($\D$) of a
 stream $\Delta s \in \stream{\stream{A}}$ use memory proportional to
 $\sum_{t_2}\sum_{t_1}|s[t_1][t_2]|$, i.e., the total size of changes
 aggregated over columns of the matrix.  The unoptimized circuit integrates

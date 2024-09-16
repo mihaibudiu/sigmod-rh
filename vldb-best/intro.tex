@@ -7,21 +7,18 @@ incremental program examples (\refsec{sec:recursive-example},
 \refsec{sec:recursive-incremental-example}), an expanded
 implementation section~\refsec{sec:implementation}, and an
 experimental evaluation~\refsec{sec:experiments}.  This paper includes
-only a few short proofs of some theorems; all the proofs can be found
-in an extended technical report~\cite{tr}; the proofs have also been
+only a few short mathematical proofs; all the proofs can be found in
+an extended technical report~\cite{tr}; the proofs have also been
 formalized and verified in the Lean proof
 assistant~\cite{dbsp-theory}.
 
 \subsection{Problem and Solution Overview}\label{sec:intro-incremental}
 
-Incremental view maintenance (IVM) is an important and well-studied
-problem in databases~\cite{gupta-idb95}.  The IVM problem can be
-stated as follows: we are given a database $DB$ and a view $V$,
-described by a query $Q$.  The goal of IVM is to keep the contents of
-$V$ up-to-date in response to changes of the database.
+The IVM problem can be stated as follows: we are given a database $DB$
+and a view $V$, described by a query $Q$.  The goal of IVM is to keep
+the contents of $V$ up-to-date in response to changes of the database.
 
-As a concrete example, consider the following statement defining a
-view in SQL:
+Consider the following SQL statement:
 
 \begin{lstlisting}[language=SQL]
 CREATE VIEW V AS
@@ -40,7 +37,7 @@ Time is the horizontal axis; the horizontal arrows labeled with
 $\Delta$ depict changes to the database.  The ``up'' arrows show the
 re-evaluation of $Q$ for each database snapshot.
 
-\includegraphics[trim={0 4.8in 3.7in 0},clip,scale=.34]{view.pdf}
+\noindent \includegraphics[trim={0 4.8in 3.7in 0},clip,scale=.34]{view.pdf}
 
 The naive solution is expensive.  After the first version of the view
 has been constructed, an ideal algorithm would compute only
@@ -60,26 +57,27 @@ In this paper we propose a new way to define $\inc{Q}$, as a form of
 Signal Processing DSP~\cite{rabiner-book75}, applied to databases,
 hence the name \dbsp.
 
-The evaluation of $\inc{Q}$ can be significantly more efficient than
-the na\"ive solution.  As is the case for traditional database
-queries, the performance of $\inc{Q}$ depends both on the query $Q$
-but also on the actual data that the query is applied to.  Informally,
-$\inc{Q}$ built by our algorithm, is faster than $Q$ by a factor of
-$O(|DB| / |\Delta DB|)$.  In practice this may be an improvement of
-several orders of magnitude.
+$\inc{Q}$ can be significantly more efficient than the na\"ive
+solution.  As is the case for traditional database queries, the
+performance of $\inc{Q}$ depends both on the query $Q$ but also on the
+actual data that the query is applied to.  Informally, $\inc{Q}$ built
+by our algorithm, is faster than $Q$ by a factor of $O(|DB| / |\Delta
+DB|)$.  In practice this may be an improvement of several orders of
+magnitude.
 
-Instead of treating the database as a large changing object, we model
-it as a \emph{sequence} or \emph{stream} of database snapshots, shown
-as $DB[1], DB[2], \ldots$ in the previous diagrams.  Similarly,
-consecutive view snapshots form a stream.  \dbsp is a simple
-programming language computing on streams; inputs and outputs are
-streams of arbitrary values.
+Instead of treating the database as a large, changing object, we model
+it as a sequence or \emph{stream} of database snapshots, shown as
+$DB[1], DB[2], \ldots$ previously.  Similarly, consecutive view
+snapshots form a stream.  \dbsp is a simple programming language
+computing on streams; inputs and outputs are streams of arbitrary
+values.
 
 The \dbsp language has only 4 operators.  However, it can express a
 rich set of computations on streams, including repeated computations
 (similar to the repeated queries $Q$ above), recursive computations
-that compute fixed points (like Datalog programs), streaming
-computations, and incremental computations (which we define shortly).
+that compute fixed points (like Datalog programs), more general
+streaming computations, and incremental computations (defined
+shortly).
 
 The central result of this paper is Algorithm~\ref{algorithm-inc}
 in~\refsec{sec:relational}.  The input to the algorithm is a \dbsp
@@ -211,11 +209,13 @@ We write $s = T(s_0, s_1)$.
 Given a function $f: A \to B$, we define a stream operator $\lift{f}
 :\stream{A} \to \stream{B}$ (read as ``$f$ lifted'') by applying
 function $f$ to each input value independently:
+
+\noindent
 \begin{center}
   \begin{tikzpicture}[auto,>=latex]
     \node[] (input) {$\sv{a b c d e}$};
-    \node[block, right of=input, node distance=2.2cm] (f) {$\lift{f}$};
-    \node[right of=f, node distance=2.8cm] (output) {$\sv{f(a) f(b) f(c) f(d) f(e)}$};
+    \node[block, right of=input, node distance=2cm] (f) {$\lift{f}$};
+    \node[right of=f, node distance=2.6cm] (output) {$\sv{f(a) f(b) f(c) f(d) f(e)}$};
     \draw[->>] (input) -- (f);
     \draw[->>] (f) -- (output);
   \end{tikzpicture}

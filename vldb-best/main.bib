@@ -169,7 +169,7 @@
 
 @InProceedings{abadi-fossacs15,
   author =       {Martín Abadi and Frank McSherry and Gordon Plotkin},
-  title =        {Foundations of Differential Dataflow},
+  title =        {Foundations of {Differential} {Dataflow}},
   booktitle =    {Foundations of Software Science and Computation
                   Structures (FoSSaCS)},
   year =         2015,
@@ -233,7 +233,7 @@
 @inproceedings{mcsherry-cidr13,
   author =       {Frank McSherry and Derek Gordon Murray and Rebecca
                   Isaacs and Michael Isard},
-  title =        {Differential Dataflow},
+  title =        {{Differential} {Dataflow}},
   booktitle =    CIDR,
   year =         2013,
   month =        {January 6--9},
@@ -525,7 +525,7 @@
   author =       {Abeysinghe, Supun and He, Qiyang and Rompf, Tiark},
   title =        {Efficient Incrementialization of Correlated Nested
                   Aggregate Queries Using Relative Partial Aggregate
-                  Indexes (RPAI)},
+                  Indexes ({RPAI})},
   year =         2022,
   url =          {https://doi.org/10.1145/3514221.3517889},
   abstract =     {Incrementalization of queries is imperative in cases
@@ -664,7 +664,7 @@
 
 @InProceedings{ryzhyk-datalog19,
    author =     {Leonid Ryzhyk and Mihai Budiu},
-   title =      {Differential Datalog},
+   title =      {Differential {Datalog}},
    booktitle =  {Datalog 2.0},
    address =    {Philadelphia, PA},
    month =      {June 4-5},
@@ -1442,55 +1442,6 @@
                   applications.}
 }
 
-@inproceedings{wang-sigmod21,
-  author =       {Wang, Guozhang and Chen, Lei and Dikshit, Ayusman
-                  and Gustafson, Jason and Chen, Boyang and Sax,
-                  Matthias J. and Roesler, John and Blee-Goldman,
-                  Sophie and Cadonna, Bruno and Mehta, Apurva and
-                  Madan, Varun and Rao, Jun},
-  title =        {Consistency and Completeness: Rethinking Distributed
-                  Stream Processing in Apache Kafka},
-  year =         2021,
-  url =          {https://doi.org/10.1145/3448016.3457556},
-  abstract =     {An increasingly important system requirement for
-                  distributed stream processing applications is to
-                  provide strong correctness guarantees under
-                  unexpected failures and out-of-order data so that
-                  its results can be authoritative (not needing
-                  complementary batch results).  Although existing
-                  systems have put a lot of effort into addressing
-                  some specific issues, such as consistency and
-                  completeness, how to enable users to make flexible
-                  and transparent trade-off decisions among
-                  correctness, performance, and cost still remains a
-                  practical challenge. Specifically, similar
-                  mechanisms are usually applied to tackle both
-                  consistency and completeness, which can result in
-                  unnecessary performance penalties. We present Apache
-                  Kafka's core design for stream processing, which
-                  relies on its persistent log architecture as the
-                  storage and inter-processor communication layers to
-                  achieve correctness guarantees. Kafka Streams, a
-                  scalable stream processing client library in Apache
-                  Kafka, defines the processing logic as
-                  read-process-write cycles in which all processing
-                  state updates and result outputs are captured as log
-                  appends. Idempotent and transactional write
-                  protocols are utilized to guarantee exactly-once
-                  semantics. Furthermore, revision-based speculative
-                  processing is employed to emit results as soon as
-                  possible while handling out-of-order data. We also
-                  demonstrate how Kafka Streams behaves in practice
-                  with large-scale deployments and performance
-                  insights exhibiting its flexible and low-overhead
-                  trade-offs.},
-  booktitle =    SIGMOD,
-  pages =        {2602–2613},
-  numpages =     12,
-  keywords =     {stream processing, semantics},
-  address =      {Virtual Event, China}
-}
-
 @Misc{storm,
   title =        {{Apache} {Storm}},
   howpublished = {\url{https://storm.apache.org/}},
@@ -2042,7 +1993,7 @@
 @Misc{tr,
   author =       {Mihai Budiu and Frank McSherry and Leonid Ryzhyk and Val Tannen},
   title =        {{DBSP}: A Language for Expressing Incremental View Maintenance for Rich Query Languages},
-  howpublished = {https://github.com/feldera/feldera/blob/main/doc/spec.pdf},
+  howpublished = {\url{https://github.com/feldera/feldera/blob/main/doc/spec.pdf}},
   year =         {2022},
   month =        {December}
 }
@@ -2514,7 +2465,7 @@
 @inproceedings{Kotowski-rr11,
   author =       {Jakub Kotowski and Fran{\c{c}}ois Bry and Simon
                   Brodt},
-  title =        {Reasoning as Axioms Change - Incremental View
+  title =        {Reasoning as Axioms Change --- Incremental View
                   Maintenance Reconsidered},
   booktitle =    {Web Reasoning and Rule Systems {RR}},
   address =      {Galway, Ireland},
@@ -2784,7 +2735,7 @@
                   prototype implementation to test these ideas.  Our
                   system extends Galax, and handles a core set of
                   operators and built-in functions capable of
-                  expressing many typical first- order queries. Its
+                  expressing many typical first-order queries. Its
                   design is fully compositional, so it can easily be
                   extended to new operators. We present preliminary
                   results of experiments run on benchmark queries from
@@ -2933,7 +2884,7 @@
 
 @InProceedings{mathlib2020,
   author        = {The mathlib Community},
-  title         = {The Lean Mathematical Library},
+  title         = {The {Lean} Mathematical Library},
   year          = {2020},
   isbn          = {9781450370974},
   publisher     = {Association for Computing Machinery},
@@ -3028,7 +2979,6 @@
                  these). SQL and Datalog can both be implemented in DBSP. As a
                  consequence, we obtain efficient incremental view maintenance
                  algorithms for queries written in all these languages.},
-   note =       {Best paper award. ACM SIGMOD Research Highlights Award.},
    url =        {https://mihaibudiu.github.io/work/budiu-vldb23.pdf},
    confweb =    {https://www.vldb.org/2023},
    doi =        {https://doi.org/10.14778/3587136.3587137},
@@ -3036,7 +2986,7 @@
 }
 
 @misc{dd-crate,
-    title = {Differential Dataflow},
+    title = {{Differential} {Dataflow} Rust library},
     author = {Frank McSherry},
     howpublished = {\url{https://github.com/TimelyDataflow/differential-dataflow}},
     note = {Retrieved September 2024}
@@ -3294,13 +3244,12 @@
                   Harry Sun and
                   Andrew Witkowski and
                   Mohamed Ziauddin},
-  title        = {Materialized Views in Oracle},
+  title        = {Materialized Views in {Oracle}},
   booktitle    = {Proceedings of 24rd International Conference on Very Large
                   Data Bases (VLDB'98)},
   month =        {August 24-27},
   location =     {New York City, New York},
   pages        = {659--664},
-  publisher    = {Morgan Kaufmann},
   year         = 1998,
   url          = {http://www.vldb.org/conf/1998/p659.pdf},
   abstract     = {Oracle Materialized Views (MVs) are designed for
@@ -3406,23 +3355,6 @@
   comments =     {Explains why triggers are not enough.  Use the
                   schema to filter some irrelevant updates.  Cute
                   circuit diagrams.}
-}
-
-@inproceedings{10.1145/253260.253353,
-author = {Colby, Latha S. and Kawaguchi, Akira and Lieuwen, Daniel F. and Mumick, Inderpal Singh and Ross, Kenneth A.},
-title = {Supporting multiple view maintenance policies},
-year = {1997},
-isbn = {0897919114},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-url = {https://doi.org/10.1145/253260.253353},
-doi = {10.1145/253260.253353},
-abstract = {Materialized views and view maintenance are becoming increasingly important in practice. In order to satisfy different data currency and performance requirements, a number of view maintenance policies have been proposed. Immediate maintenance involves a potential refresh of the view after every update to the deriving tables. When staleness of views can be tolerated, a view may be refreshed periodically or (on-demand) when it is queried. The maintenance policies that are chosen for views have implications on the validity of the results of queries and affect the performance of queries and updates. In this paper, we investigate a number of issues related to supporting multiple views with different maintenance policies.We develop formal notions of consistency for views with different maintenance policies. We then introduce a model based on view groupings for view maintenance policy assignment, and provide algorithms, based on the viewgroup model, that allow consistency of views to be guaranteed. Next, we conduct a detailed study of the performance aspects of view maintenance policies based on an actual implementation of our model. The performance study investigates the trade-offs between different maintenance policy assignments. Our analysis of both the consistency and performance aspects of various view maintenance policies are important in making correct maintenance policy assignments.},
-booktitle = {Proceedings of the 1997 ACM SIGMOD International Conference on Management of Data},
-pages = {405–416},
-numpages = {12},
-location = {Tucson, Arizona, USA},
-series = {SIGMOD '97}
 }
 
 @article{colby-sigmod97,
@@ -3680,7 +3612,7 @@ series = {SIGMOD '97}
   author =       {Begoli, Edmon and Akidau, Tyler and Hueske, Fabian
                   and Hyde, Julian and Knight, Kathryn and Knowles,
                   Kenneth},
-  title =        {One {SQL} to Rule Them All - an Efficient and
+  title =        {One {SQL} to Rule Them All --- an Efficient and
                   Syntactically Idiomatic Approach to Management of
                   Streams and Tables},
   year =         2019,
@@ -4017,7 +3949,7 @@ series = {SIGMOD '97}
 
 @inproceedings{Graefe-sigmod90,
   author =       {Graefe, Goetz},
-  title =        {Encapsulation of parallelism in the Volcano query
+  title =        {Encapsulation of parallelism in the {Volcano} query
                   processing system},
   year =         1990,
   url =          {https://doi.org/10.1145/93597.98720},
@@ -4064,9 +3996,523 @@ series = {SIGMOD '97}
 }
 
 @Misc{nexmark-flink,
-  author = 	 {Jingsong Lee and Jark Wu and others},
-  title = 	 {{Nexmark} Benchmark},
+  author =       {Jingsong Lee and Jark Wu and others},
+  title =        {{Nexmark} Benchmark},
   howpublished = {\url{https://github.com/nexmark/nexmark}},
-  month = 	 {August},
-  year = 	 2024}
+  month =        {August},
+  year =         2024
+}
 
+@Misc{pgivm,
+  author =    {{IVM} Development Group},
+  title =     {pg\_ivm},
+  howpublished = {\url{https://github.com/sraoss/pg_ivm}},
+  note =      {Retrieved September 2024}}
+
+@article{dong-ats21,
+  author =       {Dong, Siying and Kryczka, Andrew and Jin, Yanqin and
+                  Stumm, Michael},
+  title =        {{RocksDB}: Evolution of Development Priorities in a
+                  Key-value Store Serving Large-scale Applications},
+  year =         2021,
+  issue_date =   {November 2021},
+  volume =       17,
+  number =       4,
+  issn =         {1553-3077},
+  url =          {https://doi.org/10.1145/3483840},
+  doi =          {10.1145/3483840},
+  abstract =     {This article is an eight-year retrospective on
+                  development priorities for RocksDB, a key-value
+                  store developed at Facebook that targets large-scale
+                  distributed systems and that is optimized for Solid
+                  State Drives (SSDs). We describe how the priorities
+                  evolved over time as a result of hardware trends and
+                  extensive experiences running RocksDB at scale in
+                  production at a number of organizations: from
+                  optimizing write amplification, to space
+                  amplification, to CPU utilization. We describe
+                  lessons from running large-scale applications,
+                  including that resource allocation needs to be
+                  managed across different RocksDB instances, that
+                  data formats need to remain backward- and
+                  forward-compatible to allow incremental software
+                  rollouts, and that appropriate support for database
+                  replication and backups are needed. Lessons from
+                  failure handling taught us that data corruption
+                  errors needed to be detected earlier and that data
+                  integrity protection mechanisms are needed at every
+                  layer of the system. We describe improvements to the
+                  key-value interface. We describe a number of efforts
+                  that in retrospect proved to be misguided. Finally,
+                  we describe a number of open problems that could
+                  benefit from future research.},
+  journal =      {ACM Trans. Storage},
+  month =        {oct},
+  articleno =    26,
+  numpages =     32,
+  keywords =     {Key-value stores, large-scale applications, RocksDB,
+                  SSD, compaction, databases}
+}
+
+@inproceedings{thakkar-hotstorage24,
+  author =       {Thakkar, Viraj and Sukumar, Madhumitha and Dai,
+                  Jiaxin and Singh, Kaushiki and Cao, Zhichao},
+  title =        {Can Modern {LLMs} Tune and Configure {LSM}-based
+                  Key-Value Stores?},
+  year =         2024,
+  isbn =         9798400706301,
+  url =          {https://doi.org/10.1145/3655038.3665954},
+  doi =          {10.1145/3655038.3665954},
+  abstract =     {Log-Structured-Merge tree-based Key-Value Stores
+                  (LSM-KVSs) are important data storage building
+                  blocks in modern IT infrastructure. However, tuning
+                  their performance involves configuring over 100
+                  parameters, a task typically done manually or with
+                  limited parameters in auto-tuning mechanisms. This
+                  paper explores and answers the following question:
+                  can we leverage LLM's understanding of the system
+                  and LSM-KVS components for unrestricted
+                  parameter-pool tuning of LSM-KVS?LLMs are trained on
+                  readily available LSM-KVS source code, research
+                  papers, and open materials enabling the machines to
+                  have human-like understanding. We investigate
+                  integrating Large-Language Models (LLMs) into an
+                  automated tuning framework for LSM-KVS to enhance
+                  the tuning capability and interactivity. Our
+                  framework utilizes LLMs to recommend tailored
+                  configurations with calibrated prompts based on
+                  hardware, system, and workload information. Initial
+                  results demonstrate upto 3X throughput improvements
+                  and an upto 9X reduction in p99 latency across
+                  various hardware and workloads compared to the
+                  out-of-box configuration for the LSM-KVS.},
+  booktitle =    {Proceedings of the 16th ACM Workshop on Hot Topics
+                  in Storage and File Systems},
+  pages =        {116–123},
+  numpages =     8,
+  keywords =     {Automatic Tuning and Configuration, LSM-KVS, Large
+                  Language Models},
+  location =     {Santa Clara, CA, USA},
+  series =       {HotStorage '24}
+}
+
+@Misc{signed-digits,
+  title =        {Signed-digit representation},
+  howpublished = {\url{https://en.wikipedia.org/wiki/Signed-digit_representation}},
+  annote =       {Retrieved September 2024},
+  abstract =     {In mathematical notation for numbers, a signed-digit
+                  representation is a positional numeral system with a
+                  set of signed digits used to encode the integers.
+                  Signed-digit representation can be used to
+                  accomplish fast addition of integers because it can
+                  eliminate chains of dependent carries. In the
+                  binary numeral system, a special case signed-digit
+                  representation is the non-adjacent form, which can
+                  offer speed benefits with minimal space overhead.}
+}
+
+@article{bentley-ipl76,
+  title =        {An almost optimal algorithm for unbounded searching},
+  journal =      {Information Processing Letters},
+  volume =       5,
+  number =       3,
+  pages =        {82-87},
+  year =         1976,
+  issn =         {0020-0190},
+  doi =          {https://doi.org/10.1016/0020-0190(76)90071-5},
+  url =          {https://www.sciencedirect.com/science/article/pii/0020019076900715},
+  author =       {Jon Louis Bentley and Andrew Chi-Chih Yao},
+  keywords =     {Ordered table searching, optimal algorithms,
+                  analysis of algorithms, representation of integers}
+}
+
+@inproceedings{kreps-netdb11,
+  title =        {{Kafka}: A distributed messaging system for log
+                  processing},
+  author =       {Kreps, Jay and Narkhede, Neha and Rao, Jun and
+                  others},
+  booktitle =    {Proceedings of NetDB},
+  number =       2011,
+  pages =        {1--7},
+  year =         2011,
+  address =      {Athens, Greece},
+  abstract =     {Log processing has become a critical component of
+                  the data pipeline for consumer internet
+                  companies. We introduce Kafka, a distributed
+                  messaging system that we developed for collecting
+                  and delivering high volumes of log data with low
+                  latency. Our system incorporates ideas from existing
+                  log aggregators and messaging systems, and is
+                  suitable for both offline and online message
+                  consumption. We made quite a few unconventional yet
+                  practical design choices in Kafka to make our system
+                  efficient and scalable.  Our experimental results
+                  show that Kafka has superior performance when
+                  compared to two popular messaging systems.  We have
+                  been using Kafka in production for some time and it
+                  is processing hundreds of gigabytes of new data each
+                  day}
+}
+
+@inproceedings{palankar-dadc08,
+  author =       {Palankar, Mayur R. and Iamnitchi, Adriana and
+                  Ripeanu, Matei and Garfinkel, Simson},
+  title =        {{Amazon} {S3} for science grids: a viable solution?},
+  year =         2008,
+  url =          {https://doi.org/10.1145/1383519.1383526},
+  doi =          {10.1145/1383519.1383526},
+  abstract =     {Amazon.com has introduced the Simple Storage Service
+                  (S3), a commodity-priced storage utility. S3 aims to
+                  provide storage as a low-cost, highly available
+                  service, with a simple 'pay-as-you-go' charging
+                  model. This article makes three
+                  contributions. First, we evaluate S3's ability to
+                  provide storage support to large-scale science
+                  projects from a cost, availability, and performance
+                  perspective. Second, we identify a set of additional
+                  functionalities that storage services targeting
+                  data-intensive science applications should
+                  support. Third, we propose unbundling the success
+                  metrics for storage utility performance as a
+                  solution, to reduce storage costs.},
+  booktitle =    {Proceedings of the 2008 International Workshop on
+                  Data-Aware Distributed Computing},
+  pages =        {55–64},
+  numpages =     10,
+  keywords =     {amazon simple storage service, performance
+                  evaluation, utility computing},
+  location =     {Boston, MA, USA},
+  series =       {DADC '08}
+}
+
+@Misc{pubsub,
+  author =    {Google},
+  title =     {Google Pub/Sub},
+  howpublished = {\url{https://cloud.google.com/pubsub?hl=en}},
+  note =      {Retrieved September 2024},
+  abstract =     {Ingest events for streaming into BigQuery, data lakes or operational databases.}
+}
+
+@Misc{debezium,
+  title =     {Debezium},
+  howpublished = {\url{https://debezium.io/}},
+  note =      {Retrieved September 2024},
+  abstract =     {Stream changes from your database.  Debezium is an
+                  open source distributed platform for change data
+                  capture. Start it up, point it at your databases,
+                  and your apps can start responding to all of the
+                  inserts, updates, and deletes that other apps commit
+                  to your databases. Debezium is durable and fast, so
+                  your apps can respond quickly and never miss an
+                  event, even when things go wrong.}
+}
+
+@article{armbrust-vldb20,
+  author =       {Armbrust, Michael and Das, Tathagata and Sun, Liwen
+                  and Yavuz, Burak and Zhu, Shixiong and Murthy, Mukul
+                  and Torres, Joseph and van Hovell, Herman and
+                  Ionescu, Adrian and \L{}uszczak, Alicja and
+                  undefinedwitakowski, Micha\l{} and Szafra\'{n}ski,
+                  Micha\l{} and Li, Xiao and Ueshin, Takuya and
+                  Mokhtar, Mostafa and Boncz, Peter and Ghodsi, Ali
+                  and Paranjpye, Sameer and Senster, Pieter and Xin,
+                  Reynold and Zaharia, Matei},
+  title =        {{Delta} lake: high-performance {ACID} table storage
+                  over cloud object stores},
+  year =         2020,
+  issue_date =   {August 2020},
+  publisher =    {VLDB Endowment},
+  volume =       13,
+  number =       12,
+  issn =         {2150-8097},
+  url =          {https://doi.org/10.14778/3415478.3415560},
+  doi =          {10.14778/3415478.3415560},
+  abstract =     {Cloud object stores such as Amazon S3 are some of
+                  the largest and most cost-effective storage systems
+                  on the planet, making them an attractive target to
+                  store large data warehouses and data
+                  lakes. Unfortunately, their implementation as
+                  key-value stores makes it difficult to achieve ACID
+                  transactions and high performance: metadata
+                  operations such as listing objects are expensive,
+                  and consistency guarantees are limited. In this
+                  paper, we present Delta Lake, an open source ACID
+                  table storage layer over cloud object stores
+                  initially developed at Databricks. Delta Lake uses a
+                  transaction log that is compacted into Apache
+                  Parquet format to provide ACID properties, time
+                  travel, and significantly faster metadata operations
+                  for large tabular datasets (e.g., the ability to
+                  quickly search billions of table partitions for
+                  those relevant to a query). It also leverages this
+                  design to provide high-level features such as
+                  automatic data layout optimization, upserts,
+                  caching, and audit logs. Delta Lake tables can be
+                  accessed from Apache Spark, Hive, Presto, Redshift
+                  and other systems. Delta Lake is deployed at
+                  thousands of Databricks customers that process
+                  exabytes of data per day, with the largest instances
+                  managing exabyte-scale datasets and billions of
+                  objects.},
+  journal =      {Proc. VLDB Endow.},
+  month =        {aug},
+  pages =        {3411–3424},
+  numpages =     14
+}
+
+@book{pandas12,
+  author =       {Wes, McKinney},
+  title =        {Python for data analysis},
+  year =         2012,
+  publisher =    {O'Reilly Media, Inc.},
+  edition =      1,
+  abstract =     {Despite the explosive growth of data in industry
+                  after industry, learning and accessing data analysis
+                  tools has remained a challenge. This pragmatic guide
+                  demonstrates the nuts and bolts of manipulating,
+                  processing, cleaning, and crunching data with
+                  Python. It also serves as a modern introduction to
+                  scientific computing in Python for data-intensive
+                  applications.}
+}
+
+@inproceedings{toshnival-sigmod14,
+  author =       {Toshniwal, Ankit and Taneja, Siddarth and Shukla,
+                  Amit and Ramasamy, Karthik and Patel, Jignesh M. and
+                  Kulkarni, Sanjeev and Jackson, Jason and Gade,
+                  Krishna and Fu, Maosong and Donham, Jake and Bhagat,
+                  Nikunj and Mittal, Sailesh and Ryaboy, Dmitriy},
+  title =        {Storm@twitter},
+  year =         2014,
+  url =          {https://doi.org/10.1145/2588555.2595641},
+  doi =          {10.1145/2588555.2595641},
+  abstract =     {This paper describes the use of Storm at
+                  Twitter. Storm is a real-time fault-tolerant and
+                  distributed stream data processing system. Storm is
+                  currently being used to run various critical
+                  computations in Twitter at scale, and in
+                  real-time. This paper describes the architecture of
+                  Storm and its methods for distributed scale-out and
+                  fault-tolerance. This paper also describes how
+                  queries (aka. topologies) are executed in Storm, and
+                  presents some operational stories based on running
+                  Storm at Twitter. We also present results from an
+                  empirical evaluation demonstrating the resilience of
+                  Storm in dealing with machine failures. Storm is
+                  under active development at Twitter and we also
+                  present some potential directions for future work.},
+  booktitle =    {Proceedings of the 2014 ACM SIGMOD International
+                  Conference on Management of Data},
+  pages =        {147–156},
+  numpages =     10,
+  keywords =     {stream data management, real-time query processing},
+  location =     {Snowbird, Utah, USA},
+  series =       {SIGMOD '14}
+}
+
+@article{noghabi-vldb17,
+  author =       {Noghabi, Shadi A. and Paramasivam, Kartik and Pan,
+                  Yi and Ramesh, Navina and Bringhurst, Jon and Gupta,
+                  Indranil and Campbell, Roy H.},
+  title =        {{Samza}: stateful scalable stream processing at
+                  {LinkedIn}},
+  year =         2017,
+  issue_date =   {August 2017},
+  publisher =    {VLDB Endowment},
+  volume =       10,
+  number =       12,
+  issn =         {2150-8097},
+  url =          {https://doi.org/10.14778/3137765.3137770},
+  doi =          {10.14778/3137765.3137770},
+  abstract =     {Distributed stream processing systems need to
+                  support stateful processing, recover quickly from
+                  failures to resume such processing, and reprocess an
+                  entire data stream quickly. We present Apache Samza,
+                  a distributed system for stateful and fault-tolerant
+                  stream processing. Samza utilizes a partitioned
+                  local state along with a low-overhead background
+                  changelog mechanism, allowing it to scale to massive
+                  state sizes (hundreds of TB) per
+                  application. Recovery from failures is sped up by
+                  re-scheduling based on Host Affinity. In addition to
+                  processing infinite streams of events, Samza
+                  supports processing a finite dataset as a stream,
+                  from either a streaming source (e.g., Kafka), a
+                  database snapshot (e.g., Databus), or a file system
+                  (e.g. HDFS), without having to change the
+                  application code (unlike the popular Lambda-based
+                  architectures which necessitate maintenance of
+                  separate code bases for batch and stream path
+                  processing).Samza is currently in use at LinkedIn by
+                  hundreds of production applications with more than
+                  10, 000 containers. Samza is an open-source Apache
+                  project adopted by many top-tier companies (e.g.,
+                  LinkedIn, Uber, Netflix, TripAdvisor, etc.). Our
+                  experiments show that Samza: a) handles state
+                  efficiently, improving latency and throughput by
+                  more than 100X compared to using a remote storage;
+                  b) provides recovery time independent of state size;
+                  c) scales performance linearly with number of
+                  containers; and d) supports reprocessing of the data
+                  stream quickly and with minimal interference on
+                  real-time traffic.},
+  journal =      {Proc. VLDB Endow.},
+  month =        {aug},
+  pages =        {1634–1645},
+  numpages =     12
+}
+
+@inproceedings{wang-sigmod21,
+  author =       {Wang, Guozhang and Chen, Lei and Dikshit, Ayusman
+                  and Gustafson, Jason and Chen, Boyang and Sax,
+                  Matthias J. and Roesler, John and Blee-Goldman,
+                  Sophie and Cadonna, Bruno and Mehta, Apurva and
+                  Madan, Varun and Rao, Jun},
+  title =        {Consistency and Completeness: Rethinking Distributed
+                  Stream Processing in {Apache} {Kafka}},
+  year =         2021,
+  url =          {https://doi.org/10.1145/3448016.3457556},
+  doi =          {10.1145/3448016.3457556},
+  abstract =     {An increasingly important system requirement for
+                  distributed stream processing applications is to
+                  provide strong correctness guarantees under
+                  unexpected failures and out-of-order data so that
+                  its results can be authoritative (not needing
+                  complementary batch results). Although existing
+                  systems have put a lot of effort into addressing
+                  some specific issues, such as consistency and
+                  completeness, how to enable users to make flexible
+                  and transparent trade-off decisions among
+                  correctness, performance, and cost still remains a
+                  practical challenge. Specifically, similar
+                  mechanisms are usually applied to tackle both
+                  consistency and completeness, which can result in
+                  unnecessary performance penalties. We present Apache
+                  Kafka's core design for stream processing, which
+                  relies on its persistent log architecture as the
+                  storage and inter-processor communication layers to
+                  achieve correctness guarantees. Kafka Streams, a
+                  scalable stream processing client library in Apache
+                  Kafka, defines the processing logic as
+                  read-process-write cycles in which all processing
+                  state updates and result outputs are captured as log
+                  appends. Idempotent and transactional write
+                  protocols are utilized to guarantee exactly-once
+                  semantics. Furthermore, revision-based speculative
+                  processing is employed to emit results as soon as
+                  possible while handling out-of-order data. We also
+                  demonstrate how Kafka Streams behaves in practice
+                  with large-scale deployments and performance
+                  insights exhibiting its flexible and low-overhead
+                  trade-offs.},
+  booktitle =    {Proceedings of the 2021 International Conference on
+                  Management of Data},
+  pages =        {2602–2613},
+  numpages =     12,
+  keywords =     {semantics, stream processing},
+  location =     {Virtual Event, China},
+  series =       {SIGMOD '21}
+}
+
+@inproceedings{armbrust-sigmod18,
+  author =       {Armbrust, Michael and Das, Tathagata and Torres,
+                  Joseph and Yavuz, Burak and Zhu, Shixiong and Xin,
+                  Reynold and Ghodsi, Ali and Stoica, Ion and Zaharia,
+                  Matei},
+  title =        {{Structured Streaming}: A Declarative {API} for
+                  Real-Time Applications in {Apache Spark}},
+  year =         2018,
+  url =          {https://doi.org/10.1145/3183713.3190664},
+  doi =          {10.1145/3183713.3190664},
+  abstract =     {With the ubiquity of real-time data, organizations
+                  need streaming systems that are scalable, easy to
+                  use, and easy to integrate into business
+                  applications. Structured Streaming is a new
+                  high-level streaming API in Apache Spark based on
+                  our experience with Spark Streaming. Structured
+                  Streaming differs from other recent streaming APIs,
+                  such as Google Dataflow, in two main ways. First, it
+                  is a purely declarative API based on automatically
+                  incrementalizing a static relational query
+                  (expressed using SQL or DataFrames), in contrast to
+                  APIs that ask the user to build a DAG of physical
+                  operators. Second, Structured Streaming aims to
+                  support end-to-end real-time applications that
+                  integrate streaming with batch and interactive
+                  analysis. We found that this integration was often a
+                  key challenge in practice. Structured Streaming
+                  achieves high performance via Spark SQL's code
+                  generation engine and can outperform Apache Flink by
+                  up to 2x and Apache Kafka Streams by 90x. It also
+                  offers rich operational features such as rollbacks,
+                  code updates, and mixed streaming/batch
+                  execution. We describe the system's design and use
+                  cases from several hundred production deployments on
+                  Databricks, the largest of which process over 1 PB
+                  of data per month.},
+  booktitle =    {Proceedings of the 2018 International Conference on
+                  Management of Data},
+  pages =        {601–613},
+  numpages =     13,
+  keywords =     {apache spark, programming models, stream processing},
+  location =     {Houston, TX, USA},
+  series =       {SIGMOD '18}
+}
+
+@article{akidau-vldb15,
+  author =       {Akidau, Tyler and Bradshaw, Robert and Chambers,
+                  Craig and Chernyak, Slava and
+                  Fern\'{a}ndez-Moctezuma, Rafael J. and Lax, Reuven
+                  and McVeety, Sam and Mills, Daniel and Perry,
+                  Frances and Schmidt, Eric and Whittle, Sam},
+  title =        {The dataflow model: a practical approach to
+                  balancing correctness, latency, and cost in
+                  massive-scale, unbounded, out-of-order data
+                  processing},
+  year =         2015,
+  issue_date =   {August 2015},
+  publisher =    {VLDB Endowment},
+  volume =       8,
+  number =       12,
+  issn =         {2150-8097},
+  url =          {https://doi.org/10.14778/2824032.2824076},
+  doi =          {10.14778/2824032.2824076},
+  abstract =     {Unbounded, unordered, global-scale datasets are
+                  increasingly common in day-to-day business (e.g. Web
+                  logs, mobile usage statistics, and sensor
+                  networks). At the same time, consumers of these
+                  datasets have evolved sophisticated requirements,
+                  such as event-time ordering and windowing by
+                  features of the data themselves, in addition to an
+                  insatiable hunger for faster answers. Meanwhile,
+                  practicality dictates that one can never fully
+                  optimize along all dimensions of correctness,
+                  latency, and cost for these types of input. As a
+                  result, data processing practitioners are left with
+                  the quandary of how to reconcile the tensions
+                  between these seemingly competing propositions,
+                  often resulting in disparate implementations and
+                  systems.We propose that a fundamental shift of
+                  approach is necessary to deal with these evolved
+                  requirements in modern data processing. We as a
+                  field must stop trying to groom unbounded datasets
+                  into finite pools of information that eventually
+                  become complete, and instead live and breathe under
+                  the assumption that we will never know if or when we
+                  have seen all of our data, only that new data will
+                  arrive, old data may be retracted, and the only way
+                  to make this problem tractable is via principled
+                  abstractions that allow the practitioner the choice
+                  of appropriate tradeoffs along the axes of interest:
+                  correctness, latency, and cost.In this paper, we
+                  present one such approach, the Dataflow Model, along
+                  with a detailed examination of the semantics it
+                  enables, an overview of the core principles that
+                  guided its design, and a validation of the model
+                  itself via the real-world experiences that led to
+                  its development.},
+  journal =      {Proc. VLDB Endow.},
+  month =        {aug},
+  pages =        {1792–1803},
+  numpages =     12
+}

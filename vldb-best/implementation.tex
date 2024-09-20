@@ -118,7 +118,7 @@ be implemented incrementally similarly:
 \end{tikzpicture}
 \end{center}
 
-\noindent The \code{UPSERT} operator and converts a \zr describing an
+\noindent The \code{UPSERT} operator converts a \zr describing an
 insertion with key $k$: $\{ (k, v) \mapsto 1 \}$ to a \zr $\{ (k, v)
 \mapsto 1, (k, v') \mapsto -1 \}$, where $(k, v')$ is the previous
 value of the record, obtained from the $\I$ operator.
@@ -189,7 +189,7 @@ contribution of each value by its associated weight.
 operator.)
 
 Distributive (e.g. \code{SUM}) and some algebraic aggregation
-(\code{AVG}) functions map can be implemented by a pair of linear
+(\code{AVG}) functions can be implemented by a pair of linear
 functions between \zrs and the target group: the actual aggregation
 and the post-processing (e.g., dividing the sum by the counter for
 average).  So apparently they are purely incremental.
@@ -540,7 +540,7 @@ paper).
 
 \subsubsection{Parallelization and Scale-out}
 
-Besides computing on streams, \dbsp circuit look very much like other
+Besides computing on streams, \dbsp circuits look very much like other
 dataflow query engines.  As such, all standard parallelization
 algorithms described in the literature~\cite{Graefe-sigmod90} can be
 applied.  Our core circuits library automatically parallelizes each
@@ -560,7 +560,7 @@ between time and space.  While many incremental query primitives are
 including joins, $\distinct$, and group-by-aggregate use $\I$
 operators in their incremental expansion.  This state is kept in
 \emph{indexes} (called ``arrangements'' in~\cite{mcsherry-vldb20}).
-(In the \dbsp theoretical model the state is stored in fact in delay
+(In the \dbsp theoretical model the state is stored in delay
 operators $\zm$ and $\lift{\zm}$, but these are always inside
 integrators $\I$.)  All other operators are stateless.
 
@@ -762,7 +762,7 @@ compiler, because they must have the same semantics as a standard
 ad-hoc SQL query.
 
 The compiler supports ``standard'' SQL and is mature enough to pass
-5+million SQL Logic Tests~\cite{sqllogictest}.
+5+ million SQL Logic Tests~\cite{sqllogictest}.
 \begin{itemize}
 \item \textbf{types:} \code{NULL}s using the standard SQL ternary
   logic, all standard SQL datatypes (including
@@ -808,7 +808,7 @@ Amazon S3~\cite{palankar-dadc08}, Google Pub/Sub~\cite{pubsub},
 DataFrames~\cite{pandas12}, Databricks Delta
 Lake~\cite{armbrust-vldb20}, database CDC streams via
 Debezium~\cite{debezium}, http, etc.), and using many data formats
-(CSV, JSON, Avro, Parquet, etc.).  Figure~\ref{fig:adapters} shows how
+(CSV, JSON, Arrow, Avro, Parquet, etc.).  Figure~\ref{fig:adapters} shows how
 a circuit uses adapters to communicate with the outside world.  The
 input adapters receive data from external sources, buffer it, convert
 it into \zrs, and feed it to the circuits.  The output adapters

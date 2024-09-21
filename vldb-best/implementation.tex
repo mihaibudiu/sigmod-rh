@@ -669,10 +669,10 @@ DRAM data structures (which, as expected, performs much better).
 \end{figure}
 
 \paragraph{Unable to Leverage Zero-Copy Deserialization.} Besides the
-scalability limitations, we also observed significant performance
-overheads even when running on a single thread. This was primarily due
-to the cost of deserializing keys and values from RocksDB (which
-stores data as byte arrays) into the corresponding Rust types.
+scalability limitations, we also observed significant overheads even
+when running on a single thread. This was primarily due to the cost of
+deserializing keys and values from RocksDB (which stores data as byte
+arrays) into the corresponding Rust types.
 
 \paragraph{Overwhelming Configuration Complexity.}
 
@@ -822,10 +822,12 @@ to a downstream consumer in a suitable format.
   \end{center}
 \end{figure}
 
-Feldera as a company offers IVM as a service.  The service-oriented
-architecture of the company's cloud offering is shown in
-Figure~\ref{fig:service}.  The pipeline manager is the centralized
+Feldera as a company offers IVM as a service.  A version of the
+service-oriented architecture of the company's cloud offering is shown
+in Figure~\ref{fig:service}.  The pipeline manager is the centralized
 control plan, which is responsible for managing the entire life-cycle
 of the IVM programs.  These programs are deployed as \emph{pipelines}
-that run in isolated Docker containers.
+that run in isolated Docker containers.  Feldera also offers a cloud
+form factor, which distributes the pipeline manager across several
+communicating services and uses Kubernetes to run the pipelines.
 

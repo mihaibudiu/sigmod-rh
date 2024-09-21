@@ -6,8 +6,7 @@ In this section we quantify some aspects of our implementation.
 Looking at Figure~\ref{fig:adapters}, it is clear that data crosses
 many layers.  In this section we evaluate only the performance of
 the central block, the \dbsp query engine.  However, in most real-life
-application performance will be limited by the adapters and network
-communication.
+application performance will be limited by the adapters and network.
 
 \subsection{Latency, throughput, and input change size}
 
@@ -114,11 +113,12 @@ with Fedora Core~40 as the operating system. We present results for
 number.
 
 \dbsp runs as a single process with 16~worker threads, and otherwise
-with default settings.  We ran \dbsp both with storage disabled, where
-\dbsp keeps all state in RAM, and with storage enabled, where \dbsp
-flushes large batches to secondary storage
-(see~\ref{sec:state-management}).  Enabling storage allows \dbsp to
-work with more state with less memory use, at some cost in throughput.
+with default settings, matching the number of workers used for Flink.
+We ran \dbsp both with storage disabled, where \dbsp keeps all state
+in RAM, and with storage enabled, where \dbsp flushes large batches to
+secondary storage (see~\ref{sec:state-management}).  Enabling storage
+allows \dbsp to work with more state with less memory use, at some
+cost in throughput.
 
 We configured the Flink implementation of Nexmark with the settings
 recommended by the upstream project, running 8~Flink task manager
@@ -164,9 +164,10 @@ very simple queries are about 1.5\x{} faster.
 Figure~\ref{fig:macrobenchmark}(b) shows peak memory consumption, as
 reported as the operating system resident set size (RSS), for the
 Flink or DBSP processes.  In our case this is a single process; for
-Flink, it is the sum of the RSS in the 8 task manager containers.  We
-did not include the control plane in either case (in Feldera's system,
-the pipeline manager; in Flink, the job manager).
+Flink, it is the sum of the RSS in the 8 task manager containers.  In
+the measurements we did not include the cost incurred by the control
+plane in either case (in Feldera's system, the pipeline manager; in
+Flink, the job manager).
 
 DBSP uses between 0.03\x{} and 2.6\x{} as much memory of Flink, with a
 geometric mean of 0.24\x{}.
@@ -179,5 +180,5 @@ which might cause it to allocate a high minimum amount of memory.
 
 Most queries use less memory in our system than in Flink.  \query{q9}
 and \query{q13} use substantially more, and \query{q18} and
-\query{q19} use somewhat more, and storage reduces the storage
+\query{q19} use somewhat more, and storage reduces the RAM use
 significantly.

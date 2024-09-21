@@ -41,8 +41,7 @@ describing such algorithms.  In some sense the \dbsp theory, through
 the chain rule, enables us to reuse all of these results (and any
 future schemes designed for particular classes of subqueries): given a
 good implementation strategy for a particular query plan it can be
-reused as a subplan in any query which can be made to use that
-particular plan.
+reused as a subplan in any query which uses that particular plan.
 
 \dbsp as described implies an ``eager'' execution model: it constantly
 maintains the entire contents of any number of views, even if no one

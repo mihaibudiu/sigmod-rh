@@ -98,69 +98,97 @@ data = pandas.DataFrame(data=transpose(data))
 (alt
  .Chart(data)
  .mark_bar()
- .encode(x=alt.X("system:N", title="System"),
-         y=alt.Y("memory", title="GiB"),
-         color=alt.Color("system:N", title="System"),
-         column=alt.Column("query:N", title="Query"))
- .properties(title="Peak Memory Usage")
+ .encode(x=alt.X("system:N", title="System").title(None),
+         y=alt.Y("memory", title=""),
+         color=alt.Color("system:N", title="").scale(scheme="category10"),
+         column=alt.Column("query:N", title="Peak Memory Usage by Query, in GiB"))
+ .configure_axis(labelFontSize=20, titleFontSize=20)
+ .configure_axisX(labels=False, ticks=False)
+ .configure_legend(labelFontSize=20, labelLimit=200, titleFontSize=10, orient="bottom")
+ .configure_title(fontSize=20)
+ .configure_header(labelFontSize=20, titleFontSize=20)
  .save('memory.pdf'))
 
 (alt
  .Chart(data)
  .mark_bar()
- .encode(x=alt.X("system:N", title="System"),
-         y=alt.Y("normal_memory", title="Normalized Memory"),
-         color=alt.Color("system:N", title="System"),
-         column=alt.Column("query:N", title="Query"))
- .properties(title="Normalized Peak Memory Usage")
+ .encode(x=alt.X("system:N", title="").title(None),
+         y=alt.Y("normal_memory", title=""),
+         color=alt.Color("system:N", title="").scale(scheme="category10"),
+         column=alt.Column("query:N", title="Normalized Peak Memory Usage by Query"))
+ .configure_axis(labelFontSize=20, titleFontSize=20)
+ .configure_axisX(labels=False, ticks=False)
+ .configure_legend(labelFontSize=20, labelLimit=200, titleFontSize=10, orient="bottom")
+ .configure_title(fontSize=20)
+ .configure_header(labelFontSize=20, titleFontSize=20)
  .save('memory_normal.pdf'))
 
 (alt
  .Chart(data)
  .mark_bar()
- .encode(x=alt.X("system:N", title="System"),
-         y=alt.Y("cpu", title="CPU-Seconds"),
-         color=alt.Color("system:N", title="System"),
-         column=alt.Column("query:N", title="Query"))
- .properties(title='Total CPU Usage')
+ .encode(x=alt.X("system:N", title="").title(None),
+         y=alt.Y("cpu", title=""),
+         color=alt.Color("system:N", title="").scale(scheme="category10"),
+         column=alt.Column("query:N", title="Total CPU Usage by Query, in CPU-Seconds"))
+ .configure_axis(labelFontSize=20, titleFontSize=20)
+ .configure_axisX(labels=False, ticks=False)
+ .configure_legend(labelFontSize=20, labelLimit=200, titleFontSize=10, orient="bottom")
+ .configure_title(fontSize=20)
+ .configure_header(labelFontSize=20, titleFontSize=20)
  .save('cpu.pdf'))
 
 (alt
  .Chart(data)
  .mark_bar()
- .encode(x=alt.X("system:N", title="System"),
-         y=alt.Y("normal_cpu", title="Normalized CPU-Seconds"),
-         color=alt.Color("system:N", title="System"),
-         column=alt.Column("query:N", title="Query"))
- .properties(title='Normalized Total CPU Usage')
+ .encode(x=alt.X("system:N", title="").title(None),
+         y=alt.Y("normal_cpu", title=""),
+         color=alt.Color("system:N", title="").scale(scheme="category10"),
+         column=alt.Column("query:N", title="Normalized Total CPU Usage by Query"))
+ .configure_axis(labelFontSize=20, titleFontSize=20)
+ .configure_axisX(labels=False, ticks=False)
+ .configure_legend(labelFontSize=20, labelLimit=200, titleFontSize=10, orient="bottom")
+ .configure_title(fontSize=20)
+ .configure_header(labelFontSize=20, titleFontSize=20)
  .save('cpu_normal.pdf'))
 
 (alt
  .Chart(data)
  .mark_bar()
- .encode(x=alt.X("system:N", title="System"),
-         y=alt.Y("elapsed", title="Seconds"),
-         color=alt.Color("system:N", title="System"),
-         column=alt.Column("query:N", title="Query"))
- .properties(title='Elapsed Time')
+ .encode(x=alt.X("system:N", title="").title(None),
+         y=alt.Y("elapsed", title=""),
+         color=alt.Color("system:N", title="").scale(scheme="category10"),
+         column=alt.Column("query:N", title="Elapsed Time by Query, in Seconds"))
+ .configure_axis(labelFontSize=20, titleFontSize=20)
+ .configure_axisX(labels=False, ticks=False)
+ .configure_legend(labelFontSize=20, labelLimit=200, titleFontSize=10, orient="bottom")
+ .configure_title(fontSize=20)
+ .configure_header(labelFontSize=20, titleFontSize=20)
  .save('elapsed.pdf'))
 
 (alt
  .Chart(data)
  .mark_bar()
- .encode(x=alt.X("system:N", title="System"),
-         y=alt.Y("throughput", title="Events/Second"),
-         color=alt.Color("system:N", title="System"),
-         column=alt.Column("query:N", title="Query"))
- .properties(title='Throughput')
+ .encode(x=alt.X("system:N", title="").title(None),
+         y=alt.Y("throughput", title=""),
+         color=alt.Color("system:N", title="").scale(scheme="category10"),
+         column=alt.Column("query:N", title="Throughput by Query, in Events/Second"))
+ .configure_axis(labelFontSize=20, titleFontSize=20)
+ .configure_axisX(labels=False, ticks=False)
+ .configure_legend(labelFontSize=20, labelLimit=200, titleFontSize=10, orient="bottom")
+ .configure_title(fontSize=20)
+ .configure_header(labelFontSize=20, titleFontSize=20)
  .save('throughput.pdf'))
 
 (alt
  .Chart(data)
  .mark_bar()
- .encode(x=alt.X("system:N", title="System"),
-         y=alt.Y("normal_throughput", title="Normalized Throughput"),
-         color=alt.Color("system:N", title="System"),
-         column=alt.Column("query:N", title="Query"))
- .properties(title='Normalized Throughput')
+ .encode(x=alt.X("system:N", title="").title(None),
+         y=alt.Y("normal_throughput", title=""),
+         color=alt.Color("system:N", title="").scale(scheme="category10"),
+         column=alt.Column("query:N", title="Normalized Throughput by Query"))
+ .configure_axis(labelFontSize=20, titleFontSize=20)
+ .configure_axisX(labels=False, ticks=False)
+ .configure_legend(labelFontSize=20, labelLimit=200, titleFontSize=10, orient="bottom")
+ .configure_title(fontSize=20)
+ .configure_header(labelFontSize=20, titleFontSize=20)
  .save('throughput_normal.pdf'))

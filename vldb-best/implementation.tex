@@ -183,26 +183,30 @@ converting an indexed \zr into a \zr.  This operation is also a linear
 Aggregation in SQL applies a function $a$ to a set of values of type
 $A$ producing a ``scalar'' result with some result type $B$.  In \dbsp
 an aggregation function has a signature $a: \Z[A] \to B$.  When
-operating on \zrs, aggregation functions have to multiply the
-contribution of each value by its associated weight.
-(\texttt{DISTINCT} aggregates have to first apply a \texttt{DISTINCT}
-operator.)
+operating on \zrs, most aggregation functions have to multiply the
+contribution of each value by its associated weight (but not
+aggregates such as \code{MAX}).  \texttt{DISTINCT} aggregates have to
+first apply a \texttt{DISTINCT} operator.
 
 Distributive (e.g. \code{SUM}) and some algebraic aggregation
 (\code{AVG}) functions can be implemented by a pair of linear
 functions between \zrs and the target group: the actual aggregation
 and the post-processing (e.g., dividing the sum by the counter for
-average).  So apparently they are purely incremental.
+average).  Since these are linear functions, it would seem that they
+can be implemented using linear operators in \dbsp.  However, this is
+not true!
 
 The subtle point is that in SQL the result of these aggregation must
 be a (singleton) set containing an element of $B$, and not a value
-with type $B$.  So additional machinery is needed to convert the
-values of $B$ into values of $\Z[B]$, and this transformation is
-\emph{not} linear.  Consider the following query: \code{SELECT
-  COUNT(*) FROM I}.  The lifted incremental version of this query is
-the following circuit, where $a_\texttt{COUNT}$ is the linear
-``count'' aggregation function, which just sums up the weights of the
-input values:
+with type $B$.  Thus an aggregate based on a linear function is
+decomposed into a linear \dbsp operator, followed by additional
+operators, which are needed to convert the values of $B$ into values
+of $\Z[B]$.  The later operators are \emph{not} linear.  Consider the
+following query: \code{SELECT COUNT(*) FROM I}.  The lifted
+incremental version of this query is the following circuit, where
+$a_\texttt{COUNT}$ is a linear operator implementing the ``count''
+aggregation function, which just sums up the weights of the input
+values:
 
 \begin{tikzpicture}[>=latex, node distance=1.2cm]
   \node[] (in) {$\Delta$\code{I}};
@@ -315,8 +319,8 @@ modeled by the composition of our solutions for grouping and
 aggregation described above.  In this case, the \code{UPSERT} operator
 indexes data using the group key.  For linear aggregates this operator
 needs to maintain state proportional to the number of groups.  For
-non-linear aggregates this maintains state proportional to the entire
-input collection.
+aggregates based on non-linear functions, this maintains state
+proportional to the entire input collection.
 
 %If we use an aggregation function $a: K \times Z[A]$ that is linear in its
 %second argument, then the aggregation operator $Agg_a$ is linear, and
@@ -370,7 +374,10 @@ input collection.
 
 SQL constructs such as \code{PARTITION BY/OVER} make it possible to
 write queries over groups, e.g., TOP-K.  These can be implemented in
-\dbsp naturally as functions over indexed \zrs.
+\dbsp naturally as functions over indexed \zrs.  Moreover, many such
+functions (\code{LAG}, \code{RANGE}) can be implemented using highly
+efficient incremental \dbsp operators, which perform work proportional
+to the size of the change.
 
 \begin{comment}
 \subsection{Streaming joins}
@@ -559,9 +566,8 @@ between time and space.  While many incremental query primitives are
 ``stateless'', some important classes of database operations,
 including joins, $\distinct$, and group-by-aggregate use $\I$
 operators in their incremental expansion.  This state is kept in
-\emph{indexes} (called ``arrangements'' in~\cite{mcsherry-vldb20}).
-(In the \dbsp theoretical model the state is stored in delay
-operators $\zm$ and $\lift{\zm}$, but these are always inside
+\emph{indexes}.  (In the \dbsp theoretical model the state is stored
+in delay operators $\zm$ and $\lift{\zm}$, but these are always inside
 integrators $\I$.)  All other operators are stateless.
 
 The size of these indexes is proportional to the size of the total
@@ -608,16 +614,16 @@ A change added to an index is represented as a single batch, sorted
 using the same order as the index.  When the index ingests a new
 change (left side of Figure~\ref{fig:trace}), the new batch is simply
 appended.  As the index grows, batches of similar size are lazily
-merged.  A merge may require multiple circuit steps.  The result of
-merging 2 batches with \(n_1\) and \(n_2\) tuples has \(n_1 +
-n_2\) or fewer tuples, and can even be empty if all weights add to 0.
+merged.  Merges are performed by background compaction threads; each
+merge may span multiple circuit steps.  The result of merging 2
+batches with \(n_1\) and \(n_2\) tuples has \(n_1 + n_2\) or fewer
+tuples, and can even be empty if all weights add to 0.
 
-To lookup the tuples of a change inside an index (right side of
-Figure~\ref{fig:trace}), an exponential search~\cite{bentley-ipl76} is
-performed to find the first value in each of the trace's batches, and
-then the cursors are advanced on all batches concurrently using binary
-search to find the next element.  When the same tuple is found in
-multiple lists, the corresponding weights are added.
+Exponential search~\cite{bentley-ipl76} is used to lookup the tuples
+of a change inside an index (right side of Figure~\ref{fig:trace}) .
+When the same tuple is found in multiple lists, the corresponding
+weights are added.  This is how the operator $H$ works (from the
+implementation of $\distinct$ in Proposition~\ref{prop-inc_distinct}).
 
 \subsection{Secondary storage}
 
@@ -640,7 +646,7 @@ LSM-Tree.
 The mature RocksDB Rust library provides all needed operations,
 including custom comparators for keys, zero-copy get operations, bulk
 inserts, and control over merging of entries with the same key during
-LSM compaction.
+compaction.
 
 Integrating RocksDB into our system was straightforward.  We
 implemented the trace API described in the previous section.
@@ -651,7 +657,7 @@ effectively by sharding data, allowing the system to scale well across
 many CPUs.  To avoid contention, we placed each persistent index in a
 separate column family in RocksDB. However, we discovered that RocksDB
 doesn't scale well beyond a few threads. In fact, with RocksDB, our
-pipelines performed best when limited to a single thread.
+pipelines performed best with a single thread.
 
 Figure~\ref{fig:rocksdb} illustrates the severity of the issue (note
 the log-scale on the y-axis). It shows the performance for a subset of
@@ -701,13 +707,14 @@ remaining option was to build our own. Building a key-value embedded
 database is a substantial endeavor, so we did not make this choice
 lightly.
 
-For this purpose, we implemented our own B-tree-like file format. The
-traces write each batch that is large enough to an individual file.  Batches
-are always created in sorted order, which allowed us to write these
-files sequentially without any seeks and with minimal in-memory
-buffering.  Because batches are never modified in-place, the file
-format and the code that implements it does not need to make
-allowances for adding, removing, or modifying data.
+For this purpose, we implemented our own
+SStable-like~\cite{chang-tcs08} file format. The traces write each
+batch that is large enough to an individual file.  Batches are always
+created in sorted order, which allowed us to write these files
+sequentially without any seeks and with minimal in-memory buffering.
+Because batches are never modified in-place, the file format and the
+code that implements it does not need to make allowances for adding,
+removing, or modifying data.
 
 Moreover, the implementation of storage extends the in-memory
 shared-nothing architecture: each worker thread processes an
@@ -768,7 +775,7 @@ The compiler supports ``standard'' SQL and is mature enough to pass
   logic, all standard SQL datatypes (including
   \code{DATE}/\code{TIME}/\\\code{TIMESTAMP}), structured and
   semi-structured types, such as arrays, maps, JSON, multisets,
-  user-defined functions.
+  user-defined types.
 \item \textbf{operators:} \code{SELECT}, \code{WHERE}, \code{FILTER},
   \code{HAVING}, \code{ORDER} \code{BY}, \code{LIMIT},
   \code{DISTINCT}, \code{EXCEPT}, \code{INTERSECT}, \code{UNION},
@@ -777,6 +784,8 @@ The compiler supports ``standard'' SQL and is mature enough to pass
   windows \\ (\code{PARTITION BY ... OVER}), \code{UNNEST}, table
   functions, common table expressions, correlated subqueries, and some
   streaming extensions, like tumbling and hopping windows, etc.
+\item A large assortment of SQL functions, including user-defined
+  functions in SQL and Rust.
 \end{itemize}
 The compiler does not yet support recursive queries (although the
 runtime does).
@@ -800,20 +809,20 @@ incorrect input data that causes issues.
   \end{center}
 \end{figure}
 
-As noticed many years ago~\cite{labio-vldb00}, database
-systems are not designed to interact well with external IVM systems.
-We provide a variety of adapters for interacting with external data
-sources, both as inputs and outputs (e.g., Kafka~\cite{kreps-netdb11},
-Amazon S3~\cite{palankar-dadc08}, Google Pub/Sub~\cite{pubsub},
-DataFrames~\cite{pandas12}, Databricks Delta
-Lake~\cite{armbrust-vldb20}, database CDC streams via
-Debezium~\cite{debezium}, http, etc.), and using many data formats
-(CSV, JSON, Arrow, Avro, Parquet, etc.).  Figure~\ref{fig:adapters} shows how
-a circuit uses adapters to communicate with the outside world.  The
-input adapters receive data from external sources, buffer it, convert
-it into \zrs, and feed it to the circuits.  The output adapters
-receive data from the circuit outputs in the form of \zrs, and send it
-to a downstream consumer in a suitable format.
+As noticed many years ago~\cite{labio-vldb00}, database systems are
+not designed to interact well with external IVM systems.  We provide a
+variety of adapters for interacting with external data sources, both
+as inputs and outputs (e.g., Kafka~\cite{kreps-netdb11}, Amazon
+S3~\cite{palankar-dadc08}, Google Pub/Sub~\cite{pubsub},
+DataFrames~\cite{pandas12}, Delta Lake~\cite{armbrust-vldb20},
+database CDC streams via Debezium~\cite{debezium}, http, etc.), and
+using many data formats (CSV, JSON, Arrow, Avro, Parquet, etc.).
+Figure~\ref{fig:adapters} shows how a circuit uses adapters to
+communicate with the outside world.  The input adapters receive data
+from external sources, buffer it, convert it into \zrs, and feed it to
+the circuits.  The output adapters receive data from the circuit
+outputs in the form of \zrs, and send it to a downstream consumer in a
+suitable format.
 
 \begin{figure}[h]
   \begin{center}
@@ -825,7 +834,7 @@ to a downstream consumer in a suitable format.
 Feldera as a company offers IVM as a service.  A version of the
 service-oriented architecture of the company's cloud offering is shown
 in Figure~\ref{fig:service}.  The pipeline manager is the centralized
-control plan, which is responsible for managing the entire life-cycle
+control plane, which is responsible for managing the entire life-cycle
 of the IVM programs.  These programs are deployed as \emph{pipelines}
 that run in isolated Docker containers.  Feldera also offers a cloud
 form factor, which distributes the pipeline manager across several

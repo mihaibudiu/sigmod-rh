@@ -1,6 +1,6 @@
 \subsection{Example recursive query}\label{sec:recursive-example}
 
-Let us apply the algorithm~\ref{algorithm-rec} to a concrete Datalog
+Let us apply Algorithm~\ref{algorithm-rec} to a concrete Datalog
 program, which computes the transitive closure of a directed graph:
 
 \begin{lstlisting}[language=ddlog,basicstyle=\small\ttfamily]
@@ -123,8 +123,8 @@ The above circuit is a complete implementation of the non-streaming
 recursive query; given an input relation \code{E} it will produce
 its transitive closure \code{R} as output.
 
-Now we use semina\"ive evaluation to rewrite the circuit (to save
-space we omit the indices from $\pi$ and $\sigma$):
+Now we use cycle rule to convert this circuit to seminaive evaluation
+(to save space we omit indices):
 
 \noindent
 \begin{tikzpicture}[>=latex, node distance=1.4cm]
@@ -184,3 +184,9 @@ Using the linearity of $\lift\pi$, this can be rewritten as:
   \draw[->>] (z) -- (j);
 \end{tikzpicture}
 
+This circuit contains two lifted incremental operators; a join and a
+distinct; these can be further expanded into simpler primitives as in
+the final step in Section~\ref{sec:relational-example}.  This
+implementation matches the efficiency of Datalog semi-naive evaluation
+engines, but does not yet handle incremental updates.  These are the
+subject of the next section.

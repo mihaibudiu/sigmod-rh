@@ -8,8 +8,8 @@ efficiently compute the incremental version of a relational query $Q$
 defining a view.
 
 However, we face a technical problem: the $\I$ and $\D$ operators were
-defined on abelian groups, and relational databases in general are
-not abelian groups, since they operate on sets.  Fortunately,
+defined on Abelian groups, and relational databases in general are
+not Abelian groups, since they operate on sets.  Fortunately,
 there is a well-known tool in the database literature
 which converts set operations into group operations by using \zrs
 (also called z-relations~\cite{green-tcs11}) to represent sets.
@@ -20,7 +20,9 @@ in~\refsec{sec:relational-operators} that this translation is
 efficiently incrementalizable because many primitive relational
 operations use LTI \zr operators.
 
-\subsection{\zrs as an abelian group}
+\vspace{-3ex}
+
+\subsection{\zrs as an Abelian group}
 
 A \zr is a database table where each row has an associated weight,
 possibly negative.  Given a set $A$, we define \defined{\zrs} over $A$
@@ -57,20 +59,20 @@ $R[\texttt{joe}] = 1$), \texttt{mary} with weight 2, and \texttt{anne}
 with weight $-1$.  So \texttt{joe} $\in R$, \texttt{mary} $\in R$,
 and \texttt{anne} $\in R$.
 
-Since $\Z$ is an abelian ring, $\Z[A]$ is also an abelian ring, and
+Since $\Z$ is an Abelian ring, $\Z[A]$ is also an Abelian ring, and
 thus a group $(\Z[A], +_{\Z[A]}, 0_{\Z[A]}, -_{\Z{A}})$.  Addition and
-subtraction are defined pointwise: $(f +_{\Z[A]} g)(x) = f(x) + g(x)
-\forall x \in A.$ The $0$ element of $\Z[A]$ is the function
+subtraction are defined pointwise: $\forall x \in A . \\ (f +_{\Z[A]}
+g)(x) = f(x) + g(x) .$ The $0$ element of $\Z[A]$ is the function
 $0_{\Z[A]}$ defined by $0_{\Z[A]}(x) = 0 .  \forall x \in A$.  For
 example, $R + R = \{ \texttt{joe} \mapsto 2, \texttt{mary} \mapsto 4,
 \texttt{anne} \mapsto -2 \}$.  Since \zrs form a group, all results
 from \secref{sec:streams} apply to streams over \zrs.
 
-\zrs generalize sets and bags.  A set with elements from $A$
-can be represented as a \zr by associating a weight of 1 with each element.
-Bags are \zrs where all weights are positive.  Crucially, \zrs
-can also represent arbitrary \emph{changes} to sets and bags.
-Negative weights in a change represent elements that are being ``removed''.
+\zrs generalize sets and bags.  A set with elements from $A$ can be
+represented as a \zr by associating a weight of 1 with each element.
+Bags are \zrs where all weights are positive.  Crucially, \zrs can
+also represent \emph{changes} to sets and bags.  Negative weights in a
+change represent elements that are being ``removed''.
 
 The remaining definitions in this section will be used to argue that
 circuits based on \zrs can exactly implement the relational algebra
@@ -96,8 +98,8 @@ $$
 
 \begin{definition}
 We say that a \zr is \defined{positive} (or a \defined{bag}) if the weight of every element is
-positive.  We define a function to check this property
-$\ispositive : \Z[A] \rightarrow \B$\index{ispositive}.
+positive.  We define a function to check this property \\
+$\ispositive : \Z[A] \rightarrow \B$\index{ispositive}
 given by
 $$\ispositive(m) \defn \left\{
 \begin{array}{ll}
@@ -389,12 +391,15 @@ just the positive fragment).
 Prior work (e.g., Proposition 6.13 in~\cite{green-tcs11}) has shown
 how some invocations of $\distinct$ can be eliminated from query plans
 without changing the query semantics; we will see that the incremental
-version of $\distinct$ incurs significant space costs.
+version of $\distinct$ incurs significant space costs, so it is worth
+minimizing its use.
 
 \begin{proposition}\label{prop-distinct-delay}
 Let $Q$ be one of the following \zrs operators: filtering $\sigma$,
-join $\bowtie$, or Cartesian product $\times$.
-Then we have $\forall i \in \Z[A]~.~\ispositive(i) \Rightarrow Q(\distinct(i)) = \distinct(Q(i))$.
+join $\bowtie$, or Cartesian product $\times$.  Then we have $\forall
+i \in \Z[A]~.~\ispositive(i) \Rightarrow Q(\distinct(i)) =
+\distinct(Q(i))$.  (For binary operators, on the left of $=$ the
+$\distinct$ is applied to every input.)
 \end{proposition}
 
 \noindent
@@ -464,13 +469,14 @@ These properties allow us to ``consolidate'' distinct operators by
 performing one $\distinct$ at the end of a chain of computations.
 This optimization is also used in traditional database optimizers.
 
-\subsection{Incremental view maintenance}
+\vspace{-3ex}
+\subsection{Incremental view maintenance}\label{sec:ivm}
 
 Let us consider a relational query $Q$ defining a view $V$.  To create
 a circuit that maintains incrementally $V$ we apply the following
 mechanical steps:
 
-\begin{algorithm}%[incremental view maintenance]
+\begin{algorithm}[incremental view maintenance]
   \label{algorithm-inc}\quad
 \begin{enumerate}[nosep, leftmargin=\parindent]
     \item Translate $Q$ into a circuit using the rules in Table~\ref{tab:relational}.
@@ -510,9 +516,8 @@ also efficient, and it can be computed by doing work proportional to
 the size of the input change:
 
 \begin{proposition}
-[Incremental $\distinct$]
+(incremental $\distinct$)
 \label{prop-inc_distinct} \\
-
 \noindent
 \begin{tabular}{m{3.4cm}m{0cm}m{5cm}}
 \begin{tikzpicture}[auto,node distance=1.4cm,>=latex]
@@ -536,7 +541,6 @@ $\cong$ &
     \draw[->>] (H) -- (output);
 \end{tikzpicture}
 \end{tabular}
-
 \noindent where $H: \Z[A] \times \Z[A] \to \Z[A]$ is defined as: \\
 $$
 H(i, d)[x] \defn
@@ -578,8 +582,10 @@ incremental version is known: we can always use the inefficient
 ``brute-force'' implementation given by $\inc{P} = \D \circ \lift{P}
 \circ \I$.
 
+\vspace{-3ex}
 \input{example1}
 
+\vspace{-3ex}
 \subsection{Complexity of incremental circuits}\label{sec:complexity}
 
 Incremental circuits are efficient.  We evaluate the cost of a circuit
@@ -600,28 +606,35 @@ write SQL programs where each output row can change even for very
 small input changes, so this assumption does not always hold in
 practice, but even in this case, the asymptotic work performed by the
 incremental query is not worse than the work of the original query.}.
+We omit the time-index $[t]$ for readability in the rest of the
+section when it is unambiguous; all formulas below hold for every time
+step.
 
 An unoptimized incremental operator $\inc{Q} = \D \circ Q \circ \I$
-evaluates query $Q$ on the whole database $DB$, the integral of the input stream:
-$DB = \I(\Delta DB)$; hence its time complexity  is the same as that of the non-incremental
-evaluation of $Q$.  In addition, each of the $\I$ and $\D$ operators uses $O(|DB[t]|)$ memory.
+evaluates query $Q$ on the whole database $DB$, the integral of the
+input stream: $DB = \I(\Delta DB)$; hence its time complexity is the
+same as that of the non-incremental evaluation of $Q$.  In addition,
+each of the $\I$ and $\D$ operators uses $O(|DB|)$ memory.
 
 Step (5) of the incrementalization algorithm applies the optimizations
 described in \secref{sec:incremental}; these reduce the time
-complexity of each operator to be $O(|\Delta DB[t]|)$.  For example,
-Theorem~\ref{linear}, allows evaluating $\inc{S}$, where $S$ is a
-linear operator, in time $O(|\Delta DB[t]|)$.  The $\I$ operator can
-also be evaluated in $O(|\Delta DB[t]|)$ time, because all values that
-appear in the output of $\I(\Delta DB)[t]$ must be present in current
-input change $\Delta DB[t]$.  Similarly, while the $\distinct$
-operator is not linear, $\inc{(\lift{\distinct})}$ can also be
-evaluated in $O(|\Delta DB[t]|)$ according to
-Proposition~\ref{prop-inc_distinct}.  Bilinear operators, including
-join, can be evaluated in time $O(|DB[t]| \times |\Delta DB[t]|)$,
-which is a factor of $|DB[t] / \Delta DB[t]|$ better than full
-re-evaluation.
+complexity of each unary operator to $O(|\Delta DB|)$.  Bilinear
+operators, including join, can be evaluated in time $O(|DB| \times
+|\Delta DB|)$; both of these are a factor of $|DB| / |\Delta DB|$
+better than full re-evaluation.  For example, Theorem~\ref{linear},
+allows evaluating $\inc{S}$, where $S$ is a linear operator, in time
+$O(|\Delta DB|)$.  The $\I$ operator can also be evaluated in
+$O(|\Delta DB|)$ time, because all values that appear in the output of
+$\I(\Delta DB)[t]$ must be present in current input change $\Delta
+DB[t]$\footnote{Assuming concatenation is constant-time; in our
+implementation the cost of $\I$ is $O(|\Delta DB| \log(|DB|))$ per
+time step.}.  Similarly, while the $\distinct$ operator is not linear,
+$\inc{(\lift{\distinct})}$ can also be evaluated in $O(|\Delta DB|)$
+according to Proposition~\ref{prop-inc_distinct}.
 
-The space complexity of linear operators is 0 (zero), since they store no
-data persistently.  The space complexity of operators such as $\inc{(\lift{\distinct})}$,
-$\inc{(\lift{\bowtie})}$, $\I$, and $\D$ is $O(|DB[t]|)$.  They need
-to store their input or output relations in full.
+The space complexity of linear operators is zero (O(1)), since they
+store no data persistently.  The space complexity of operators such as
+$\inc{(\lift{\distinct})}$, $\inc{(\lift{\bowtie})}$, $\I$, and $\D$
+is $O(|DB|)$.  They need to store their input or output relations in
+full (moreover, some of these are intermediate results, which may be
+even larger than the input database).

@@ -4,12 +4,13 @@ This paper is an extended version of a VLDB 2023
 publication~\cite{budiu-vldb23}, adopting the notations
 from~\cite{budiu-sigmod24}.  The major changes are: adding new
 incremental program examples (\refsec{sec:recursive-example},
-\refsec{sec:recursive-incremental-example}), an expanded
-implementation section~\refsec{sec:implementation}, and an
-experimental evaluation~\refsec{sec:experiments}.  This paper includes
-only a few short mathematical proofs; all the proofs can be found in
-an extended technical report~\cite{tr}; the proofs have also been
-formalized and verified in the Lean proof
+\refsec{sec:recursive-incremental-example}), an expanded discussion of
+implementing SQL with its ``standard'' semantics~\refsec{sec:sql}, an
+extended implementation section~\refsec{sec:implementation}, and a
+preliminary experimental evaluation~\refsec{sec:experiments}.  This
+paper includes only a few short mathematical proofs; all the proofs
+can be found in an extended technical report~\cite{tr}; the proofs
+have also been formalized and verified in the Lean proof
 assistant~\cite{dbsp-theory}.
 
 \subsection{Problem and Solution Overview}\label{sec:intro-incremental}
@@ -31,7 +32,7 @@ rows of table \code{T} whose value for the column \code{Age} is
 greater than or equal to 10.
 
 In general a query is a function applied to the contents of a
-database: $V = Q(DB)$.  A na\"ive solution re-executes query $Q$ every
+database: $V = Q(DB)$.  A naive solution re-executes query $Q$ every
 time the database changes, as illustrated in the following diagram.
 Time is the horizontal axis; the horizontal arrows labeled with
 $\Delta$ depict changes to the database.  The ``up'' arrows show the
@@ -39,25 +40,23 @@ re-evaluation of $Q$ for each database snapshot.
 
 \noindent \includegraphics[trim={0 4.8in 3.7in 0},clip,scale=.34]{view.pdf}
 
-The naive solution is expensive.  After the first version of the view
-has been constructed, an ideal algorithm would compute only
-\emph{changes} to the view $\Delta V$ doing work $O(|\Delta DB|)$.
-Ideally, we want to construct a new query $\inc{Q}$ with the property
-that $\Delta V = \inc{Q}(\Delta DB)$, i.e., $\inc{Q}$ can compute the
-change of the view from the change of the database:
+The naive solution is expensive.  An ideal algorithm, would compute
+only \emph{changes} to the view $\Delta V$ doing work $O(|\Delta DB|)$
+(after computing the first version of the view).
 
 \noindent \includegraphics[trim={0 5.2in 4.1in 0},clip,scale=.35]{incview.pdf}
 
-We call $\inc{Q}$ the \emph{incremental} version of $Q$.  If we want
-$\inc{Q}$ to be a function of $\Delta DB$, one can show that the ideal
-solution as described above is impossible to reach.
+We call $\inc{Q}$ the \emph{incremental} version of $Q$.  For an
+arbitrary query $Q$ one can show that there is no solution where
+$\inc{Q}$ is a (pure) function of $\Delta DB$ (only restricted classes
+of queries have such solutions).
 
 In this paper we propose a new way to define $\inc{Q}$, as a form of
 \emph{computation on streams}.  Our model is inspired by Digital
 Signal Processing DSP~\cite{rabiner-book75}, applied to databases,
 hence the name \dbsp.
 
-$\inc{Q}$ can be significantly more efficient than the na\"ive
+$\inc{Q}$ can be significantly more efficient than the naive
 solution.  As is the case for traditional database queries, the
 performance of $\inc{Q}$ depends both on the query $Q$ but also on the
 actual data that the query is applied to.  Informally, $\inc{Q}$ built
@@ -67,10 +66,10 @@ magnitude.
 
 Instead of treating the database as a large, changing object, we model
 it as a sequence or \emph{stream} of database snapshots, shown as
-$DB[1], DB[2], \ldots$ previously.  Similarly, consecutive view
-snapshots form a stream.  \dbsp is a simple programming language
-computing on streams; inputs and outputs are streams of arbitrary
-values.
+$DB[1], DB[2], \ldots$ in the previous diagrams.  Similarly,
+consecutive view snapshots form a stream.  \dbsp is a simple
+programming language computing on streams; inputs and outputs are
+streams of arbitrary values.
 
 The \dbsp language has only 4 operators.  However, it can express a
 rich set of computations on streams, including repeated computations
@@ -134,7 +133,7 @@ labels, showing the circuit above as:
     \node[below of=input0,node distance=.15cm] (dummy) {};
     \node[below of=dummy,node distance=.15cm] (input1) {$j$};
     \node[block, right of=dummy] (T) {$f$};
-    \node[right of=T] (output) {$s$};
+    \node[right of=T] (output) {$o$};
     \draw[->] (input0) -- (T);
     \draw[->] (input1) -- (T);
     \draw[->] (T) -- (output);
@@ -205,7 +204,7 @@ the use of double arrows.
 \end{center}
 %
 We write $s = T(s_0, s_1)$.
-%\begin{definition}(lifting)
+
 Given a function $f: A \to B$, we define a stream operator $\lift{f}
 :\stream{A} \to \stream{B}$ (read as ``$f$ lifted'') by applying
 function $f$ to each input value independently:
@@ -220,7 +219,8 @@ function $f$ to each input value independently:
     \draw[->>] (f) -- (output);
   \end{tikzpicture}
 \end{center}
-%\end{definition}
+
+\vspace{-3ex}
 
 \subsection{Databases as streams}
 
@@ -233,7 +233,7 @@ have a total order.  $DB[t]$ is the snapshot of the database contents
 after $t$ transactions have been applied.  We use this notation in the
 diagrams in \refsec{sec:intro-incremental}.
 
-Database transactions also form a stream $\Delta DB$, this time a
+Database transactions also form a stream $\Delta DB$, which is a
 stream of \emph{changes}, or \emph{deltas}, that are applied to the
 database.  The values of this stream are defined by $(\Delta DB)[t] =
 DB[t] - DB[t-1]$, where ``$-$'' stands for the difference between two
@@ -318,26 +318,31 @@ implementation of transitive closure in the natural recursive way, our
 algorithm produces a program that efficiently maintains the transitive
 closure of a graph as nodes and edges are added and deleted.
 
+\vspace{-3ex}
+
 \subsection{Contributions}
 
 This work makes the following contributions:
 \begin{enumerate}
-  \item We introduce \dbsp, a simple but expressive language for
-    streaming computation. \dbsp gives an elegant formal foundation
-    unifying the manipulation of streaming and incremental
-    computations.
-  \item We describe algorithm~\ref{algorithm-inc} for incrementalizing
-    any streaming computation expressed in \dbsp that handles
-    arbitrary insertions and deletions from any of the data sources.
+  \item We introduce \dbsp~\refsec{sec:streams}, a simple but
+    expressive language for streaming computation. \dbsp gives an
+    elegant formal foundation unifying the manipulation of streaming
+    and incremental computations.
+  \item We describe an algorithm
+    (Algorithm~\ref{algorithm-inc},~\refsec{sec:ivm}) for
+    incrementalizing any streaming computation expressed in \dbsp
+    that handles arbitrary insertions and deletions from any of the
+    data sources.
   \item We describe how \dbsp can model various classes of practical
-    queries, such as relational algebra, nested relations,
-    aggregations, and Datalog.
+    languages: the relational algebra~\refsec{sec:relational},
+    Datalog~\refsec{sec:recursion}, and SQL~\refsec{sec:sql}.
   \item We provide the first general and machine-checked theory of
-    IVM.  All the theoretical results in this
-    paper~\cite{budiu-vldb23} have been checked~\cite{dbsp-theory}
-    using the Lean proof assistant~\cite{moura-cade15}.
+    IVM.  All the theoretical results in this paper have been
+    checked~\cite{dbsp-theory} using the Lean proof
+    assistant~\cite{moura-cade15}.
   \item We describe a practical open-source implementation of this
-    theory as a runtime and a SQL compiler.
-  \item We give an evaluation of the performance of our
-    implementation.
+    theory as a runtime and a SQL
+    compiler~\refsec{sec:implementation}.
+  \item We give a preliminary evaluation of the performance of our
+    implementation~\refsec{sec:experiments}.
 \end{enumerate}

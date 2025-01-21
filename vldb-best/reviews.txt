@@ -1,0 +1,160 @@
+Reviewers' comments:
+
+Reviewer #1: The article builds upon the paper presented at VLDB 2023, where the authors introduced an elegant abstraction for defining computations over data streams. The proposed language, DBSP, is minimalistic, consisting of only a few primitives, yet powerful enough to express both relational and recursive queries. In this extended version, the authors have included: 1) new examples demonstrating how their transformation works; 2) insights into the implementation of their DBSP engine; and 3) an experimental comparison with Apache Flink.
+
+Overall, this paper presents notable new content compared to the VLDB 2023 paper, with strong scientific contributions. There are a few areas for improvement though, particularly in the paper's presentation and in clarifying some technical aspects, as outlined below. The experimental evaluation could be stronger, and I would encourage the authors to conduct more comprehensive experiments.
+
+
+Strong points:
+---
+
+S1. The main contribution is an algorithm that transforms an arbitrary computation, including cyclic one, expressed in the DBSP language into an incremental DBSP program that computes on a stream of changes.
+
+S2. The paper also showcases an elegant result demonstrating how recursive queries can be expressed using DBSP circuits, including a derivation of the semi-naive evaluation algorithm from Datalog.
+
+S3. The substantial engineering effort invested in developing the DBSP engine is clearly evident.
+
+S4. The paper is clear and well-structured. The logical order of topics and the use of circuits effectively aid understanding of the concepts.
+
+
+
+Opportunities for improvement:
+---
+
+fixed O1. The link to the technical report [26] is broken.
+
+fixed O2. "Ideally, we want to construct a new query Q∆ with the property that ∆V = Q∆(∆DB)" --
+
+This is a fairly restrictive view on what an ideal delta algorithm should be. This implies that only queries consisting of stateless operators are efficiently incrementalizable (e.g., no joins allowed). However, we know that this is not the case. There exists a broader class of queries, so called q-hierarchical queries (Berkholz et al. PODS 2017), which admit incremental maintenance in time O(|∆DB|) -- precisely the ideal scenario you initially described. For example, the query Q(A) = R(A,B), S(A,C) is q-hierarchical, and there exists a dynamic algorithm maintaining the result of Q for changes in R and S in O(1) time per update. Please clarify the notion of an ideal incremental algorithm.
+
+fixed O3. "If we want Q∆ to be a function of ∆DB, one can show that the ideal solution as described above is impossible to reach" --
+
+This requires further clarification. The ideal solution is possible to achieve for some queries (e.g., the example query on page 1).
+
+fixed O4. Proposition 2: To help the reader understand this concept, perhaps give an example with the delay function, which is strict, and explain the solution of the equation alpha = z^-1(alpha).
+
+fixed O5. Lemma 1: Why is this lemma important? Does this also apply to other circuits where operator T has n inputs and each 'feedback' edge is strict? If so, it would be helpful to mention it. Additionally, including a sketch of the proof would be beneficial.
+
+fixed O6. Section 2 introduces multiple propositions and lemmas, yet how they are connected is not immediately clear to the reader. For example, Proposition 5 seems to directly follow from Lemma 1. It would be good to highlight such connections, e.g., by providing proof sketches for relevant propositions.
+
+fixed O7. Proposition 8: In the inversion case, the syntax \mapsto is introduced but not defined. It might be clearer to state that the function f(Q) = D \circ Q \circ I is bijective, and its inverse is f^-1(Q) = I \circ Q \circ D, if that was the intended meaning.
+
+fixed O8. The cycle rule is essential for recursive queries, so presenting the proof (or proof sketch) of the cycle rule would be important.
+
+fixed O9. Proposition 9: join and Cartesian product are binary operators, yet Q is treated as unary. Additionally, delaying the application of dist in those two cases seems possible even if only one input is positive. Please clarify these cases. Similar comment for Proposition 10.
+
+fixed O10. In Step 1 of the example in Section 4.4, it's unclear why the distinct operators are needed following the filtering and projection steps on the input tables, as applying the rules from Table 1 would not create them.
+
+fixed O11. page 10, complexity analysis: "these reduce the time complexity of each operator to be O(|∆DB[t]|)" -- this claim does not hold for joins and Cartesian products
+
+fixed O12. "The I operator can also be evaluated in O(|∆DB[t]|) time, because all values that appear in the output of I(∆DB)[t] must be present in current input change ∆DB[t]." -- The explanation is confusing. The I operator accumulates all previous changes, meaning its output may include values not originating from the current input change ∆DB[t] but from earlier changes. Please clarify.
+
+fixed O13. The space complexity of linear operators is 0 (zero) --> since the complexity is discussed in asymptotic terms, please change to O(1)
+
+fixed O14. Nested time domains: The example circuit does not put any restriction on Q, but Q must be a streaming operator that returns a zero almost-everywhere stream; e.g., Q cannot be ^f, where f = \lambda x.x+1. Please clarify.
+
+fixed O15. The notions of nested streams and operator lifting are somewhat difficult to grasp. I strongly recommend including an example to illustrate how operators, such as z^-1 and I, work on nested streams (e.g., before or after Proposition 13).
+
+O16. In the top figure on page 16, the circuit appears unnecessarily complex for this task, and the purpose of some operators is unclear. For instance, the first I operator already aggregates the result from 'acount', so why is it necessary to pass this result to 'inc'? Additionally, why the need to have two I operators (one without z^-1?), when the same functionality, I believe, could be achieved using only one? Please clarify.
+
+fixed O17. The paragraph starting with "Feldera as a company offers IVM as a service" feels somewhat disconnected from the surrounding text, as it introduces the company name for the first time without linking it to the DBSP engine. Rephrase to establish a clearer connection between Feldera and the DBSP engine.
+
+O18. The experimental evaluation is somewhat underwhelming. The experiments compare DBSP with Flink using the Nexmark benchmark, where DBSP consistently outperforms Flink in terms of throughput and memory consumption. However, these results could partly come from differences in the underlying runtime engines (Rust vs. Java). Do these engine follow similar incremental plans in all cases? Are there any notable differences?
+
+O19. The evaluation lacks comparisons with other incremental engines, for example, Differential Dataflow, Trill, and DBToaster. Including additional competitors and query workloads would definitely strengthen the paper.
+
+
+
+Minor comments (typos, etc.):
+--
+
+fixed M1. Inconsistent use of the diaeresis ("): both naïve and naive are used on page 1.
+
+fixed M2. page 2: "so we omit input labels, showing the circuit above as" -> for consistency, should the output be labelled by o, not s? same for the stream operator T below
+
+Incorrect fix M3. page 5: "An example is lifted multiplication:" -> should the stream operator be \uparrow f instead of f?
+
+fixed M4. Proposition 5: Is S is causal -> If S is causal
+
+fixed M5. Definition 11: should it be I = \lambda s ... instead of I(s)? or keep I(s) without '\lambda s'.
+
+fixed M6. page 7: around 'defined pointwise' - missing dot before \foreach x
+
+fixed M7. Definition 14: extra dot before 'given by'
+
+fixed M8. page 10: which is a factor of -- missing | |
+
+fixed M9. both 'zero almost-everywhere' and 'zero almost everywhere' are used
+
+fixed M10. "we must have ispositive(S), so ∀x . S(x) ≥ x." -- should be S(x) ≥ 0 ?
+
+fixed M11. both 'semi-naıve' and 'seminaıve' are used
+
+fixed M12. typo: 'indexed by two-dimensional time (t0, t1).' -- comma instead of full stop
+
+fixed M13. typo: needs two insert two extra
+
+fixed M14. typo: for representing data processed -- processed data?
+
+fixed M15. typo: in an pure incremental
+
+fixed M16. page 22: runs at least 1.4x faster in Feldera -> DBSP, also on page 23
+
+fixed M17. typo: DBToaster introduced recursive recursive IVM
+
+
+Reviewer #2: This manuscript is a revision and extension of a paper which I originally reviewed for VLDB 2023.  In my original review I was very positive about the significant new contributions of the work as well as its excellent motivation, both scientific and practical.   Furthermore, the paper was very well written and grounded in the literature.
+
+The new extended version continues this high quality.  The writing and notation have evolved, further strengthening the presentation.  The authors also greatly extend the original paper with new examples and deeper details, as well as in-depth discussion of implementation issues and experimental evaluation.
+
+Like the original work, I find the new results and writing to be complete and clear.  I think this is an excellent extended presentation, and do not have any suggestions for further refinement or improvement.  Hence, I am happy to recommend acceptance as is.
+
+
+Reviewer #3: This is an extended version of a VLDB 2023 publication.  I already liked
+that VLDB publication and like this extended version, too.
+
+The manuscript proposes the "DBSP" language.  DBSP is Turing complete,
+but tailored to express database queries.  Specifically, DBSP provides
+nice mechanisms to infer and express incremental computation, e.g., to
+realize view maintenance.  DBSP is powerful: queries can be compiled
+into DBSP using very clear translation steps, DBSP enables beneficial
+optimizations, including advanced functionality such as recursive
+queries or aggregation.  At the same time, the model behind DBSP is lean
+and sound; it is not really surprising that the authors have succeeded
+in proving the correctness of their procedures using a proof assistant.
+
+The paper is presented well, with beautiful illustrations that make it
+easy to follow the work.
+
+The comments that I have to improve the work are only minor.
+
+fixed. "Abelian groups" are named after Niels Henrik Abel.  In the English
+    language, it is common to therefore use a capital "A" in "Abelian".
+    At the very least, you should be consistent regarding the
+    capitalization of the term.
+
+fixed. I suggest to give your algorithms names or explanations, not just
+    numbers.  "Algorithm 4" is everything but self-explaining.  If you
+    added a short keyword or sentence that summarizes what the algorithm
+    is about, that would help to follow your work, e.g., in case of
+    back-references.
+
+    (And, by the way, why is there only Algorithm 4, not Algorithms
+    1—4?)
+
+fixed.  3. In Section 4.4, you present a (nice) SQL example.  When you
+    translate this into DBSP, you insert several 'dist' operators.
+    However, SQL semantics does not impose a distinct semantics here.
+    You address the bag semantics of SQL later in the paper; here, it
+    may at least make sense to add a short comment as to why you assume
+    a set semantics here.
+
+fixed. The example in Section 5.2 ends a bit abruptly.  I would suggest to
+    append a short conclusion.  What can I see in this example or why is
+    the resulting plan so cool?
+
+ 5. [More a comment than an actual suggestion.] Section 7 mixes aspects
+    that are conceptual (and independent of the specific implementation;
+    e.g., intricacies of the SQL semantics) with real implementation
+    details.  I was wondering whether it would make sense to seperate
+    those aspects more explicitly.

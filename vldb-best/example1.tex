@@ -14,38 +14,32 @@ SELECT DISTINCT a.x, b.y FROM (
 
 Step 1: Create a \dbsp circuit to represent this query using the rules
 in Table~\ref{tab:relational}; this circuit is essentially a dataflow
-implementation of the query:
+implementation of the query.
 
 \noindent
-\begin{tikzpicture}[node distance=1.1cm,>=latex]
+\begin{tikzpicture}[node distance=1.3cm,>=latex]
     \node[] (t1) {\code{t1}};
-    \node[block, right of=t1, node distance=.9cm] (s1) {$\sigma_{a > 2}$};
-    \node[block, right of=s1] (d1) {$\distinct$};
-    \node[block, right of=d1] (p1) {$\pi_{x, id}$};
+    \node[block, right of=t1, node distance=1cm] (s1) {$\sigma_{a > 2}$};
+    \node[block, right of=s1] (p1) {$\pi_{x, id}$};
     \node[block, right of=p1] (d11) {$\distinct$};
     \node[below of=t1, node distance=1cm] (t2) {\code{t2}};
-    \node[block, right of=t2, node distance=.9cm] (s2) {$\sigma_{s > 5}$};
-    \node[block, right of=s2] (d2) {$\distinct$};
-    \node[block, right of=d2] (p2) {$\pi_{y, id}$};
+    \node[block, right of=t2, node distance=1cm] (s2) {$\sigma_{s > 5}$};
+    \node[block, right of=s2] (p2) {$\pi_{y, id}$};
     \node[block, right of=p2] (d21) {$\distinct$};
     \node[below of=d11, node distance=.5cm] (mid) {};
-    \node[block, right of=mid, node distance=.5cm] (j) {$\bowtie_{id = id}$};
+    \node[block, right of=mid] (j) {$\bowtie_{id = id}$};
     \node[block, right of=j, node distance=1.3cm] (p) {$\pi_{x, y}$};
-    \node[block, right of=p] (d) {$\distinct$};
-    \node[right of=d, node distance=.8cm] (V) {\code{V}};
+    \node[right of=p] (V) {\code{V}};
     \draw[->] (t1) -- (s1);
-    \draw[->] (s1) -- (d1);
-    \draw[->] (d1) -- (p1);
+    \draw[->] (s1) -- (p1);
     \draw[->] (p1) -- (d11);
     \draw[->] (t2) -- (s2);
-    \draw[->] (s2) -- (d2);
-    \draw[->] (d2) -- (p2);
+    \draw[->] (s2) -- (p2);
     \draw[->] (p2) -- (d21);
     \draw[->] (d11) -| (j);
     \draw[->] (d21) -| (j);
     \draw[->] (j) -- (p);
-    \draw[->] (p) -- (d);
-    \draw[->] (d) -- (V);
+    \draw[->] (p) -- (V);
 \end{tikzpicture}
 
 Step 2: eliminate $\distinct$ operators, producing an equivalent
@@ -132,7 +126,7 @@ circuit: (we omit the subscripts to save space):
   \draw[->] (d) -- (V);
 \end{tikzpicture}
 
-Note that some arrows that were sets in the original circuit
+\noindent Note that some arrows that were sets in the original circuit
 may by multisets in the optimized circuit.
 
 Step 3: lift the circuit to compute over streams; all arrows are

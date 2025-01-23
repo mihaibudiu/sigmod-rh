@@ -123,7 +123,7 @@ The above circuit is a complete implementation of the non-streaming
 recursive query; given an input relation \code{E} it will produce
 its transitive closure \code{R} as output.
 
-Now we use cycle rule to convert this circuit to seminaive evaluation
+Now we use cycle rule to convert this circuit to semi-naive evaluation
 (to save space we omit indices):
 
 \noindent
@@ -184,7 +184,7 @@ Using the linearity of $\lift\pi$, this can be rewritten as:
   \draw[->>] (z) -- (j);
 \end{tikzpicture}
 
-This circuit contains two lifted incremental operators; a join and a
+This circuit contains two lifted incremental operators, a join and a
 distinct; these can be further expanded into simpler primitives as in
 the final step in Section~\ref{sec:relational-example}.  This
 implementation matches the efficiency of Datalog semi-naive evaluation

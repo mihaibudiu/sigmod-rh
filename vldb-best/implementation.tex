@@ -40,7 +40,7 @@ For iterative computations the library provides the $\delta$ operator
 and an operator that generalizes $\int$ by terminating iteration when
 \emph{all} the operators in the corresponding circuit cycle have
 reached a fixed point, which is detected when neither outputs or state
-change in an excution step.  The low level library allows users to
+change in an execution step.  The low level library allows users to
 construct incremental circuits manually by stitching together
 incremental and non-incremental versions of primitive operators.
 
@@ -298,7 +298,7 @@ The compiler supports ``standard'' SQL and is mature enough to pass
   streaming extensions, like tumbling and hopping windows, etc.
 \item A large assortment of SQL functions, including user-defined
   functions that can be written in either SQL or Rust.
-\item Currently mutually recursive views support all query operators
+\item Currently, mutually recursive views support all query operators
   except \code{OVER}.  They are incrementally evaluated using
   Algorithm~\ref{algorithm-rec}.
 \end{itemize}
@@ -328,7 +328,7 @@ variety of adapters for interacting with external data sources, both
 as inputs and outputs (e.g., Kafka~\cite{kreps-netdb11}, Amazon
 S3~\cite{palankar-dadc08}, Google Pub/Sub~\cite{pubsub},
 DataFrames~\cite{pandas12}, Delta Lake~\cite{armbrust-vldb20},
-database CDC streams via Debezium~\cite{debezium}, http, etc., with
+database CDC streams via Debezium~\cite{debezium}, HTTP, etc., with
 more added every day), and using many data formats (CSV, JSON, Arrow,
 Avro, Parquet, etc.).  Figure~\ref{fig:adapters} shows how a circuit
 uses adapters to communicate with the outside world.  The input

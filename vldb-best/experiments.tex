@@ -8,6 +8,46 @@ many layers.  In this section we evaluate only the performance of
 the central block, the \dbsp query engine.  However, in most real-life
 application performance will be limited by the adapters and network.
 
+\subsection{Cost of incremental updates}
+
+Here we validate our claim that updates in \dbsp have a cost
+proportional to the size of the change.
+
+We ran TPC-H on a desktop computer, with a scale factor 100, meaning
+that the input data is about 100 GB, consisting of about 1.6 billion
+records.  We divided the largest tables, \emph{orders} and
+\emph{lineitem}, which in total contain about half the input records,
+into 10 equal-sized batches, each comprising about 75,000,000 records.
+Because \emph{orders} records refer to \emph{lineitem} records, we
+ensured that if an \emph{order} record was in a batch, so were its
+\emph{lineitem} records.  Then, for each batch in turn, we inserted
+its records.
+
+We ran this computation using two database systems: (1) using a
+popular open-source database\footnote{Because it's hard to make a fair
+comparison, we won’t specify the database.}, by rerunning the query
+after each insertion, and (2) using our incremental implementation,
+where we declare the query as a view.
+
+We show results for TPC-H query 5, which is a 6-way join that we
+selected as representative of the set of TPC-H queries.  We did not
+use indexes with the database, because we found that they made the
+overall computation slower.
+
+Figure~\ref{fig:tpch} shows the time taken to process each batch.  As
+expected, ignoring the absolute performance, and looking just at
+trends, the data shows that re-executing queries on an increasing
+dataset slows down as the total data size increases, whereas
+incremental computation performance remains steady.
+
+\begin{figure}[t]
+  \begin{center}
+  \includegraphics[scale=.4]{graph/tpch}
+  \caption{Incremental versus batch performance on TPC-H
+    Q5\label{fig:tpch}.}
+  \end{center}
+\end{figure}
+
 \vspace{-3ex}
 \subsection{Latency, throughput, and input change size}
 

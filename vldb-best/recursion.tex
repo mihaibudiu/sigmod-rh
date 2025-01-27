@@ -11,15 +11,15 @@ are used to iterate computations until a fixed-point is reached.
 The following definition allows us to describe what a fixed point is
 in terms of streams:
 
-\begin{definition}\label{def:zae}
-We say that a stream $s \in \stream{A}$ is \defined{zero almost-everywhere} if it has a finite
-number of non-zero values, i.e., there exists a time $t_0 \in \N$
-s.t. $\forall t \geq t_0~.~s[t] = 0$.
+\begin{definition}[zero a.e.]\label{def:zae}
+We say that a stream $s \in \stream{A}$ is \defined{zero almost
+  everywhere} if it has a finite number of non-zero values, i.e.,
+there exists a time $t_0 \in \N$ s.t. $\forall t \geq t_0.s[t] = 0$.
 \noindent Denote the set of streams that are zero almost everywhere
 by $\streamf{A} \subset \stream{A}$.
 \end{definition}
 
-\paragraph{Stream introduction.}  The delta function (named from the
+\begin{definition}[stream introduction]  The delta function (named from the
 Dirac delta function) $\delta : A \rightarrow \stream{A}$ produces a
 stream from a scalar value:
 $$\delta(v)[t] \defn \left\{
@@ -29,13 +29,14 @@ $$\delta(v)[t] \defn \left\{
 \end{array}
 \right.
 $$
+\end{definition}
 
 The input of $\delta$ has a single arrow, while the output has a
 double arrow.  For example:
 
 \begin{center}
 \begin{tikzpicture}[auto,node distance=1cm,>=latex]
-    \node[] (input) {\fbox{x}};
+    \node[] (input) {\fbox{$x$}};
     \node[block, right of=input] (delta) {$\delta$};
     \node[right of=delta, node distance=2.2cm] (output) {\sv{x 0 0 0 0}};
     \draw[->] (input) -- (delta);
@@ -43,10 +44,13 @@ double arrow.  For example:
 \end{tikzpicture}
 \end{center}
 
-\paragraph{Stream elimination.}
+\begin{definition}[stream elimination]
 We define the function $\int : \streamf{A} \rightarrow A$, over
 streams that are zero almost everywhere, as $\int(s) \defn \sum_{t
-  \geq 0} s[t]$.  $\int$ simply adds up all values in the input stream
+  \geq 0} s[t]$.
+\end{definition}
+
+$\int$ simply adds up all values in the input stream
 and produces a scalar result with the sum.  $\int$ is closely related
 to $\I$; if $\I$ is the indefinite (discrete) integral, $\int$ is the
 definite (discrete) integral on the interval $0 - \infty$.  For
@@ -75,15 +79,16 @@ a single arrow.  E.g.,:
 $\delta$ and $\int$ are LTI.
 \end{proposition}
 
-\paragraph{Nested time domains.}
+\vspace{-3ex}
+\subsection{Nested time domains}
+
 So far we have used a tacit assumption that ``time'' is common for all
-streams in a program.  For example, when we add two streams,
-we assume that they use the same ``clock'' for the time dimension.
-However, the $\delta$ operator creates a stream with a ``new'', independent time
-dimension.  We require \emph{well-formed circuits}
-to ``insulate'' such
-nested time domains by ``bracketing'' them between a $\delta$
-and an $\int$ operator:
+streams in a program.  For example, when we add two streams, we assume
+that they use the same ``clock'' for the time dimension.  However, the
+$\delta$ operator creates a stream with a ``new'', independent time
+dimension.  We require \emph{well-formed circuits} to ``insulate''
+such nested time domains by ``bracketing'' them between a $\delta$ and
+an $\int$ operator:
 
 \begin{center}
 \begin{tikzpicture}[auto,node distance=1cm,>=latex]
@@ -102,15 +107,17 @@ and an $\int$ operator:
 
 In the above circuit $Q$ is a streaming operator, but the entire
 circuit is a scalar function, shown by the single input and output
-arrows.
+arrows.  As we discuss briefly in Section~\ref{sec-turing}, \dbsp
+circuits are Turing-complete.  Thus, in general there exists no simple
+syntactic criterion to decide whether a query $Q$ returns a stream
+that is zero almost everywhere.  For a $Q$ that does \emph{not} return
+such a stream, the above circuit never terminates, since $\int$ never
+returns a value.
 
 Algorithm~\ref{algorithm-rec} below, which translates recursive queries to
 \dbsp circuits, always produces well-formed circuits.
-%\begin{proposition}
-%If $Q$ is time-invariant, the circuit above has the zero-preservation
-%property: $\zpp{\int \circ\; Q \circ \delta_o}$.
-%\end{proposition}
 
+\vspace{-3ex}
 \subsection{Implementing recursive queries}\label{sec:datalog}
 
 We describe the implementation of recursive queries in \dbsp for
@@ -121,17 +128,18 @@ $(O_1,..,O_n)=R(I_1,..,I_m, O_1,..,O_n)$, where $I_1,..,I_m$ are
 input relations and $R$ is a non-recursive query.
 
 We describe here the algorithm for the simpler case of a single-input,
-single-output query\footnote{The general case in the companion
-technical report~\cite{tr} is only slightly more involved.}.  The
-input of our algorithm is a Datalog query of the form $O = R(I, O)$,
-where $R$ is a relational, non-recursive query, producing a set as a
-result, but whose output $O$ is also an input.  The output of the
-algorithm is a \dbsp circuit which evaluates this recursive query
-producing output $O$ when given the input $I$.  In this section we
-build a non-incremental circuit, which evaluates the Datalog query; in
+single-output query\footnote{The general case for any number of
+mutually recursive relations is shown in the companion technical
+report~\cite{tr}, and is only slightly more involved.}.  The input of
+our algorithm is a Datalog query of the form $O = R(I, O)$, where $R$
+is a relational, non-recursive query, producing a set as a result, but
+whose output $O$ is also an input.  The output of the algorithm is a
+\dbsp circuit which evaluates this recursive query producing output
+$O$ when given the input $I$.  In this section we build a
+non-incremental circuit, which evaluates the Datalog query; in
 \refsec{sec:nested} we incrementalize this circuit.
 
-\begin{algorithm}%[recursive queries]
+\begin{algorithm}[recursive queries]
   \label{algorithm-rec}
 \noindent
 \begin{enumerate}[nosep, leftmargin=\parindent]
@@ -186,7 +194,7 @@ recursive input via a delay:
  \end{center}
 
 \item ``Bracket'' the circuit, first with $\I$ and $\D$ nodes, and
-  then in $\delta$ and $\int$:
+  then with $\delta$ and $\int$:
 
 \begin{center}
 \begin{tikzpicture}[auto,>=latex, node distance=.8cm]
@@ -216,21 +224,19 @@ We argue that the cycle inside this circuit computes iteratively the fixed point
 The $\D$ operator yields the set of new Datalog facts (changes) computed by each iteration of the loop.
 When the set of new facts becomes empty, the fixed point has been reached:
 
-\begin{theorem}[Recursion correctness]\label{theorem:recursion}
+\begin{theorem}[recursion correctness]\label{theorem:recursion}
 If $\isset(\code{I})$, the output of the circuit above is
 the relation $\code{O}$ as defined by the Datalog semantics of given program
 $R$ as a function of the input relation \code{I}.
 \end{theorem}
-\label{proof-recursion}
-
-\begin{proof}
+\begin{proof}\label{proof-recursion}
 Let us compute the contents of the $o$ stream, produced at the output
 of $R$.  We show that this stream contains increasing approximations of the value of \code{O}.
 
 Define the following one-argument function: $S(x) = \lambda x . R(\code{I}, x)$.
 Notice that the left input of the $\lift{R}$ block is a constant stream
 with the value \code{I}.  Due to the stratified nature of the language,
-we must have $\ispositive(S)$, so $\forall x~.~S(x) \geq x$.
+we must have $\ispositive(S)$, so $\forall x~.~S(x) \geq 0$.
 We get the following system of equations:
 $$
 \begin{aligned}
@@ -240,7 +246,7 @@ o[t] =& S(o[t-1]) \\
 $$
 So, by induction on $t$ we have $o[t] = S^t(0)$, where by
 $S^t$ we mean $\underbrace{S \circ S \circ \ldots \circ S}_{t}$.
-$S$ is monotone; thus, if there is a time $k$ such that $S^k(0) = S^{k+1}(0)$, we have
+If there is a time $k$ such that $S^k(0) = S^{k+1}(0)$, we have
 $\forall j~.~S^{k+j}(0) = S^k(0)$.  Applying a $\D$ to this stream
 will then produce a stream that is zero almost everywhere, and integrating
 this result will return the last distinct value in the stream $o$.
@@ -254,7 +260,7 @@ using integers with arithmetic), this construction does not guarantee
 that at runtime a fixed point is reached.  But if a program does converge, the
 above construction will find the least fixed point.
 
-In fact, this circuit implements the standard \defined{na\"{\i}ve evaluation}
+In fact, this circuit implements the standard \defined{naive evaluation}
 algorithm (e.g., see Algorithm~1 in \cite{greco-sldm15}).
 Notice that the inner part of the circuit is the incremental
 form of another circuit, since it is sandwiched between $\I$ and $\D$ operators.
@@ -277,12 +283,13 @@ Using the cycle rule of Proposition~\ref{prop-inc-properties} we can rewrite thi
 \end{tikzpicture}
 \end{center}
 
-This circuit implements \defined{semi-na\"{\i}ve evaluation}
+This circuit implements \defined{semi-naive evaluation}
 (Algorithm~2 from~\cite{greco-sldm15}).  We have just proven the
-correctness of semi-na\"{\i}ve evaluation as an immediate consequence
+correctness of semi-naive evaluation as an immediate consequence
 of the cycle rule!
 
 %In \refsec{sec:recursive-example} we show a concrete example, applying Algorithm~\ref{algorithm-rec}
 %to a recursive query computing the transitive closure of a graph.
 
+\vspace{-3ex}
 \input{example2}

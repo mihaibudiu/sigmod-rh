@@ -1993,7 +1993,7 @@
 @Misc{tr,
   author =       {Mihai Budiu and Frank McSherry and Leonid Ryzhyk and Val Tannen},
   title =        {{DBSP}: A Language for Expressing Incremental View Maintenance for Rich Query Languages},
-  howpublished = {\url{https://www.feldera.com/spec.pdf}},
+  howpublished = {\url{https://mihaibudiu.github.io/work/dbsp-spec.pdf}},
   year =         {2022},
   month =        {December}
 }
@@ -4519,20 +4519,20 @@
 }
 
 @article{chang-tcs08,
-  author =	 {Chang, Fay and Dean, Jeffrey and Ghemawat, Sanjay
+  author =       {Chang, Fay and Dean, Jeffrey and Ghemawat, Sanjay
                   and Hsieh, Wilson C. and Wallach, Deborah A. and
                   Burrows, Mike and Chandra, Tushar and Fikes, Andrew
                   and Gruber, Robert E.},
-  title =	 {{Bigtable}: A Distributed Storage System for
+  title =        {{Bigtable}: A Distributed Storage System for
                   Structured Data},
-  year =	 2008,
-  issue_date =	 {June 2008},
-  volume =	 26,
-  number =	 2,
-  issn =	 {0734-2071},
-  url =		 {https://doi.org/10.1145/1365815.1365816},
-  doi =		 {10.1145/1365815.1365816},
-  abstract =	 {Bigtable is a distributed storage system for
+  year =         2008,
+  issue_date =   {June 2008},
+  volume =       26,
+  number =       2,
+  issn =         {0734-2071},
+  url =          {https://doi.org/10.1145/1365815.1365816},
+  doi =          {10.1145/1365815.1365816},
+  abstract =     {Bigtable is a distributed storage system for
                   managing structured data that is designed to scale
                   to a very large size: petabytes of data across
                   thousands of commodity servers. Many projects at
@@ -4550,22 +4550,22 @@
                   clients dynamic control over data layout and format,
                   and we describe the design and implementation of
                   Bigtable.},
-  journal =	 {ACM Trans. Comput. Syst.},
-  month =	 {jun},
-  articleno =	 4,
-  numpages =	 26,
-  keywords =	 {Large-Scale Distributed Storage}
+  journal =      {ACM Trans. Comput. Syst.},
+  month =        {jun},
+  articleno =    4,
+  numpages =     26,
+  keywords =     {Large-Scale Distributed Storage}
 }
 
 @inproceedings{hammer-pldi14,
-  author =	 {Hammer, Matthew A. and Phang, Khoo Yit and Hicks,
+  author =       {Hammer, Matthew A. and Phang, Khoo Yit and Hicks,
                   Michael and Foster, Jeffrey S.},
-  title =	 {Adapton: composable, demand-driven incremental
+  title =        {Adapton: composable, demand-driven incremental
                   computation},
-  year =	 2014,
-  url =		 {https://doi.org/10.1145/2594291.2594324},
-  doi =		 {10.1145/2594291.2594324},
-  abstract =	 {Many researchers have proposed programming languages
+  year =         2014,
+  url =          {https://doi.org/10.1145/2594291.2594324},
+  doi =          {10.1145/2594291.2594324},
+  abstract =     {Many researchers have proposed programming languages
                   that support incremental computation (IC), which
                   allows programs to be efficiently re-executed after
                   a small change to the input. However, existing
@@ -4592,16 +4592,97 @@
                   benchmarks, and found that it provides reliable
                   speedups, and in many cases dramatically outperforms
                   state-of-the-art IC approaches.},
-  booktitle =	 {Proceedings of the 35th ACM SIGPLAN Conference on
+  booktitle =    {Proceedings of the 35th ACM SIGPLAN Conference on
                   Programming Language Design and Implementation},
-  pages =	 {156–166},
-  numpages =	 11,
-  keywords =	 {call-by-push-value (CBPV), demanded computation
+  pages =        {156–166},
+  numpages =     11,
+  keywords =     {call-by-push-value (CBPV), demanded computation
                   graph (DCG) incremental computation, laziness,
                   self-adjusting computation, thunks},
-  location =	 {Edinburgh, United Kingdom},
-  series =	 {PLDI '14},
+  location =     {Edinburgh, United Kingdom},
+  series =       {PLDI '14},
   comments =     {A lazy language with references that keeps track of
                   previous re-evaluations and attempts to reuse them
                   when possible.}
+}
+
+@inproceedings{berkholz-pods17,
+  author =       {Berkholz, Christoph and Keppeler, Jens and
+                  Schweikardt, Nicole},
+  title =        {Answering Conjunctive Queries under Updates},
+  year =         2017,
+  url =          {https://doi.org/10.1145/3034786.3034789},
+  doi =          {10.1145/3034786.3034789},
+  abstract =     {We consider the task of enumerating and counting
+                  answers to k-ary conjunctive queries against
+                  relational databases that may be updated by
+                  inserting or deleting tuples. We exhibit a new
+                  notion of q-hierarchical conjunctive queries and
+                  show that these can be maintained efficiently in the
+                  following sense. During a linear time pre-processing
+                  phase, we can build a data structure that enables
+                  constant delay enumeration of the query results; and
+                  when the database is updated, we can update the data
+                  structure and restart the enumeration phase within
+                  constant time. For the special case of self-join
+                  free conjunctive queries we obtain a dichotomy: if a
+                  query is not q-hierarchical, then query enumeration
+                  with sublinear *) delay and sublinear update time
+                  (and arbitrary preprocessing time) is
+                  impossible. For answering Boolean conjunctive
+                  queries and for the more general problem of counting
+                  the number of solutions of k-ary queries we obtain
+                  complete dichotomies: if the query's homomorphic
+                  core is q-hierarchical, then size of the the query
+                  result can be computed in linear time and maintained
+                  with constant update time. Otherwise, the size of
+                  the query result cannot be maintained with sublinear
+                  update time.All our lower bounds rely on the
+                  OMv-conjecture, a conjecture on the hardness of
+                  online matrix-vector multiplication that has
+                  recently emerged in the field of fine-grained
+                  complexity to characterise the hardness of dynamic
+                  problems. The lower bound for the counting problem
+                  additionally relies on the orthogonal vectors
+                  conjecture, which in turn is implied by the strong
+                  exponential time hypothesis.*) By sublinear we mean
+                  $O(n^(1-\varepsilon))$ for some $\varepsilon > 0$,
+                  where $n$ is the size of the active domain of the
+                  current database.},
+  booktitle =    {Proceedings of the 36th ACM SIGMOD-SIGACT-SIGAI
+                  Symposium on Principles of Database Systems (PODS)},
+  pages =        {303–318},
+  numpages =     16,
+  keywords =     {query evaluation, online matrix-vector
+                  multiplication, dynamic algorithms, dichotomy,
+                  counting complexity, constant delay enumeration},
+  location =     {Chicago, Illinois, USA},
+  series =       {PODS '17}
+}
+
+@Misc{sequential-logic,
+  title =     {Sequential Logic Circuits},
+  howpublished = {\url{https://www.electronics-tutorials.ws/sequential/seq_1.html}},
+  note =      {Retrieved January 2025}}
+
+@InProceedings{hirn-cidr23,
+  author =       {Denis Hirn and Torsten Grust},
+  title =        {A Fix for the Fixation on Fixpoints},
+  booktitle =    CIDR,
+  year =         2023,
+  month =        {January},
+  address =      {Amsterdam, Netherlands},
+  abstract =     {We derive new iterative CTE variants from the simple
+                  loop-based, operational semantics of SQL:1999’s WITH
+                  RECURSIVE. In the absence of fixpoint-based
+                  semantics and monotonicity restrictions, these CTE
+                  variants (1) can hold onto as well as forget the
+                  results of earlier loop iterations or (2) maintain
+                  iteration results in a keyed table, enabling a SQL
+                  authoring style that mimics imperative
+                  algorithms. We exercise the new variants using a
+                  series of examples to demonstrate that this fresh
+                  look at CTEs has a beneficial impact on the
+                  readability and performance of iterative SQL
+                  queries.}
 }

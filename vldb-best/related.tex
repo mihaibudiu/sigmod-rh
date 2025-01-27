@@ -8,11 +8,12 @@ approach is as follows: given a query $Q$, discover a ``delta query'',
 a ``differential'' version $\Delta Q$ that satisfies the equation:
 $Q(d+\Delta d)=Q(d)+\Delta Q(d,\Delta d)$, and which can be used to
 compute the change for a new input reusing the previous output.
-DBToaster introduced recursive recursive
+DBToaster introduced recursive
 IVM~\cite{ahmad-vldb09,koch-pods10,nikolic-sigmod16}, where the
 incrementalization process is repeated for the delta query.  Our
 definition of IVM is subtly different from the above one, as IVM is
-defined as a stream computation, well-defined for any query.
+defined as a stream computation, which is well-defined and can be
+computed for any query.
 
 \cite{bello-vldb98} describes an early implementation in Oracle~8,
 which handles a limited set of queries.  Many custom algorithms were
@@ -26,22 +27,24 @@ acyclic conjunctive queries: instead of keeping the output view
 materialized they build data structures that allow efficiently
 querying the output views.  PAI maps~\cite{abeysinghe-sigmod22} are
 specially designed for queries with correlated aggregations.
-\cite{palpanas-vldb02} discusses non-distributive aggregate functions.
-\cite{katsis-sigmod15} uses primary key information to compress the
-representation of the deltas, and using an ``update'' operator that is
-similar to our ``upsert'' operator.  AJU~\cite{wang-sigmod20} and
-\cite{svingos-amd23} focus on using foreign key information to
-optimize query plan generation.  These techniques are only sound in
-the absence of deletions and updates; our implementation uses these
-optimizations as well.  Some algorithms apply to sets, some work for
-multisets~\cite{griffin-sigmod95}.  Many of these formalisms look very
-complicated because they deal with ``insertions'', ``deletions'', and
-``update'' changes separately.  \zrs are a much more compact tool for
-describing such algorithms.  In some sense the \dbsp theory, through
-the chain rule, enables us to reuse all of these results (and any
-future schemes designed for particular classes of subqueries): given a
-good implementation strategy for a particular query plan it can be
-reused as a subplan in any query which uses that particular plan.
+q-hierarchical que\-ries~\cite{berkholz-pods17} admit very efficient
+update algorithms.  \cite{palpanas-vldb02} discusses non-distributive
+aggregate functions.  \cite{katsis-sigmod15} uses primary key
+information to compress the representation of the deltas, and using an
+``update'' operator that is similar to our ``upsert'' operator.
+AJU~\cite{wang-sigmod20} and \cite{svingos-amd23} focus on using
+foreign key information to optimize query plan generation.  These
+techniques are only sound in the absence of deletions and updates; our
+implementation uses these optimizations as well.  Some algorithms
+apply to sets, some work for multisets~\cite{griffin-sigmod95}.  Many
+of these formalisms look very complicated because they deal with
+``insertions'', ``deletions'', and ``update'' changes separately.
+\zrs are a much more compact tool for describing such algorithms.  In
+some sense the \dbsp theory, through the chain rule, enables us to
+reuse all of these results (and any future schemes designed for
+particular classes of subqueries): given a good implementation
+strategy for a particular query plan it can be reused as a subplan in
+any query which uses that particular plan.
 
 \dbsp as described implies an ``eager'' execution model: it constantly
 maintains the entire contents of any number of views, even if no one
@@ -75,7 +78,7 @@ variants~\cite{motik-aaai15,Harrison-wdd92,motik-ai19}.  \dbsp is more
 general, and our incrementalization algorithm handles arbitrary
 recursive queries and generates more efficient plans for recursive
 queries in the presence of arbitrary updates (especially deletions,
-where competing approaches may over-delete).  Interestingly, the \zrs
+where competing ap\-proach\-es may over-delete).  Interestingly, the \zrs
 weights in \dbsp are related to the counting-number-of-derivations
 approaches, but our use of the $\distinct$ operator shows that precise
 counting is not necessary.
@@ -108,13 +111,13 @@ queries~\cite{arasu-tr02,aurora} such as CQL queries.
 database queries and streaming queries; it also proposes some
 extensions to SQL specific to streaming systems.  The \dbsp theory
 allows us to more precisely understand the classes of queries that
-cannot be expressed in SQL.  A SQL query is a function of the state of
-the database; in other words, a SQL query cannot provide different
-results based on the order of insertions of tuples in a table.
-Streaming systems however can.  \dbsp also enables us to handle
-generalizations of the proposed concepts -- for example, we believe
-that the ``timestamps'' attached by streaming systems to ``events'' do
-not need any special treatment.
+\emph{cannot} be expressed in SQL.  A SQL query is a function of the
+state of the database; in other words, a SQL query cannot provide
+different results based on the order of insertions of tuples in a
+table.  Streaming systems however can.  \dbsp also enables us to
+generalize and simplify the architecture of existing streaming
+systems; for example, we believe that the ``timestamps'' attached by
+streaming systems to ``events'' do not need any special treatment.
 
 \cite{bonifati-iclp2018} implemented a verified IVM algorithm for a
 particular class of graph queries called Regular Datalog, with an
@@ -141,22 +144,22 @@ Algorithm~\ref{algorithm-inc}, a syntax-directed translation that can
 convert any expressible query into an incremental version --- in DD
 users have to assemble incremental queries manually using incremental
 operators.  materialize.com offers a product that automates
-incrementalization for SQL queries based on DD.  The Differential
-Datalog~\cite{ryzhyk-datalog19} project compiles Datalog to DD.
-Unlike DD, \dbsp is a modular theory, which easily accommodates the
-addition of new operators: as long as we can express a new operator as
-a \dbsp circuit, we can (1) define its incremental version, (2) apply
-the incrementalization algorithm to obtain an efficient incremental
-implementation, and (3) be confident that it composes with any other
-operators.
+incrementalization for Postgres SQL queries based on DD.  The
+Differential Datalog~\cite{ryzhyk-datalog19} project compiles Datalog
+to DD.  Unlike DD, \dbsp is a modular theory, which easily
+accommodates the addition of new operators: as long as we can express
+a new operator as a \dbsp circuit, we can (1) define its incremental
+version, (2) apply the incrementalization algorithm to obtain an
+efficient incremental implementation, and (3) be confident that it
+composes with any other operators.
 
 Many custom streaming systems have been implemented:
 Storm~\cite{toshnival-sigmod14}, Spark
 Streaming~\cite{zaharia-sosp13}, Flink~\cite{carbone-ieee15},
 Samza~\cite{noghabi-vldb17}, Beam~\cite{akidau-vldb15}, Kafka
-Streams~\cite{wang-sigmod21}, and many have adopted SQL dialectsL
-Spark Structured Streaming~\cite{armbrust-sigmod18}, Spark SQL,
-KSQL~\cite{jafarpour-edbt19}.  These sytems usually sacrifice some of
+Streams~\cite{wang-sigmod21}, and many have adopted SQL dialects,
+e.g., Spark Structured Streaming~\cite{armbrust-sigmod18}, Spark SQL,
+KSQL~\cite{jafarpour-edbt19}.  These systems usually sacrifice some of
 the nice properties of database systems in order to compute
 efficiently over unbounded streams.  These systems may only support
 restricted classes of queries.  We believe that in the future
@@ -164,15 +167,15 @@ databases will incorporate the best features of streaming systems, and
 that \dbsp shows one way this can be achieved.
 
 \cite{akidau-amd23,akidau-debs24} describe the Snowflake incremental
-and streaming capabilities.  In Showflake ``streams'' are database
+and streaming capabilities.  In Snowflake ``streams'' are database
 table that store the history of changes to a table.  Dynamic tables
 are views which are periodically refreshed, at user-specified
 intervals.  These can be updated either incrementally or using batch
-recomputation; the system chooses a stragegy based on the refres
+recomputation; the system chooses a strategy based on the refresh
 period.  The views provide snapshot isolation, which is similar to the
 DBSP consistency model.
 
-The \code{pg\_ivm}~\cite{pgivm} project ofers an open-source Postgres
+The \code{pg\_ivm}~\cite{pgivm} project offers an open-source Postgres
 module which adds IVM capabilities.  The supported set of queries has
 some significant restrictions.
 

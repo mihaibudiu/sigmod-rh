@@ -4,8 +4,8 @@ In \secref{sec:streams}--\ref{sec:relational}
 we showed how to incrementalize a relational query by
 compiling it into a circuit, lifting the circuit to compute on streams, and
 applying the $\inc{\cdot}$ operator.  In \secref{sec:recursion} we showed
-how to compile a recursive query into a circuit that employs incremental
-computation internally (using semi-na\"ive evaluation), to compute the fixed point.
+how to compile a recursive query into a circuit using incremental
+computation internally (using semi-naive evaluation), to compute the fixed point.
 Here we combine these results to construct a circuit that evaluates a \emph{recursive
 query incrementally}.  The circuit receives a stream of updates to input
 relations, and for every update recomputes the fixed point.  To do this
@@ -15,12 +15,31 @@ account for the modified inputs.  Thus, every element of the input stream yields
 a stream of adjustments to the fixed point computation, using
 \emph{nested streams}.
 
-Nested streams, or streams of streams, $\stream{\stream{A}} = \N \rightarrow (\N
-\rightarrow A)$, are well defined, since streams form an abelian group.
-Equivalently, a nested stream is a value in $\N \times \N \to A$, i.e., a matrix
-with an infinite number of rows, indexed by two-dimensional time $(t_0, t_1)$.
-where each row is a stream.  In circuits we show nested streams with
-arrows with \emph{triple} heads.
+\subsection{Nested streams}
+
+\newcommand{\ssa}[1]{
+  \small
+\setsepchar{ }
+\readlist\arg{#1}
+\begin{bmatrix}
+   \begin{array}{ccccccc}
+        {[} & \arg[1] & \arg[2] & \arg[3] & \arg[4] & \cdots & {]} \\
+        {[} & \arg[5] & \arg[6] & \arg[7] & \arg[8] & \cdots & {]} \\
+        {[} & \arg[9] & \arg[10] & \arg[11] & \arg[12] & \cdots & {]} \\
+        {[} & \arg[13] & \arg[14] & \arg[15] & \arg[16] & \cdots & {]} \\
+        \multicolumn{7}{c}{\cdots}
+   \end{array}
+\end{bmatrix}
+}
+
+Nested streams, or streams of streams, $\stream{\stream{A}} = \N
+\rightarrow (\N \rightarrow A)$, are well defined, since streams form
+an Abelian group.  Equivalently, a nested stream is a value in $\N
+\times \N \to A$, i.e., a matrix with an infinite number of rows,
+indexed by two-dimensional time $(t_0, t_1)$, where each row is a
+stream.  For example, here is the nested stream $i \in
+\stream{\stream{\N}}$ defined by $i[t_0][t_1] = t_0 + 2 t_1$:
+$$ i = \ssa{0 1 2 3 2 3 4 5 4 5 6 7 6 7 8 9} $$
 
 The same way we lift functions to produce stream operators, we can
 lift stream operators to produce operators on streams of streams.
@@ -31,14 +50,22 @@ that $(\lift{S})(s) = S \circ s$, or, pointwise: $(\lift{S}(s))[t_0][t_1] =
 S(s[t_0])[t_1], \forall t_0, t_1 \in \N$.  In particular, a scalar function $f:
 A \rightarrow B$ can be lifted twice to produce an operator between streams of
 streams: $\lift{\lift{f}}: \stream{\stream{A}} \rightarrow \stream{\stream{B}}$.
+$$(\lift{\lift{(x \mapsto x \bmod 2)}})(i) =
+  \ssa{0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1}$$
+
+$\zm$ delays the rows of the matrix:
+$$\zm(i) = \ssa{0 0 0 0 0 1 2 3 2 3 4 5 4 5 6 7}$$
+
+\noindent while its lifted version delays each column:
+$$(\lift{\zm})(i) = \ssa{0 0 1 2 0 2 3 4 0 4 5 6 0 6 7 8}$$
+
+We show nested streams with \emph{triple} arrows:
 
 \begin{center}
 \begin{tikzpicture}[>=latex, node distance=1.2cm]
-  \node[] (input) {$i$};
-  \node[block, right of=input] (I) {$\lift{\lift{{f}}}$};
-  \node[right of=I] (output)  {$o$};
-  \draw[->>>] (input) -- (I);
-  \draw[->>>] (I) -- (output);
+  \node[] (input) {$i$}; \node[block, right of=input] (I)
+       {$\lift{\lift{{f}}}$}; \node[right of=I] (output) {$o$};
+       \draw[->>>] (input) -- (I); \draw[->>>] (I) -- (output);
 \end{tikzpicture}
 \end{center}
 
@@ -58,22 +85,21 @@ is well defined for a strict operator $F$.
 The operator $\lift{\zm}: \stream{\stream{A}} \to \stream{\stream{A}}$ is strict (in its second dimension).
 \end{proposition}
 
-The operator $\zm$ on nested streams delays ``rows'' of the matrix,
-while $\lift{\zm}$ delays ``columns''.
-The $\I$ operator on $\stream{\stream{A}}$ operates on rows
-of the matrix, treating each row as a single value.
-Lifting a stream operator computing on $\stream{A}$,
-such as $\I: \stream{A} \to \stream{A}$, also produces an operator on nested streams, but
-this time computing on the columns of the matrix
-$\lift{\I}: \stream{\stream{A}} \to \stream{\stream{A}}.$
+The $\I$ operator on $\stream{\stream{A}}$ operates on rows of the
+matrix, treating each row as a single value.  Lifting a stream
+operator computing on $\stream{A}$, such as $\I: \stream{A} \to
+\stream{A}$, also produces an operator on nested streams, but
+computing on the columns of the matrix $\lift{\I}: \stream{\stream{A}}
+\to \stream{\stream{A}}.$
 
-\begin{proposition}[Lifting cycles]
+\begin{proposition}[lifting cycles]
 \label{prop-lift-cycle}
 For a binary, causal $T$ we have: $\lift{(\lambda
   s. \fix{\alpha}{T(s,\zm(\alpha)}))} = \\ \lambda
 s. \fix{\alpha}{(\lift{T})(s,(\lift{\zm})(\alpha))}$
-\noindent i.e., lifting a circuit containing a ``cycle'' can be accomplished by
-lifting all operators independently, including the $\zm$ back-edge.
+\noindent i.e., lifting a circuit containing a cycle can be
+accomplished by lifting all operators independently, including the
+$\zm$ back-edge.
 \end{proposition}
 
 This means that lifting a \dbsp stream operator can be expressed within \dbsp
@@ -100,9 +126,12 @@ itself.  For example, we have:
 \end{tikzpicture}
 \end{tabular}
 
-This proposition gives the ability to lift
-entire circuits, including circuits computing on streams and having feedback edges,
-which are well-defined, due to Proposition~\ref{prop-liftz}.
+This proposition gives the ability to lift entire circuits, including
+circuits with feedback edges, producing well-defined results, due to
+Proposition~\ref{prop-liftz}.
+
+\subsection{Programs on nested streams}
+
 With this machinery we can now apply Algorithm~\ref{algorithm-inc} to arbitrary
 circuits, even circuits built for recursively-defined relations.
 
@@ -206,4 +235,4 @@ fixed point iterations from earlier timestamps to update them efficiently as new
 Notice that space usage is proportional to the \emph{number of iterations of the inner loop}
 that computes the fixed-point.
 Fortunately, many recursive algorithms converge in a relatively small number of steps
-(for example, transitive closure requires a number of steps  log(graph diameter).
+(for example, transitive closure performs log(graph diameter) steps.

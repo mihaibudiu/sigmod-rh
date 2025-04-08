@@ -1856,86 +1856,28 @@ implementation of the query.
     \node[] (t1) {\code{t1}};
     \node[block, right of=t1, node distance=1cm] (s1) {$\sigma_{a > 2}$};
     \node[block, right of=s1] (p1) {$\pi_{x, id}$};
-    \node[block, right of=p1] (d11) {$\distinct$};
     \node[below of=t1, node distance=1cm] (t2) {\code{t2}};
     \node[block, right of=t2, node distance=1cm] (s2) {$\sigma_{s > 5}$};
     \node[block, right of=s2] (p2) {$\pi_{y, id}$};
-    \node[block, right of=p2] (d21) {$\distinct$};
-    \node[below of=d11, node distance=.5cm] (mid) {};
+    \node[below of=p1, node distance=.5cm] (mid) {};
     \node[block, right of=mid] (j) {$\bowtie_{id = id}$};
     \node[block, right of=j, node distance=1.3cm] (p) {$\pi_{x, y}$};
-    \node[right of=p] (V) {\code{V}};
+    \node[block, right of=p] (d) {$\distinct$};
+    \node[right of=d] (V) {\code{V}};
     \draw[->] (t1) -- (s1);
     \draw[->] (s1) -- (p1);
-    \draw[->] (p1) -- (d11);
     \draw[->] (t2) -- (s2);
     \draw[->] (s2) -- (p2);
-    \draw[->] (p2) -- (d21);
-    \draw[->] (d11) -| (j);
-    \draw[->] (d21) -| (j);
+    \draw[->] (p1) -| (j);
+    \draw[->] (p2) -| (j);
     \draw[->] (j) -- (p);
-    \draw[->] (p) -- (V);
+    \draw[->] (p) -- (d);
+    \draw[->] (d) -- (V);
 \end{tikzpicture}
 
 Step 2: eliminate $\distinct$ operators, producing an equivalent
-circuit: (we omit the subscripts to save space):
-
-%\noindent
-%\begin{tikzpicture}[node distance=1.2cm,>=latex]
-%    \node[] (t1) {\code{t1}};
-%    \node[block, right of=t1, node distance=.9cm] (s1) {$\sigma_{a > 2}$};
-%    \node[block, right of=s1] (p1) {$\pi_{x, id}$};
-%    \node[block, right of=p1] (d11) {$\distinct$};
-%    \node[below of=t1, node distance=1cm] (t2) {\code{t2}};
-%    \node[block, right of=t2, node distance=.9cm] (s2) {$\sigma_{s > 5}$};
-%    \node[block, right of=s2] (p2) {$\pi_{y, id}$};
-%    \node[block, right of=p2] (d21) {$\distinct$};
-%    \node[below of=d11, node distance=.5cm] (mid) {};
-%    \node[block, right of=mid, node distance=.8cm] (j) {$\bowtie_{id = id}$};
-%    \node[block, right of=j] (p) {$\pi_{x, y}$};
-%    \node[block, right of=p] (d) {$\distinct$};
-%    \node[right of=d, node distance=1.2cm] (V) {\code{V}};
-%    \draw[->] (t1) -- (s1);
-%    \draw[->] (s1) -- (p1);
-%    \draw[->] (p1) -- (d11);
-%    \draw[->] (t2) -- (s2);
-%    \draw[->] (s2) -- (p2);
-%    \draw[->] (p2) -- (d21);
-%    \draw[->] (d11) -| (j);
-%    \draw[->] (d21) -| (j);
-%    \draw[->] (j) -- (p);
-%    \draw[->] (p) -- (d);
-%    \draw[->] (d) -- (V);
-%\end{tikzpicture}
-
-
-%\noindent
-%\begin{tikzpicture}[node distance=1.2cm,>=latex]
-%    \node[] (t1) {\code{t1}};
-%    \node[block, right of=t1, node distance=.9cm] (s1) {$\sigma$};
-%    \node[block, right of=s1] (p1) {$\pi$};
-%    \node[below of=t1, node distance=1cm] (t2) {\code{t2}};
-%    \node[block, right of=t2, node distance=.9cm] (s2) {$\sigma$};
-%    \node[block, right of=s2] (p2) {$\pi$};
-%    \node[below of=p1, node distance=.5cm] (mid) {};
-%    \node[block, right of=mid, node distance=.8cm] (j) {$\bowtie$};
-%    \node[block, right of=j] (d0) {$\distinct$};
-%    \node[block, right of=d0] (p) {$\pi$};
-%    \node[block, right of=p] (d) {$\distinct$};
-%    \node[right of=d, node distance=1.2cm] (V) {\code{V}};
-%    \draw[->] (t1) -- (s1);
-%    \draw[->] (s1) -- (p1);
-%    \draw[->] (t2) -- (s2);
-%    \draw[->] (s2) -- (p2);
-%    \draw[->] (p1) -| (j);
-%    \draw[->] (p2) -| (j);
-%    \draw[->] (j) -- (d0);
-%    \draw[->] (d0) -- (p);
-%    \draw[->] (p) -- (d);
-%    \draw[->] (d) -- (V);
-%\end{tikzpicture}
-%
-%\noindent And again~\ref{prop-distinct-once}:
+circuit; (no changes are produced, but we omit the subscripts to save
+space):
 
 \noindent
 \begin{tikzpicture}[node distance=1cm,>=latex]
@@ -1967,6 +1909,7 @@ may be multisets in the optimized circuit.
 Step 3: lift the circuit to compute over streams; all arrows are
 doubled and all functions are lifted:
 
+\vspace{1mm}
 \noindent
 \begin{tikzpicture}[node distance=1cm,>=latex]
     \node[] (t1) {\code{t1}};
@@ -2809,8 +2752,7 @@ itself.  For example, we have:
 \end{tabular}
 
 This proposition gives the ability to lift entire circuits, including
-circuits with feedback edges, producing well-defined results, due to
-Proposition~\ref{prop-liftz}.
+circuits with feedback edges, producing well-defined results.
 
 \subsection{Programs on nested streams}
 
@@ -3916,7 +3858,7 @@ DRAM data structures (which, as expected, performs much better).
 
 \begin{figure}[h]
   \begin{center}
-  \includegraphics[scale=.43]{rocksdb}
+  \includegraphics[scale=.3,trim={.7in 1.4in .5in .8in},clip]{rocksdb}
   \caption{Query throughput using RocksDB as a storage layer; higher
     is better.  Note the logarithmic Y axis\label{fig:rocksdb}.}
   \end{center}
@@ -4146,7 +4088,7 @@ incremental computation performance remains steady.
 
 \begin{figure}[t]
   \begin{center}
-  \includegraphics[scale=.4]{tpch}
+  \includegraphics[scale=.33,trim={.4in 1in .4in 1in},clip]{tpch}
   \caption{Incremental versus batch performance on TPC-H
     Q5\label{fig:tpch}.}
   \end{center}
@@ -4198,16 +4140,15 @@ obtained for batches of 2K-20K records.
 \subsection{Macrobenchmarks}\label{sec:macrobenchmarks}
 
 \begin{figure*}
-  \includegraphics[width=.95\textwidth]{throughput} \hspace{-3ex}
-  (a) \\
-  \includegraphics[width=.95\textwidth]{memory} \hspace{-3ex}
-  (b) \\
-  \caption{(a) Average normalized throughput with respect to Flink
-    (higher is better), and (b) peak memory consumption (lower is
+  \includegraphics[width=.92\textwidth,trim={.9in 4.5in .78in
+      1in},clip]{throughput.pdf} \\
+  \includegraphics[width=.92\textwidth,trim={.9in 4.8in .78in
+      .81in},clip]{memory}
+  \caption{(top) Average normalized throughput with respect to Flink
+    (higher is better), and (bottom) peak memory consumption (lower is
     better), in GiB (\(2^{30}\) bytes).  The workload comprises the
     Nexmark queries that \dbsp and Flink support in common, over
-    100,000,000 events.  There are no measurements for q11 for
-    \dbsp.\label{fig:macrobenchmark}}
+    100,000,000 events.\label{fig:macrobenchmark}}
 \end{figure*}
 
 There are no standard benchmark suites for IVM.  In this section we
@@ -4264,9 +4205,9 @@ service performance and configuration as a possible source of
 variability.
 
 Figure~\ref{fig:macrobenchmark} reports our measurements.  We show 3
-bars for \dbsp: the first (blue) is using hand-written Rust code based
+bars for \dbsp: the first (red) is using hand-written Rust code based
 on the \dbsp runtime, running in memory; the second (orange) bar is
-written in SQL and runs in memory, while the third (red) bar shows the
+written in SQL and runs in memory, while the third (blue) bar shows the
 SQL program using secondary storage.
 
 \paragraph{Throughput.}
@@ -4274,13 +4215,13 @@ SQL program using secondary storage.
 \newcommand{\x}{\(\times\)}
 
 Figure~\ref{fig:macrobenchmark}(a) shows the normalized throughput of
-\dbsp versus Flink (which is always 1).  With storage disabled, \dbsp
-is up to 17\x{} faster than Flink, with a geometric mean of 2.2\x{}
-faster on average.  As queries get more complicated, \dbsp's advantage
-over Flink grows by a much larger factor.  We also notice that there
-is still a roughly $2\times{}$ gap to cover between the performance of
-hand-written \dbsp programs and the code generated by the SQL
-compiler.
+\dbsp versus Flink with RocksDB (which is always 1); the last group is
+the geometric mean.  With storage disabled, \dbsp is up to 17\x{}
+faster than Flink, with a geometric mean of 2\x{} faster on average.
+As queries get more complicated, \dbsp's advantage over Flink grows by
+a much larger factor.  We also notice that there is still a roughly
+$2\times{}$ gap to cover between the performance of hand-written \dbsp
+programs and the code generated by the SQL compiler.
 
 \query{q13} is an outlier that performs slightly slower in our system
 than Flink; with storage enabled, it is slower than Flink.  We are
@@ -4300,10 +4241,8 @@ Flink or \dbsp processes.  In our case this is a single process; for
 Flink, it is the sum of the RSS in the 8 task manager containers.  In
 the measurements we did not include the cost incurred by the control
 plane in either case (in Feldera's system, the pipeline manager; in
-Flink, the job manager).
-
-\dbsp uses between 0.03\x{} and 2.6\x{} as much memory of Flink, with a
-geometric mean of 0.24\x{}.
+Flink, the job manager).  \dbsp uses between 0.03\x{} and 2.6\x{} as
+much memory of Flink, with a geometric mean of 0.24\x{}.
 
 \query{q0} and several other queries use 2~GiB or less memory with our
 implementation, but over 17~GiB with Flink.  These queries are linear,
@@ -4311,10 +4250,8 @@ and do not require any state, or only minimal state, so \dbsp does not
 allocate much memory.  Flink runs under the Java Virtual Machine,
 which might cause it to allocate a high minimum amount of memory.
 
-Most queries use less memory in our system than in Flink.  \query{q9}
-and \query{q13} use substantially more, and \query{q18} and
-\query{q19} use somewhat more, and storage reduces the RAM use
-significantly.
+Most queries use less memory in our system than in Flink.  Storage
+reduces the RAM use significantly.
 
 %\input{related}
 \section{Related work}\label{sec:related}
@@ -4477,7 +4414,7 @@ Storm~\cite{toshnival-sigmod14}, Spark
 Streaming~\cite{zaharia-sosp13}, Flink~\cite{carbone-ieee15},
 Samza~\cite{noghabi-vldb17}, Beam~\cite{akidau-vldb15}, Kafka
 Streams~\cite{wang-sigmod21}, and many have adopted SQL dialects,
-e.g., Spark Structured Streaming~\cite{armbrust-sigmod18}, Spark SQL,
+e.g., Spark Structured Streaming \cite{armbrust-sigmod18}, Spark SQL,
 KSQL~\cite{jafarpour-edbt19}.  These systems usually sacrifice some of
 the nice properties of database systems in order to compute
 efficiently over unbounded streams.  These systems may only support
@@ -4546,6 +4483,7 @@ practice of streaming incremental computation.  As a proof, we have
 built a SQL compiler that can essentially incrementalize arbitrary
 queries.
 
+\newpage
 
 \bibliographystyle{plain}
 \bibliography{main}

@@ -42,7 +42,7 @@ incremental computation performance remains steady.
 
 \begin{figure}[t]
   \begin{center}
-  \includegraphics[scale=.4]{graph/tpch}
+  \includegraphics[scale=.4]{tpch}
   \caption{Incremental versus batch performance on TPC-H
     Q5\label{fig:tpch}.}
   \end{center}
@@ -85,38 +85,18 @@ monotonically with input batch size, but the optimum throughput is
 obtained for batches of 2K-20K records.
 
 \begin{figure}[h]
-  \includegraphics[width=.90\columnwidth]{graph/batchsize}
+  \includegraphics[width=.90\columnwidth]{batchsize}
   \caption{Latency and throughput as a function of the input batch
     size.  Notice the logarithmic X axis.\label{fig:batchsize}}
 \end{figure}
-
-\begin{comment}
-Increasing the batch size further beyond 100K records causes the
-system to enter an unstable state (the crossover point depends on the
-available memory size), in which throughput oscillates, as shown in
-Figure~\ref{fig:oscillation}.  One reason this happens is that some
-activities, such as merging batches, and garbage collection of useless
-records, only happen between circuit steps.  The right solution to
-smooth these oscillations is probably a dynamic controller for input
-sizes, but also for partitioning resources like memory between \dbsp
-operators and their shards.
-
-\begin{figure}[h]
-  \begin{center}
-  \includegraphics[scale=.5]{graph/oscillation}
-  \caption{Unstable throughput for very large input batch
-    sizes\label{fig:oscillation}.}
-  \end{center}
-\end{figure}
-\end{comment}
 
 \vspace{-3ex}
 \subsection{Macrobenchmarks}\label{sec:macrobenchmarks}
 
 \begin{figure*}
-  \includegraphics[width=.95\textwidth]{graph/throughput} \hspace{-3ex}
+  \includegraphics[width=.95\textwidth]{throughput} \hspace{-3ex}
   (a) \\
-  \includegraphics[width=.95\textwidth]{graph/memory} \hspace{-3ex}
+  \includegraphics[width=.95\textwidth]{memory} \hspace{-3ex}
   (b) \\
   \caption{(a) Average normalized throughput with respect to Flink
     (higher is better), and (b) peak memory consumption (lower is

@@ -188,21 +188,4366 @@ essentially arbitrary queries written in all these languages.
 
 \end{abstract}
 
-\input{intro}
-\input{streams}
-\input{relational}
-\input{recursion}
-\input{nested}
-\input{expressivity}
-\input{implementation}
-\input{experiments}
-\input{related}
-\input{conclusions}
+%\input{intro}
+\section{Introduction}\label{sec:introduction}
+
+This paper is an extended version of a VLDB 2023
+publication~\cite{budiu-vldb23}, adopting the notations
+from~\cite{budiu-sigmod24}.  The major changes are: adding new
+incremental program examples (\refsec{sec:recursive-example},
+\refsec{sec:recursive-incremental-example}), an expanded discussion of
+implementing SQL with its ``standard'' semantics~\refsec{sec:sql}, an
+extended implementation section~\refsec{sec:implementation}, and a
+preliminary experimental evaluation~\refsec{sec:experiments}.  This
+paper includes only a few short mathematical proofs; all the proofs
+can be found in an extended technical report~\cite{tr}; the proofs
+have also been formalized and verified in the Lean proof
+assistant~\cite{dbsp-theory}.
+
+\subsection{Problem and Solution Overview}\label{sec:intro-incremental}
+
+The IVM problem can be stated as follows: we are given a database $DB$
+and a view $V$, described by a query $Q$.  The goal of IVM is to keep
+the contents of $V$ up-to-date in response to changes of the database.
+
+Consider the following SQL statement:
+
+\begin{lstlisting}[language=SQL]
+CREATE VIEW V AS
+SELECT * FROM T WHERE Age >= 10
+\end{lstlisting}
+
+In this example the query $Q$ defining the view $V$ is the
+\code{SELECT} statement.  The view \code{V} always contains all the
+rows of table \code{T} whose value for the column \code{Age} is
+greater than or equal to 10.
+
+In general a query is a function applied to the contents of a
+database: $V = Q(DB)$.  A naive solution re-executes query $Q$ every
+time the database changes, as illustrated in the following diagram.
+Time is the horizontal axis; the horizontal arrows labeled with
+$\Delta$ depict changes to the database.  The ``up'' arrows show the
+re-evaluation of $Q$ for each database snapshot.
+
+\noindent \includegraphics[trim={0 4.8in 3.7in 0},clip,scale=.34]{view.pdf}
+
+The naive solution is expensive.  An ideal algorithm would compute
+only \emph{changes} to the view $\Delta V$, doing work $O(|\Delta DB|)$
+(after computing the first version of the view).
+
+\noindent \includegraphics[trim={0 5.2in 4.1in 0},clip,scale=.35]{incview.pdf}
+
+We call $\inc{Q}$ the \emph{incremental} version of $Q$.  For an
+arbitrary query $Q$ one can show that there is no solution where
+$\inc{Q}$ is a (pure) function of $\Delta DB$ (only restricted classes
+of queries have such solutions).
+
+In this paper we propose a new way to define $\inc{Q}$, as a form of
+\emph{computation on streams}.  Our model is inspired by Digital
+Signal Processing DSP~\cite{rabiner-book75}, applied to databases,
+hence the name \dbsp.
+
+$\inc{Q}$ can be significantly more efficient than the naive
+solution.  As is the case for traditional database queries, the
+performance of $\inc{Q}$ depends both on the query $Q$ but also on the
+actual data that the query is applied to.  Informally, $\inc{Q}$ built
+by our algorithm, is faster than $Q$ by a factor of $O(|DB| / |\Delta
+DB|)$.  In practice this may be an improvement of several orders of
+magnitude.
+
+Instead of treating the database as a large, changing object, we model
+it as a sequence or \emph{stream} of database snapshots, shown as
+$DB[1], DB[2], \ldots$ in the previous diagrams.  Similarly,
+consecutive view snapshots form a stream.  \dbsp is a simple
+programming language computing on streams; inputs and outputs are
+streams of arbitrary values.
+
+The \dbsp language has only 4 operators.  However, it can express a
+rich set of computations on streams, including repeated computations
+(similar to the repeated queries $Q$ above), recursive computations
+that compute fixed points (like Datalog programs), more general
+streaming computations, and incremental computations (defined
+shortly).
+
+The central result of this paper is Algorithm~\ref{algorithm-inc}
+in~\refsec{sec:relational}.  The input to the algorithm is a \dbsp
+program that computes on a stream of data; the algorithm mechanically
+transforms it into an incremental \dbsp program that computes on a
+stream of changes.
+
+\dbsp is not tied to databases in any way; it is in fact a
+Turing-complete language that can be used for many other purposes.
+But it works particularly well in the area of databases, for two
+reasons:
+
+\begin{itemize}[nosep, leftmargin=0pt, itemindent=0.5cm]
+  \item \dbsp operates on values from a commutative group.  Databases
+    can be modeled as a commutative group.
+  \item \dbsp reduces the problem of incrementalizing a complex
+    program to the problem of incrementalizing each primitive
+    operation that appears in the program.  For databases there are
+    known efficient incremental implementations for all primitive
+    operations.
+\end{itemize}
+
+\subsection{Core abstractions}
+
+\subsubsection{Circuits}
+
+In this paper we use circuit diagrams to depict programs.  In a
+circuit a rectangle represents a function, and an arrow represents an
+input or output value.  The following diagram shows a function $f$
+consuming two inputs $i$ (input 0) and $j$ (input 1) and producing one
+output $o = f(i, j)$:
+%
+\begin{center}
+\begin{tikzpicture}[auto,>=latex,inner sep=0mm]
+  \node[block, minimum height=.6cm, minimum width=.5cm] (function) {$f$};
+  \node[below=1mm of function.north west,font=\tiny,anchor=north west] (0) {0};
+  \node[above=1mm of function.south west,font=\tiny,anchor=south west] (1) {1};
+  \node[left of=0, node distance=.5cm] (input0) {$i$};
+  \node[left of=1, node distance=.5cm] (input1) {$j$};
+  \node[right of=function, node distance=.8cm] (output) {$o$};
+  \draw[->] (input0) -- (0);
+  \draw[->] (input1) -- (1);
+  \draw[->] (function) -- (output);
+\end{tikzpicture}
+\end{center}
+
+%
+Most of the functions we deal with are commutative, so we omit input
+labels, showing the circuit above as:
+%
+\begin{center}
+  \begin{tikzpicture}[auto,>=latex, node distance=.7cm]
+    \node[] (input0) {$i$};
+    \node[below of=input0,node distance=.15cm] (dummy) {};
+    \node[below of=dummy,node distance=.15cm] (input1) {$j$};
+    \node[block, right of=dummy] (T) {$f$};
+    \node[right of=T] (output) {$o$};
+    \draw[->] (input0) -- (T);
+    \draw[->] (input1) -- (T);
+    \draw[->] (T) -- (output);
+  \end{tikzpicture}
+\end{center}
+
+%
+Functions, and their circuits, can be composed, as in the following
+example showing $o = g(s) + (f(s) \times s)$:
+%
+\begin{center}
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {$s$};
+  \node[] [right of=input, node distance=.4cm] (dummy) {};
+  \node[block, below of=dummy, node distance=.65cm] (S1) {$f$};
+  \node[block, right of=S1] (T1) {$\times$};
+  \node[block, right of=T1] (T2) {$+$};
+  \node[block, above of=T2, node distance=.65cm] (S2) {$g$};
+  \node[right of=T2, node distance=.7cm] (output) {$o$};
+  \draw[->] (input) -| (S1);
+  \draw[->] (input) -| (T1);
+  \draw[->] (S1) -- (T1);
+  \draw[->] (T1) -- (T2);
+  \draw[->] (input) -- (S2);
+  \draw[->] (T2) -- (output);
+  \draw[->] (S2) -- (T2);
+\end{tikzpicture}
+\end{center}
+
+\subsubsection{Streams}
+
+The core notion of \dbsp is the \textbf{stream}.  Given a set $A$, a
+\defined{stream} \emph{of values from $A$} is an infinite sequence of
+values from $A$.  $\stream{A}$ denotes the set of all streams with
+values from $A$.  We write $s[t]$ for the $t$-th element of the stream
+$s$.  Think of $t$ as the ``time'' and of $s[t]\in A$ as the value of
+the stream $s$ ``at time'' $t$.  We show streams as a sequence of
+boxes, with time from \emph{right to left}: e.g., the stream $id[t]
+\defn t$ is:
+%
+\begin{center}
+\begin{tabular}{cc}
+  \sv{0 1 2 3 4} \\
+  $\xleftarrow[\hspace{1cm}\mathrm{time}\hspace{1cm}]{}$
+\end{tabular}
+\end{center}
+
+A \defined{stream operator} is a function that computes on streams and
+produces streams.  We use ``operator'' for streams, and ``function''
+for computations on ``scalar'' values.  In circuits we use arrows with
+a double head to depict streams.  The following diagram shows a stream
+operator $T$ consuming two input streams $s_0$ and $s_1$, producing
+one output stream $s$; the difference from the previous figure is in
+the use of double arrows.
+%
+\begin{center}
+\begin{tikzpicture}[auto,>=latex,inner sep=0mm]
+  \node[block, minimum height=.6cm, minimum width=.5cm] (function) {$T$};
+  \node[below=1mm of function.north west,font=\tiny,anchor=north west] (0) {0};
+  \node[above=1mm of function.south west,font=\tiny,anchor=south west] (1) {1};
+  \node[left of=0, node distance=0.8cm] (input0) {$s_0$};
+  \node[left of=1, node distance=0.8cm] (input1) {$s_1$};
+  \node[right of=function, node distance=.8cm] (output) {$s$};
+  \draw[->>] (input0) -- (0);
+  \draw[->>] (input1) -- (1);
+  \draw[->>] (function) -- (output);
+\end{tikzpicture}
+\end{center}
+%
+We write $s = T(s_0, s_1)$.
+
+Given a function $f: A \to B$, we define a stream operator $\lift{f}
+:\stream{A} \to \stream{B}$ (read as ``$f$ lifted'') by applying
+function $f$ to each input value independently:
+
+\noindent
+\begin{center}
+  \begin{tikzpicture}[auto,>=latex]
+    \node[] (input) {$\sv{a b c d e}$};
+    \node[block, right of=input, node distance=2cm] (f) {$\lift{f}$};
+    \node[right of=f, node distance=2.6cm] (output) {$\sv{f(a) f(b) f(c) f(d) f(e)}$};
+    \draw[->>] (input) -- (f);
+    \draw[->>] (f) -- (output);
+  \end{tikzpicture}
+\end{center}
+
+\vspace{-3ex}
+
+\subsection{Databases as streams}
+
+We generally think of streams as sequences of ``small'' values, such
+as insertions or deletions in a database.  However, we also treat the
+whole database as a \emph{stream of database snapshots}.  We model a
+database as a stream $DB$.  Time is not wall-clock time, but counts
+the transactions executed.  Since transactions are linearizable, they
+have a total order.  $DB[t]$ is the snapshot of the database contents
+after $t$ transactions have been applied.  We use this notation in the
+diagrams in \refsec{sec:intro-incremental}.
+
+Database transactions also form a stream $\Delta DB$, which is a
+stream of \emph{changes}, or \emph{deltas}, that are applied to the
+database.  The values of this stream are defined by $(\Delta DB)[t] =
+DB[t] - DB[t-1]$, where ``$-$'' stands for the difference between two
+databases, a notion that we will soon make more precise.  The $\Delta
+DB$ stream can be produced from the $DB$ stream by the \emph{stream
+differentiation} operator $\D$; this operator produces as its output
+the stream of changes from its input stream; we have thus $\D(DB) =
+\Delta DB$.
+
+Conversely, the database snapshot at time $t$ is the cumulative result
+of applying all transactions up to $t$: $DB[t] = \Delta DB[0] + \Delta
+DB[1] + \ldots + \Delta DB[t]$.  The stream operator $\I$ is defined
+to produce each output by adding up all previous inputs.  We call $\I$
+\emph{stream integration}, the inverse of differentiation.  The
+following diagram shows the relationship between the streams $\Delta
+DB$ and $DB$:
+\begin{center}
+\begin{tikzpicture}[auto,>=latex,minimum width=.5cm, node distance=1.2cm]
+  \node[] (input) {$\Delta DB$};
+  \node[block, right of=input] (I) {$\I$};
+  \node[right of=I] (output) {$DB$};
+  \node[block, right of=output] (D) {$\D$};
+  \node[right of=D] (end) {$\Delta DB$};
+  \draw[->>] (input) -- (I);
+  \draw[->>] (I) -- (output);
+  \draw[->>] (output) -- (D);
+  \draw[->>] (D) -- (end);
+\end{tikzpicture}
+\end{center}
+
+In this model a database view is also a stream.  Suppose query $Q$
+defining a view $V$.  For each snapshot of the database stream we have
+a snapshot of the view: $V[t] = Q(DB[t])$.  A view is thus just a
+lifted query: $V = (\lift{Q})(DB)$.
+
+Armed with these basic definitions, we can precisely define IVM.  A
+maintenance algorithm computes the \emph{changes} to the view given
+the changes to the database. Given a query $Q$, a key contribution of
+this paper is the definition of its \emph{incremental version}
+$\inc{Q}$, using stream integration and differentiation, depicted
+graphically as:
+
+%
+\begin{center}
+\begin{tikzpicture}[auto,>=latex,minimum width=.5cm]
+  \node[] (input) {$\Delta DB$};
+  \node[block, right of=input, node distance=1.3cm] (I) {$\I$};
+  \node[block, right of=I, node distance=1.3cm] (Q) {$\lift{Q}$};
+  \node[block, right of=Q, node distance=1.3cm] (D) {$\D$};
+  \node[right of=D] (output) {$\Delta V$};
+  \draw[->>] (input) -- (I);
+  \draw[->>] (I) -- node (db) {$DB$} (Q);
+  \draw[->>] (Q) -- node (B) {$V$} (D);
+  \draw[->>] (D) -- (output);
+  \draw[decorate, decoration = {brace, raise=12pt}] (input) -- (output)
+  node[pos=.5, above=12pt]{$\inc{Q}$};
+\end{tikzpicture}
+\end{center}
+
+%
+Mathematically: $\inc{Q} = \D \circ (\lift{Q}) \circ \I$.  The
+incremental version of a query $Q$ is a \emph{streaming operator}
+$\inc{Q}$ which computes directly on changes and produces changes.
+The incremental version of a query is thus always well-defined.  The
+above definition gives us one way to compute a query incrementally,
+but applying it naively produces an inefficient execution, since it
+reconstructs the database at each step.  It is in fact as bad as the
+naive solution.  In \refsec{sec:incremental} we show how we can
+optimize the implementation of $\inc{Q}$. The key property is that the
+we can ``push'' the $\inc{.}$ operator ``down'' in a query plan:
+$\inc{(Q_1 \circ Q_2)} = \inc{Q_1} \circ \inc{Q_2}$.
+
+Armed with this general theory of incremental computation, in
+\secref{sec:relational} we show how to model relational queries in
+\dbsp.  This immediately gives us a general algorithm to compute the
+incremental version of any relational query.  These results were
+previously known, but they are cleanly modeled by \dbsp.  We show how
+programs containing recursion can be
+implemented~\secref{sec:recursion} and
+incrementalized~\secref{sec:nested} in \dbsp.  For example, given an
+implementation of transitive closure in the natural recursive way, our
+algorithm produces a program that efficiently maintains the transitive
+closure of a graph as nodes and edges are added and deleted.
+
+\vspace{-3ex}
+
+\subsection{Contributions}
+
+This work makes the following contributions:
+\begin{enumerate}
+  \item We introduce \dbsp~\refsec{sec:streams}, a simple but
+    expressive language for streaming computation. \dbsp gives an
+    elegant formal foundation unifying the manipulation of streaming
+    and incremental computations.
+  \item We describe an algorithm
+    (Algorithm~\ref{algorithm-inc},~\refsec{sec:ivm}) for
+    incrementalizing any streaming computation expressed in \dbsp
+    that handles arbitrary insertions and deletions from any of the
+    data sources.
+  \item We describe how \dbsp can model various classes of practical
+    languages: the relational algebra~\refsec{sec:relational},
+    Datalog~\refsec{sec:recursion}, and SQL~\refsec{sec:sql}.
+  \item We provide the first general and machine-checked theory of
+    IVM.  All the theoretical results in this paper have been
+    checked~\cite{dbsp-theory} using the Lean proof
+    assistant~\cite{moura-cade15}.
+  \item We describe a practical open-source implementation of this
+    theory as a runtime and a SQL
+    compiler~\refsec{sec:implementation}.
+  \item We give a preliminary evaluation of the performance of our
+    implementation~\refsec{sec:experiments}.
+\end{enumerate}
+
+%\input{streams}
+\section{Stream computations}\label{sec:streams}
+
+The core notion of our theory of IVM is the \textbf{stream}.  In this
+section we introduce streams as infinite sequences of values, and
+define computations on streams.
+
+$\N$ is the set of natural numbers (from 0), $\B$ is the set of
+Booleans, $\Z$ is the set of integers, and $\R$ is the set of real
+numbers.
+
+\vspace{-3ex}
+
+\subsection{Streams and stream operators}\label{sec:notation}
+
+\begin{definition}[stream]
+Given a set $A$, a \defined{stream} \emph{of values from $A$}, or an
+\emph{$A$-stream}, is a function $\N \rightarrow A$.  $\stream{A}
+\defn \{ s \,|\, s : \N \to A \}$ is the set of all $A$-streams.
+\end{definition}
+
+When $s\in\stream{A}$ and $t\in\N$ we
+write $s[t]$ for the $t$-th element of the stream $s$.
+
+\begin{definition}[stream operator]
+A \defined{stream operator} is a function
+$T:\stream{A_0}\times\cdots\times\stream{A_{n-1}}\to\stream{B}$.
+\end{definition}
+
+\begin{definition}[lifting]
+Given a (scalar) function $f: A \to B$,
+we define a stream operator $\lift{f} :\stream{A} \to \stream{B}$
+by \emph{lifting} the function $f$ pointwise in time: $(\lift{f})(s) \defn f \circ s$.
+Equivalently, $((\lift{f})(s))[t] \defn f(s[t])$.
+This extends to functions of multiple arguments.
+\end{definition}
+
+\ifstreamexamples
+For example, $(\lift{(\lambda x.(2x))})(id) = \sv{0 2 4 6 8}$.
+\fi
+
+\begin{proposition}[distributivity]\label{prop:distributivity}
+Lifting distributes over function composition:
+$\lift{(f \circ g)} = (\lift{f}) \circ (\lift{g})$.
+\end{proposition}
+\begin{comment}
+\begin{proof}
+This is easily proved by using associativity of function composition:
+$\forall s~.~(\lift{(f \circ g)})(s) = (f \circ g) \circ s =
+f \circ (g \circ s) = f \circ (\lift{g})(s) = (\lift{f})((\lift{g})(s)) =
+(\lift{f} \circ \lift{g})(s).$\qed
+\end{proof}
+\end{comment}
+
+We say that two \dbsp programs are \defined{equivalent} if they compute the same
+input-output function on streams.
+We use the symbol $\cong$ to indicate that two circuits are
+equivalent.  For example, Proposition~\ref{prop:distributivity}
+states the following circuit equivalence:
+
+\noindent
+\begin{tabular}{m{3.5cm}m{.3cm}m{3.5cm}}
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {$s$};
+  \node[block, right of=input] (g) {$\lift{g}$};
+  \node[block, right of=g] (f) {$\lift{f}$};
+  \node[right of=f] (output) {$o$};
+  \draw[->>] (input) -- (g);
+  \draw[->>] (g) -- (f);
+  \draw[->>] (f) -- (output);
+\end{tikzpicture}
+&
+$\cong$
+&
+\begin{tikzpicture}[auto,>=latex]
+    \node[] (input) {$s$};
+    \node[block, right of=input, node distance=1.5cm] (fg) {$\lift{(f \circ g)}$};
+    \node[right of=fg, node distance=1.5cm] (output) {$o$};
+    \draw[->>] (input) -- (fg);
+    \draw[->>] (fg) -- (output);
+\end{tikzpicture}
+\end{tabular}
+
+\vspace{-3ex}
+
+\subsection{Streams over Abelian groups}\label{sec:abelian}
+
+For the rest of the technical development we require the set of values
+$A$ of a stream $\stream{A}$ to form a commutative group $(A, +, 0_A,
+-)$.  The \emph{plus} defines what it means to add new data, while the
+\emph{minus} allows us to compute differences (deltas).  We show later
+that this restriction is not a problem for using \dbsp with relational
+data.
+
+\subsubsection{Delays and time-invariance}\label{sec:delay}
+
+\begin{definition}[delay]
+The \defined{delay operator}\footnote{The name $\zm$ comes from the
+DSP literature, and is related to the
+z-transform~\cite{rabiner-book75}.}  $\zm$ produces an output stream
+by delaying its input by one step: $\zm_A: \stream{A} \to \stream{A}$:
+%\begin{tabular}{m{5cm}m{3cm}}
+$$
+\zm_A(s)[t] \defn   \begin{cases}
+0_A      & \text{when}~t=0 \\
+s[t - 1] & \text{when}~t\geq1
+\end{cases}
+$$
+%&
+%\begin{tikzpicture}[auto,node distance=1cm,>=latex]
+%    \node[] (input) {$s$};
+%    \node[block, right of=input] (z) {$\zm$};
+%    \node[right of=z] (output) {$o$};
+%    \draw[->] (input) -- (z);
+%    \draw[->] (z) -- (output);
+%\end{tikzpicture}
+%\end{tabular}
+\end{definition}
+
+We often omit the type parameter $A$, and write just $\zm$.
+\ifstreamexamples
+For example, $\zm(\id) = \sv{0 0 1 2 3}$.
+\fi
+
+\begin{definition}[time invariance]
+A stream operator $S: \stream{A} \to \stream{B}$ is \defined{time-invariant} (TI) if
+$S(\zm_A(s)) = \zm_B(S(s))$ for all $s \in \stream{A}$; in other words, if
+the following two circuits are equivalent:
+\end{definition}
+
+\begin{tabular}{m{3cm}m{.5cm}m{3cm}}
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {$s$};
+  \node[block, right of=input] (S) {$S$};
+  \node[block, right of=S] (z) {$\zm$};
+  \node[right of=z] (output) {$o$};
+  \draw[->>] (input) -- (S);
+  \draw[->>] (S) -- (z);
+  \draw[->>] (z) -- (output);
+\end{tikzpicture}
+&
+$\cong$
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {$s$};
+  \node[block, right of=input] (z) {$\zm$};
+  \node[block, right of=z] (S) {$S$};
+  \node[right of=S] (output) {$o$};
+  \draw[->>] (input) -- (z);
+  \draw[->>] (z) -- (S);
+  \draw[->>] (S) -- (output);
+\end{tikzpicture}
+\end{tabular}
+
+The output of a TI operator only depends on its input, but never on
+the ``logical clock'' value.  For example the operator $S(s)[t] = s[t]
++ t$ is \emph{not} TI.  The composition of TI operators of any number
+of inputs is TI. The delay operator $\zm$ is TI.  \dbsp only uses TI
+operators.
+
+%\begin{definition}
+%We say that a function between groups $f: A \to B$ has the \emph{zero-preservation
+%property} if $f(0_A) = 0_B$.  We write $\zpp{f}$.
+%\end{definition}
+%
+%A lifted operator $\lift{f}$ is TI iff $\zpp{f}$.
+
+\subsubsection{Causal and strict operators}\label{sec:causal}
+
+The definitions in this section are used to argue that some circuits
+with cycles are well-defined.
+
+\begin{definition}[causality]
+A stream operator \\ $S:\stream{A}\to\stream{B}$
+is \defined{causal} when $\forall s,s'\in\stream{A}$,
+and $\forall t \in \N$ we have:
+$
+(\forall i \leq t~.~s[i]=s'[i]) \Rightarrow S(s)[t]=S(s')[t].
+$
+\end{definition}
+
+\noindent
+In other words, the output value at time $t$ can only depend on input
+values from times $t' \leq t$ (they cannot ``look'' into the future).
+Operators produced by lifting are causal, and $\zm$ is causal.  The
+composition of causal operators is causal.  \dbsp only uses causal
+operators.
+
+\begin{definition}[strictness]
+A stream operator \\ $F:\stream{A}\to\stream{B}$
+is \defined{strict}
+if  $\forall s,s'\in\stream{A}, \forall t \in \N$ we have:
+$(\forall i<t~.~s[i]=s'[i]) \Rightarrow F(s)[t]=F(s')[t].$
+\end{definition}
+
+In other words, the $t$-th output of $F(s)$ can depend only on
+``past'' values of the input $s$, between $0$ and $t-1$.  In
+particular, $F(s)[0] = 0_B$ is the same for all $s \in \stream{A}$.
+Strict operators are causal, but in addition, the current output can
+only depend on previous inputs.  Lifted operators in general are
+\emph{not} strict.  $\zm$ is strict.  Strict operators can compute
+their $k$-th output \emph{before} having received the corresponding
+$k$-th input.
+
+\begin{proposition}
+\label{prop-unique-fix}
+For a strict $F: \stream{A} \to \stream{A}$ the equation ~$\alpha=F(\alpha)$~ has a unique
+solution $\alpha \in \stream{A}$, denoted by $\fix{\alpha}{F(\alpha)}$.
+\end{proposition}
+
+Thus every strict operator from a set to itself has a unique fixed
+point.  The simple proof relies on strong induction, showing that the
+solution $\alpha[t]$ depends only on the values of $\alpha$ prior to
+$t$.  As an example, consider $F = \zm$.  The base of the induction
+is: $\alpha[0] = \zm[0] = 0$, and the inductive step gives us
+$\alpha[t] = \zm(\alpha)[t] = \alpha[t-1]$, thus $\forall t
+. \alpha[t] = 0$.
+
+Consider a circuit with a strict ``feedback'' edge $F$:
+\begin{center}
+\begin{tikzpicture}[>=latex]
+    \node[] (input) {$s$};
+    \node[block, right of=input] (f) {$T$};
+    \node[right of=f, node distance=1.2cm] (output) {$\alpha$};
+    \node[block, below of=f, node distance=.6cm] (z) {$F$};
+    \draw[->>] (input) -- (f);
+    \draw[->>] (f) -- node (mid) {} (output);
+    \draw[->>] (mid.center) |-  (z);
+    \draw[->>] (z.west) -- ++(-.4,0) |- ([yshift=1mm]f.south west);
+\end{tikzpicture}
+\end{center}
+
+This circuit is a well-defined function on streams, because the $F$
+operator can produce an output before having received the
+corresponding input, enabling $T$ to compute the first output
+immediately.  This fact is mathematically shown by the following
+Lemma:
+
+%\begin{lemma}
+%\label{lemma-causal-strict}
+%If $F: \stream{B} \to \stream{B}$ is strict and $T: \stream{A} \times \stream{B} \to \stream{B}$ is causal, then for fixed $s$ the operator
+%$\lambda\alpha.T(s,F(\alpha)): \stream{A} \to \stream{B}$ is strict.
+%\end{lemma}
+
+\begin{lemma}\label{feedback-semantics}
+\label{cor-loop}
+If $F: \stream{B} \to \stream{B}$ is strict and $T: \stream{A} \times \stream{B} \to \stream{B}$ is causal,
+the operator $Q(s)=\fix{\alpha}{T(s,F(\alpha))}$ is well-defined and causal.
+If, moreover, $F$ and $T$ are TI then so is $Q$.
+\end{lemma}
+
+We will use circuits with such feedback loops extensively; in
+particular, the integrator below from Proposition~\ref{prop-integral}
+has this structure.  Such circuits are similar to sequential logic
+circuits in digital design~\cite{sequential-logic}, where the $\zm$
+operator has the role of a latch.
+
+Most \dbsp computations are built using just lifted functions and
+delays.  We add two more operators in \secref{sec:nested} to support
+recursive functions.  But first let's build some very useful circuits.
+
+\subsection{Integration and differentiation}\label{sec:abelianstreams}
+
+Remember that we require the elements of a stream to come from an
+Abelian group $A$.  Streams themselves form an Abelian group:
+
+\begin{proposition}
+The structure $(\stream{A},+,0,-)$, obtained by lifting the $+$ and
+unary $-$ operations of $A$, is an Abelian group.  $0$ is the stream
+with all values $0_A$.
+\end{proposition}
+
+\noindent
+To simplify the notation, we write $a + b$ for streams $a, b$ instead
+of $a (\lift{+}) b$; we also write $-a$ instead of $(\lift{-})a$.
+Stream addition and negation are causal, TI operators.
+
+\begin{definition}[linear]
+Given Abelian groups $A$ and $B$ we call a stream operator
+$S: \stream{A} \rightarrow \stream{B}$ \defined{linear} if it is a group homomorphism, that is,
+$S(a+b)=S(a)+S(b)$ (and therefore $S(0)=0$ and $S(-a)=-S(a)$).
+\end{definition}
+
+We write LTI for ``linear and TI''.  Given a linear function $f: A \to
+B$, the stream operator $\lift{f}$ is LTI.  $\zm$ is also LTI.
+
+\begin{definition}[bilinear]
+A function of two arguments $f: A \times B \to C$ where $A, B, C$ are
+groups, is \emph{bilinear} if it is linear separately in each argument
+(i.e., it distributes over addition): $\forall a, b, c, d~.~f(a+b, c)
+= f(a, c) + f(b, c)$, and $f(a, c+d) = f(a, c) + f(c, d).$
+\end{definition}
+
+This definition extends to stream operators.
+The lifting of a bilinear function $f$ is
+a bilinear stream operator $\lift{f}$.  An example
+is lifted multiplication:
+$f: \stream{\N} \times \stream{\N} \to \stream{\N}, f(a, b)[t] = a[t]\cdot b[t]$.
+
+%The composition of (bi)linear operators with linear operators
+%is (bi)linear (since homomorphisms compose).
+
+\begin{definition}[differentiation]
+The \defined{differentiation operator} $\D_{\stream{A}} : \stream{A}
+\to \stream{A}$ is: $\D(s) \defn s - \zm(s)$.
+\begin{center}
+\begin{tikzpicture}[auto,>=latex,node distance=1cm]
+    \node[] (input) {$s$};
+    \node[block, shape=circle, right of=input, inner sep=0pt,node distance=2cm] (plus) {$+$};
+    \node[right of=plus] (output) {$\D(s)$};
+    \draw[->>] (input) -- node (i) {} (plus);
+    \node[block, below of=i, node distance=.8cm] (z) {$\zm$};
+    \node[block, shape=circle, right of=z, inner sep=0pt] (minus) {$-$};
+    \draw[->>] (plus) -- (output);
+    \draw[->>] (i) -- (z);
+    \draw[->>] (z) -- (minus);
+    \draw[->>] (minus) -- (plus);
+\end{tikzpicture}
+\end{center}
+\end{definition}
+We generally omit the type, and write just $\D$.  $\D(s)[t] = s[t] -
+s[t-1]$ if $t > 0$.  If $s$ is a stream, then $\D(s)$ is the
+\emph{stream of changes} of $s$.
+
+As an example:
+{
+\noindent \small
+\begin{align*}
+  \D(\sv{0 1 2 1 0}) &= \\
+  \sv{0 1 2 1 0} - \zm(\sv{0 1 2 1 0}) &=\\
+  \sv{0 1 2 1 0} - \sv{0 0 1 2 1} &= \sv{0 1 1 -1 -1}
+%  &\sv{0-0 1-0 2-1 1-2 0-1} =\\
+\end{align*}
+}
+
+\begin{proposition}
+\label{prop-diff-properties}
+$\D$ is causal and LTI.
+\end{proposition}
+
+The ``feedback loop'' built from linear operator and a delay is
+linear, as shown by the following
+
+\begin{proposition}
+\label{prop-rec-linear}
+If $S$ is causal and LTI, the operator
+$Q(s)=\fix{\alpha}{S(s+\zm(\alpha))}$ is well-defined and LTI:
+
+\begin{center}
+\begin{tikzpicture}[>=latex]
+    \node[] (input) {$s$};
+    \node[block, shape=circle, right of=input, inner sep=0pt, node distance=.8cm] (plus) {$+$};
+    \node[block, right of=plus, node distance=.8cm] (Q) {$S$};
+    \node[right of=Q, node distance=1.4cm] (output) {$\alpha$};
+    \node[block, below of=Q, node distance=.6cm] (z) {$\zm$};
+    \draw[->>] (input) -- (plus);
+    \draw[->>] (plus) -- (Q);
+    \draw[->>] (Q) -- node (mid) {} (output);
+    \draw[->>] (mid.center) |-  (z);
+    \draw[->>] (z) -| (plus);
+\end{tikzpicture}
+\end{center}
+\end{proposition}
+The proposition is a consequence of Lemma~\ref{feedback-semantics}.
+
+The integration operator ``reconstitutes'' a stream from its changes:
+
+\begin{definition}[integration]
+The \defined{integration operator} $\I_{\stream{A}} : \stream{A} \to
+\stream{A}$ is $\I(s) \defn \fix{\alpha}{(s +
+  \zm(\alpha))}$:
+\begin{center}
+\begin{tikzpicture}[auto,>=latex, node distance=1.1cm]
+    \node[] (input) {s};
+    \node[block, shape=circle, right of=input, inner sep=0pt] (plus) {$+$};
+    \node[right of=plus, node distance=2cm] (output) {$\I(s) = o$};
+    \node[block, below of=plus, node distance=.85cm] (z) {$z^{-1}$};
+    \draw[->>] (input) -- (plus);
+    \draw[->>] (plus) -- node (o) {} (output);
+    \draw[->>] (o) |- (z);
+    \draw[->>] (z) -- (plus);
+\end{tikzpicture}
+\end{center}
+\end{definition}
+
+\noindent
+We also omit the type, and write just $\I$.  This is the circuit from
+Proposition~\ref{prop-rec-linear}, with $S$ the identity function.
+
+\begin{proposition}
+\label{prop-integral}
+$\I(s)$ is the discrete (indefinite) integral applied to the stream $s$:
+$\I(s)[t] = \sum_{i \leq t} s[i]$.
+\end{proposition}
+\begin{proof}
+Using the notation $o = \I(s)$ to make formulas more readable, we can
+see the contents of stream $o$ is produced step by step.
+\begin{align*}
+  o[0] &= s[0] + (\zm(o))[0] = s[0] + 0 = s[0] \\
+  o[1] &= s[1] + (\zm(o))[1] = s[1] + o[0] = s[1] + s[0] \\
+  \ldots \\
+  o[t] &= s[t] + (\zm(o))[t] = s[t] + o[t-1]. \qed
+\end{align*}
+\end{proof}
+
+\begin{proposition}
+\label{prop-integ-properties}
+$\I$ is causal and LTI.
+\end{proposition}
+
+\begin{theorem}[inversion]
+\label{inverses}
+$\I$ and $\D$ are inverses of each other: $\forall s~.~\I(\D(s)) =
+\D(\I(s)) = s$.
+\end{theorem}
+
+\noindent
+\begin{tabular}{m{2.5cm}m{.2cm}m{.8cm}m{.2cm}m{2.5cm}}
+\begin{tikzpicture}[auto,>=latex, node distance=.85cm]
+    \node[] (input) {$s$};
+    \node[block, right of=input] (I) {$\I$};
+    \node[block, right of=I] (D) {$\D$};
+    \node[right of=D] (output) {$o$};
+    \draw[->>] (input) -- (I);
+    \draw[->>] (I) -- (D);
+    \draw[->>] (D) -- (output);
+\end{tikzpicture}
+     & $\cong$ &
+\begin{tikzpicture}[auto,>=latex, node distance=.85cm]
+    \node[] (input) {$s$};
+    \node[right of=input] (output) {$o$};
+    \draw[->>] (input) -- (output);
+\end{tikzpicture}
+     & $\cong$ &
+\begin{tikzpicture}[auto,>=latex, node distance=.85cm]
+    \node[] (input) {$s$};
+    \node[block, right of=input] (D) {$\D$};
+    \node[block, right of=D] (I) {$\I$};
+    \node[right of=I] (output) {$o$};
+    \draw[->>] (input) -- (D);
+    \draw[->>] (D) -- (I);
+    \draw[->>] (I) -- (output);
+\end{tikzpicture}
+\end{tabular}
+
+\section{Incremental view maintenance}\label{sec:incremental}
+
+Here we define IVM and analyze its properties.
+
+\begin{definition}
+Given a unary stream operator $Q: \stream{A} \to \stream{B}$ we define the
+\defined{incremental version} of $Q$ as:
+\begin{equation}\label{def:inc}
+\inc{Q} \defn \D \circ Q \circ \I.
+\end{equation}
+$\inc{Q}$ has the same ``type'' as $Q$: $\inc{Q}: \stream{A} \to \stream{B}$.
+For an operator with multiple inputs we define
+the incremental version by applying $\I$ to each input independently:
+e.g., if $T: \stream{A} \times \stream{B} \rightarrow \stream{C}$ then
+$\inc{T}(a, b) \defn \D (T(\I(a), \I(b)))$.
+\end{definition}
+
+\begin{center}
+\begin{tikzpicture}[auto,>=latex]
+    \node[] (input) {$\Delta s$};
+    \node[block, right of=input] (I) {$\I$};
+    \node[block, right of=I] (Q) {$Q$};
+    \node[block, right of=Q] (D) {$\D$};
+    \node[right of=D] (output) {$\Delta o$};
+    \draw[->>] (input) -- (I);
+    \draw[->>] (I) -- node (s) {$s$} (Q);
+    \draw[->>] (Q) -- node (o) {$o$} (D);
+    \draw[->>] (D) -- (output);
+    \draw[decorate, decoration = {brace, raise=10pt}] (input) -- (output)
+    node[pos=.5, above=13pt]{$\inc{Q}$};
+\end{tikzpicture}
+\end{center}
+If $Q(s) = o$ is a streaming operator, then $\inc{Q}$ operates on
+streams of changes: $\inc{Q}(\Delta s) = \Delta o$.
+
+Notice that our definition of incremental computation is meaningful only for \emph{streaming}
+computations; this is in contrast to classic definitions, e.g.~\cite{gupta-idb95} which
+consider only one change.  Generalizing the definition to operate on streams gives us
+additional power, especially when operating with recursive queries.
+
+The following is one of our central results:
+
+\begin{proposition}(Properties of the incremental version):
+\label{prop-inc-properties}
+\begin{description}[nosep, leftmargin=\parindent]
+\item[inversion:] The function $f(Q) = \inc{Q} = \D \circ Q \circ \I$ is bijective; it's
+  inverse is $f^{-1}(Q) = \I\circ Q\circ\D$.
+%\item[invariance:] $\inc{+} = +, \inc{(\zm)} = \zm, \inc{-} = -, \inc{\I}=\I, \inc{\D}=\D$
+\item[push/pull:] \label{prop-part-commutation}
+    $Q \circ \I = \I \circ \inc{Q}$; $\D\circ Q = \inc{Q}\circ\D$
+\item[chain:] $\inc{(Q_1\circ Q_2)} = \inc{Q_1}\circ\inc{Q_2}$
+\item[add:] $\inc{(Q_1 + Q_2)} = \inc{Q_1} + \inc{Q_2}$
+\item[cycle:] $\inc{(\lambda s. \fix{\alpha}{T(s,\zm(\alpha)}))} = \lambda s. \fix{\alpha}{\inc{T}(s,\zm(\alpha)})$
+\end{description}
+\end{proposition}
+
+Here is the proof of the \defined{chain rule}, which states that
+$\inc{(Q_1 \circ Q_2)} = \inc{Q_1} \circ \inc{Q_2}$.
+
+\begin{tabular}{cr}
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {$\Delta i$};
+  \node[block, right of=input] (I) {$\I$};
+  \node[block, right of=I] (Q1) {$Q_1$};
+  \node[block, right of=Q1] (Q2) {$Q_2$};
+  \node[block, right of=Q2] (D) {$\D$};
+  \node[right of=D] (output)  {$\Delta o$};
+  \draw[->>] (input) -- (I);
+  \draw[->>] (I) -- (Q1);
+  \draw[->>] (Q1) -- (Q2);
+  \draw[->>] (Q2) -- (D);
+  \draw[->>] (D) -- (output);
+\end{tikzpicture} &
+$\cong$ \\
+\begin{tikzpicture}[>=latex, node distance=.9cm]
+  \node[] (input) {$\Delta i$};
+  \node[block, right of=input] (I1) {$\I$};
+  \node[block, right of=I1] (Q1) {$Q_1$};
+  \node[block, right of=Q1] (D1) {$\D$};
+  \node[block, right of=D1] (I2) {$\I$};
+  \node[block, right of=I2] (Q2) {$Q_2$};
+  \node[block, right of=Q2] (D2) {$\D$};
+  \node[right of=D2] (output)  {$\Delta o$};
+  \draw[->>] (input) -- (I1);
+  \draw[->>] (I1) -- (Q1);
+  \draw[->>] (Q1) -- (D1);
+  \draw[->>] (D1) -- (I2);
+  \draw[->>] (I2) -- (Q2);
+  \draw[->>] (Q2) -- (D2);
+  \draw[->>] (D2) -- (output);
+\end{tikzpicture} &
+$\cong$ \\
+\begin{tikzpicture}[>=latex, node distance=1.2cm]
+  \node[] (input) {$\Delta i$};
+  \node[block, right of=input] (Q1) {$\inc{Q_1}$};
+  \node[block, right of=Q1] (Q2) {$\inc{Q_2}$};
+  \node[right of=Q2] (output)  {$\Delta o$};
+  \draw[->>] (input) -- (Q1);
+  \draw[->>] (Q1) -- (Q2);
+  \draw[->>] (Q2) -- (output);
+\end{tikzpicture}
+\end{tabular}
+
+\noindent In other words, \textbf{to incrementalize a composite query
+  you can incrementalize each sub-query independently}.  This gives us
+a simple, syntax-directed, deterministic recipe for computing the
+incremental version of an arbitrarily complex query.
+
+The following three circuits are equivalent; the equivalence between
+the first and the last is the \defined{cycle rule}:
+
+\noindent
+\begin{tabular}{m{4.4cm}m{.2cm}m{3cm}}
+\begin{tikzpicture}[>=latex]
+    \node[] (input) {$\Delta s$};
+    \node[block, right of=input] (I) {$\I$};
+    \node[block, right of=I] (f) {$T$};
+    \node[block, right of=f, node distance=1.4cm] (D) {$\D$};
+    \node[right of=D] (output) {$\Delta o$};
+    \node[block, below of=f, node distance=.6cm] (z) {$\zm$};
+    \draw[->>] (input) -- (I);
+    \draw[->>] (I) -- (f);
+    \draw[->>] (f) -- node (mid) {} (D);
+    \draw[->>] (mid.center) |-  (z);
+    \draw[->>] (z.west) -- ++(-.3,0) |- ([yshift=1mm]f.south west);
+    \draw[->>] (D) -- (output);
+\end{tikzpicture} & $\cong$ \\
+\begin{tikzpicture}[>=latex]
+    \node[] (input) {$\Delta s$};
+    \node[block, node distance=.8cm, right of=input] (I) {$\I$};
+    \node[block, below of=I] (D0) {$\D$};
+    \node[block, right of=D0] (I0) {$\I$};
+    \node[above of=I0, node distance=.5cm] (midway) {};
+
+    \node[block, right of=midway, node distance=.5cm] (f) {$T$};
+    \node[block, right of=f, node distance=.8cm] (D) {$\D$};
+    \node[right of=D] (output) {$\Delta o$};
+    \node[block, below of=f, node distance=1.2cm] (I1) {$\I$};
+    \node[block, left of=I1] (z) {$\zm$};
+    \draw[->>] (input) -- (I);
+    \draw[->>] (I) -| (f);
+    \draw[->>] (D0) -- (I0);
+    \draw[->>] (I0) -| (f);
+    \draw[->>] (f) -- (D);
+    \draw[->>] (D) -- node (mid) {} (output);
+    \draw[->>] (mid.center) |-  (I1);
+    \draw[->>] (I1) -- (z);
+    \draw[->>] (z.west) -- ++(-0.8,0) |- (D0);
+\end{tikzpicture} & $\cong$
+\begin{tikzpicture}[>=latex]
+    \node[] (input) {$\Delta s$};
+    \node[block, right of=input] (f) {$\inc{T}$};
+    \node[right of=f, node distance=1.3cm] (output) {$\Delta o$};
+    \node[block, below of=f, node distance=.6cm] (z) {$\zm$};
+    \draw[->>] (input) -- (f);
+    \draw[->>] (f) -- node (mid) {} (output);
+    \draw[->>] (mid.center) |-  (z);
+    \draw[->>] (z.west) -- ++(-.3,0) |- ([yshift=1mm]f.south west);
+\end{tikzpicture}
+\end{tabular}
+
+In other words, the incremental version of a feedback loop around a
+query is just the feedback loop with the incremental query for its
+body.  This result will be used to implement recursive queries
+in~\refsec{sec:recursion}.
+
+To execute incremental queries efficiently, we want to compute
+directly on streams of changes, without integrating them.  The
+following theorems show how this can be done for linear and bi-linear
+operators:
+
+\begin{theorem}[Linear]\label{linear}
+If $Q$ is LTI, we have $\inc{Q}=Q$.
+\end{theorem}
+
+This implies that stream operators $+$, $-$, $\I$, $\D$, and $\zm$ are
+identical to their incremental versions.
+
+\begin{theorem}[Bilinear]\label{bilinear}
+Using the infix notation: if $\times$ is bilinear TI, we have:
+\begin{eqnarray*}
+\inc{(\Delta a \times \Delta b)} = \\
+(\Delta a \times \Delta b ~+~ \zm(\I(\Delta a)) \times
+\Delta b ~+~ \Delta a \times \zm(\I(\Delta b)) = \\
+\Delta a \times \Delta b + \zm(a) \times \Delta b + \Delta a \times \zm(b)
+\end{eqnarray*}
+In pictures: \\
+\noindent
+\begin{tabular}{m{3.3cm}m{0cm}m{4cm}}
+\begin{tikzpicture}[auto,>=latex]
+    \node[] (a) {$\Delta a$};
+    \node[block, right of=a] (ai) {$\I$};
+    \node[below of=a, node distance=.8cm] (midway) {};
+    \node[below of=midway, node distance=.8cm] (b) {$\Delta b$};
+    \node[block, right of=b] (bi) {$\I$};
+    \node[block, right of=midway, node distance=1cm] (q) {$\times$};
+    \node[block, right of=q] (D) {$\D$};
+    \node[right of=D] (output) {$\Delta o$};
+    \draw[->>] (a) -- (ai);
+    \draw[->>] (b) -- (bi);
+    \draw[->>] (ai) -- (q);
+    \draw[->>] (bi) -- (q);
+    \draw[->>] (q) -- (D);
+    \draw[->>] (D) -- (output);
+\end{tikzpicture} &
+$\cong$ &
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input1) {$\Delta a$};
+  \node[below of=input1, node distance=1.6cm] (input2) {$\Delta b$};
+  \node[block, right of=input1, node distance=1cm] (I1) {$\I$};
+  \node[block, below of=I1,node distance=.8cm] (ab) {$\times$};
+  \node[block, right of=input2, node distance=1cm] (I2) {$\I$};
+  \draw[->>] (input1) -- (I1);
+  \draw[->>] (input2) -- (I2);
+  \draw[->>] (input1) |- ([yshift=-1mm]ab.north west);
+  \draw[->>] (input2) |- ([yshift=1mm]ab.south west);
+  \node[block, right of=I1] (ZI1) {$\zm$};
+  \node[block, right of=I2] (ZI2) {$\zm$};
+  \draw[->>] (I1) -- (ZI1);
+  \draw[->>] (I2) -- (ZI2);
+  \node[block, right of=ZI1] (DI1) {$\times$};
+  \node[block, right of=ZI2] (DI2) {$\times$};
+  \draw[->>] (ZI1) -- (DI1);
+  \draw[->>] (ZI2) -- (DI2);
+  \node[block, circle, right of=ab, inner sep=0cm, node distance=2cm] (sum) {$+$};
+  \draw[->>] (ab) -- (sum);
+  \draw[->>] (DI1) -- (sum);
+  \draw[->>] (DI2) -- (sum);
+  \node[right of=sum, node distance=.8cm] (output) {$\Delta o$};
+  \draw[->>] (sum) -- (output);
+  \draw[->>] (input1) -- (DI2);
+  \draw[->>] (input2) -- (DI1);
+\end{tikzpicture}
+%&
+%$\cong$ &
+%\begin{tikzpicture}[auto,>=latex,node distance=.7cm]
+%  \node[] (input1) {$a$};
+%  \node[below of=input1, node distance=1cm] (input2) {$b$};
+%  \node[block, right of=input1, node distance=.5cm] (I1) {$\I$};
+%  \node[block, right of=input2, node distance=.5cm] (I2) {$\I$};
+%  \draw[->>] (input1) -- (I1);
+%  \draw[->>] (input2) -- (I2);
+%  \node[block, right of=I2] (ZI2) {$\zm$};
+%  \draw[->>] (I2) -- (ZI2);
+%  \node[block, right of=I1] (DI1) {$\times$};
+%  \node[block, right of=ZI2] (DI2) {$\times$};
+%  \draw[->>] (I1) -- (DI1);
+%  \draw[->>] (ZI2) -- (DI2);
+%  \node[block, circle, above of=DI2, inner sep=0cm, node distance=.5cm] (sum) {$+$};
+%  \draw[->>] (DI1) -- (sum);
+%  \draw[->>] (DI2) -- (sum);
+%  \node[right of=sum, node distance=.5cm] (output) {$o$};
+%  \draw[->>] (sum) -- (output);
+%  \draw[->>] (input1) -- (DI2);
+%  \draw[->>] (input2) -- (DI1);
+%\end{tikzpicture}
+\end{tabular}
+\end{theorem}
+
+This equation is the well-known formula for join delta
+queries~\cite{koch-pods10} in terms of streaming computations.
+
+
+%\input{relational}
+\section{IVM for the Relational Algebra}\label{sec:relational}
+
+Results in \secref{sec:streams} and~\secref{sec:incremental}
+apply to streams of arbitrary group values.  In this
+section we apply these results to
+IVM for relational databases.  As explained in the introduction, our goal is to
+efficiently compute the incremental version of a relational query $Q$
+defining a view.
+
+However, we face a technical problem: the $\I$ and $\D$ operators were
+defined on Abelian groups, and relational databases in general are
+not Abelian groups, since they operate on sets.  Fortunately,
+there is a well-known tool in the database literature
+which converts set operations into group operations by using \zrs
+(also called z-relations~\cite{green-tcs11}) to represent sets.
+
+We start by defining the \zrs group, and then we review how relational
+queries are converted into \dbsp circuits over \zrs.  We show
+in~\refsec{sec:relational-operators} that this translation is
+efficiently incrementalizable because many primitive relational
+operations use LTI \zr operators.
+
+\vspace{-3ex}
+
+\subsection{\zrs as an Abelian group}
+
+A \zr is a database table where each row has an associated weight,
+possibly negative.  Given a set $A$, we define \defined{\zrs} over $A$
+as functions with \emph{finite support} from $A$ to $\Z$.  These are
+functions $f: A \rightarrow \Z$ where $f(x) \not= 0$ for at most a
+finite number of values $x \in A$.  We also write $\Z[A]$ for the type
+of \zrs with elements from $A$.  Values in $\Z[A]$ can be thought of
+as key-value maps with keys in $A$ and values in $\Z$, justifying the
+array indexing notation.  If $m \in \Z[A]$ we write $m[a]$ instead of
+$m(a)$, again using an indexing notation.
+
+A particular \zr $m \in \Z[A]$ can be denoted by enumerating its
+elements that have non-zero weights and their corresponding weights:
+$m = \{ x_1 \mapsto w_1, \dots, x_n \mapsto w_n \}$.
+We call $w_i \in \Z$ the \defined{weight}
+of $x_i \in A$.  Weights can be negative.
+We say that $x \in m$ iff $m[x] \not= 0$.
+
+The following table shows an example \zr with three rows, let's call
+it $R$.  The first row has value \texttt{joe} and weight 1.  We never
+show rows with weight 0.
+%
+\begin{center}
+\begin{tabular}{|c|c|}\hline
+  Row & Weight \\ \hline
+  joe & 1 \\
+  mary & 2 \\
+  anne & -1 \\ \hline
+\end{tabular}
+\end{center}
+
+$R$ has three elements in its domain, \texttt{joe} with weight 1 (so
+$R[\texttt{joe}] = 1$), \texttt{mary} with weight 2, and \texttt{anne}
+with weight $-1$.  So \texttt{joe} $\in R$, \texttt{mary} $\in R$,
+and \texttt{anne} $\in R$.
+
+Since $\Z$ is an Abelian ring, $\Z[A]$ is also an Abelian ring, and
+thus a group $(\Z[A], +_{\Z[A]}, 0_{\Z[A]}, -_{\Z{A}})$.  Addition and
+subtraction are defined pointwise: $\forall x \in A . \\ (f +_{\Z[A]}
+g)(x) = f(x) + g(x) .$ The $0$ element of $\Z[A]$ is the function
+$0_{\Z[A]}$ defined by $0_{\Z[A]}(x) = 0 .  \forall x \in A$.  For
+example, $R + R = \{ \texttt{joe} \mapsto 2, \texttt{mary} \mapsto 4,
+\texttt{anne} \mapsto -2 \}$.  Since \zrs form a group, all results
+from \secref{sec:streams} apply to streams over \zrs.
+
+\zrs generalize sets and bags.  A set with elements from $A$ can be
+represented as a \zr by associating a weight of 1 with each element.
+Bags are \zrs where all weights are positive.  Crucially, \zrs can
+also represent \emph{changes} to sets and bags.  Negative weights in a
+change represent elements that are being ``removed''.
+
+The remaining definitions in this section will be used to argue that
+circuits based on \zrs can exactly implement the relational algebra
+operators.
+
+\begin{definition}
+We say that a \zr represents a \defined{set} if the weight of every
+element is one.  We define a function to check this property
+$\isset : \Z[A] \rightarrow \B$\index{isset}
+given by:
+$$\isset(m) \defn \left\{
+\begin{array}{ll}
+  \mbox{true} & \mbox{ if } m[x] = 1, \forall x \in m \\
+  \mbox{false} & \mbox{ otherwise}
+\end{array}
+\right.
+$$
+\end{definition}
+
+\ifzsetexamples
+\noindent For our example $\isset(R) = \mbox{false}$, since $R[\texttt{anne}] = -1$.
+\fi
+
+\begin{definition}
+We say that a \zr is \defined{positive} (or a \defined{bag}) if the weight of every element is
+positive.  We define a function to check this property \\
+$\ispositive : \Z[A] \rightarrow \B$\index{ispositive}
+given by
+$$\ispositive(m) \defn \left\{
+\begin{array}{ll}
+  \mbox{true} & \mbox{ if } m[x] \geq 0, \forall x \in A \\
+  \mbox{false} & \mbox{ otherwise}
+\end{array}
+\right.$$
+\end{definition}
+If $\isset(m)$, then $\ispositive(m)$.  For our example \zr, \\
+$\ispositive(R) = \mbox{false}$.
+
+We write $m \geq 0$ when $m$ is positive.  For positive $m, n \in
+\Z[A]$ we write $m \geq n$ for iff $m - n \geq 0$.  $\geq$ is a
+partial order.
+
+We call a function $f : \Z[A] \rightarrow \Z[B]$ \defined{positive} if it maps
+positive values to positive values:
+$\forall x \in \Z[A]~.~x \geq 0_{\Z[A]} \Rightarrow f(x) \geq 0_{\Z[B]}$.
+We use the same notation for functions: $\ispositive(f)$.
+
+\begin{definition}[distinct]
+The function $\distinct: \\ \Z[A] \rightarrow \Z[A]$\index{distinct}
+``converts'' a \zr into a set:
+$$\distinct(m)[x] \defn \left\{
+\begin{array}{ll}
+  1 & \mbox{ if } m[x] > 0 \\
+  0 & \mbox{ otherwise}
+\end{array}
+\right.
+$$
+\end{definition}
+
+Notice that $\distinct$ ``removes'' duplicates from multisets, and it also eliminates
+elements with negative weights.
+\ifzsetexamples
+$\distinct(R) = \{ \texttt{joe} \mapsto 1, \texttt{mary} \mapsto 1 \}$.
+\fi
+While very simple, this definition of $\distinct$ has been carefully
+chosen to enable us to implement the relational (set) operators
+using \zrs operators.
+%Circuits derived from relational queries only compute on positive \zrs.
+
+%\begin{definition}(mononotonicity)
+%A stream $s \in \stream{\Z[A]}$ is \defined{positive} if every value of the stream is positive:
+%$s[t] \geq 0 . \forall t \in \N$.
+%A stream $s \in \stream{\Z[A]}$ is \defined{monotone} if $s[t] \geq s[t-1], \forall t \in \N$.
+%\end{definition}
+%
+%If $s \in \stream{\Z[A]}$ is positive, then $\I(s)$ is monotone.
+%If $s \in \stream{\Z[A]}$ is monotone, $\D(s)$ is positive.
+%
+\subsection{Relational operators on \zrs}\label{sec:relational-operators}
+
+The fact that relational algebra can be implemented by computations
+on \zrs has been shown before, e.g.~\cite{green-pods07}.  The translation
+of the relational operators to \dbsp is shown in Table~\ref{tab:relational}.
+The first row of the table shows that a composite query is translated
+recursively.  This gives us a recipe for
+translating an arbitrary relational query plan into a \dbsp circuit.
+
+\newlength{\commentsize}
+\setlength{\commentsize}{7cm}
+\begin{table*}[h]
+\centering
+\small
+\caption{Implementation of SQL relational set operators as circuits
+  computing on \zrs.\label{tab:relational}}
+\begin{tabular}{|m{1.4cm}m{3.6cm}m{3.5cm}m{\commentsize}|} \hline
+Operation & SQL example & \dbsp circuit & Details \\ \hline
+Composition &
+ \begin{lstlisting}[language=SQL]
+SELECT ... AS O FROM
+(SELECT ... AS I
+ FROM I0)
+\end{lstlisting}
+ &
+ \begin{tikzpicture}[auto,>=latex]
+  \node[] (I) {\code{I0}};
+  \node[block, right of=I] (CI) {$C_I$};
+  \draw[->] (I) -- (CI);
+  \node[block, right of=CI] (CO) {$C_O$};
+  \node[right of=CO] (O) {\code{O}};
+  \draw[->] (CI) -- (CO);
+  \draw[->] (CO) -- (O);
+\end{tikzpicture}
+ &
+ \parbox[b][][t]{\commentsize}{
+  $C_I$ circuit for inner query, \\
+   $C_O$ circuit for outer query.}
+ \\ \hline
+Union &
+\begin{lstlisting}[language=SQL]
+(SELECT * FROM I1)
+UNION
+(SELECT * FROM I2)
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input1) {\code{I1}};
+  \node[below of=input1, node distance=.4cm] (midway) {};
+  \node[below of=midway, node distance=.4cm] (input2) {\code{I2}};
+  \node[block, shape=circle, right of=midway, inner sep=0in] (plus) {$+$};
+  \node[block, right of=plus] (distinct) {$\distinct$};
+  \node[right of=distinct] (output) {\code{O}};
+  \draw[->] (input1) -| (plus);
+  \draw[->] (input2) -| (plus);
+  \draw[->] (plus) -- (distinct);
+  \draw[->] (distinct) -- (output);
+\end{tikzpicture}
+& $\distinct$ eliminates duplicates.  An implementation of
+\texttt{UNION ALL} does not need the $\distinct$.
+\\ \hline
+Projection &
+\begin{lstlisting}[language=SQL]
+SELECT DISTINCT I.c
+FROM I
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {\code{I}};
+  \node[block, right of=input] (pi) {$\pi_c$};
+  \node[block, right of=pi, node distance=1.2cm] (distinct) {$\distinct$};
+  \node[right of=distinct] (output) {\code{O}};
+  \draw[->] (input) -- (pi);
+  \draw[->] (pi) -- (distinct);
+  \draw[->] (distinct) -- (output);
+\end{tikzpicture}
+&
+\parbox[b][][t]{\commentsize}{
+  Project each row with its weight unchanged.
+  Add up weights of identical rows.
+}
+\\ \hline
+Filtering &
+\begin{lstlisting}[language=SQL]
+SELECT * FROM I
+WHERE P(...)
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {\code{I}};
+  \node[block, right of=input] (map) {$\sigma_P$};
+  \node[right of=map] (output) {\code{O}};
+  \draw[->] (input) -- (map);
+  \draw[->] (map) -- (output);
+\end{tikzpicture}
+&
+\parbox[b][][t]{\commentsize}{
+  P is a predicate applied to each row.
+  Select each row separately.  If the row is selected, preserve the
+  weight, else make the weight 0.
+}
+\\ \hline
+\parbox[b][][t]{1cm}{
+Cartesian \\
+product} &
+\begin{lstlisting}[language=SQL]
+SELECT I1.*, I2.*
+FROM I1, I2
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (i1) {\code{I1}};
+  \node[below of=i1, node distance=.4cm] (midway) {};
+  \node[below of=midway, node distance=.4cm] (i2) {\code{I2}};
+  \node[block, right of=midway] (prod) {$\times$};
+  \node[right of=prod] (output) {\code{O}};
+  \draw[->] (i1) -| (prod);
+  \draw[->] (i2) -| (prod);
+  \draw[->] (prod) -- (output);
+\end{tikzpicture}
+&
+\parbox[b][][t]{\commentsize}{
+  The weight of the pair (a,b) is the product of the the weights of a
+  and b.
+}
+\\ \hline
+Equi-join &
+\begin{lstlisting}[language=SQL]
+SELECT I1.*, I2.*
+FROM I1 JOIN I2
+ON I1.c1 = I2.c2
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (i1) {\code{I1}};
+  \node[below of=i1, node distance=.4cm] (midway) {};
+  \node[below of=midway, node distance=.4cm] (i2) {\code{I2}};
+  \node[block, right of=midway] (prod) {$\bowtie_{c1 = c2}$};
+  \node[right of=prod] (output) {\code{O}};
+  \draw[->] (i1) -| (prod);
+  \draw[->] (i2) -| (prod);
+  \draw[->] (prod) -- (output);
+\end{tikzpicture}
+&
+\parbox[b][][t]{\commentsize}{
+  Multiply the weights of the rows that appear in the output.
+}
+\\ \hline
+Intersection &
+\begin{lstlisting}[language=SQL]
+(SELECT * FROM I1)
+INTERSECT
+(SELECT * FROM I2)
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (i1) {\code{I1}};
+  \node[below of=i1, node distance=.4cm] (midway) {};
+  \node[below of=midway, node distance=.4cm] (i2) {\code{I2}};
+  \node[block, right of=midway] (prod) {$\bowtie$};
+  \node[right of=prod] (output) {\code{O}};
+  \draw[->] (i1) -| (prod);
+  \draw[->] (i2) -| (prod);
+  \draw[->] (prod) -- (output);
+\end{tikzpicture}
+&
+Special case of equi-join when both relations have the same schema.
+\\ \hline
+Difference &
+\begin{lstlisting}[language=SQL]
+SELECT * FROM I1
+EXCEPT
+SELECT * FROM I2
+\end{lstlisting}
+&
+\begin{tikzpicture}[auto,>=latex, node distance=.7cm]
+  \node[] (i1) {\code{I1}};
+  \node[below of=i1, node distance=.4cm] (midway) {};
+  \node[below of=midway, node distance=.4cm] (i2) {\code{I2}};
+  \node[block, shape=circle, inner sep=0in, right of=i2] (m) {$-$};
+  \node[block, right of=midway, shape=circle, inner sep=0in, node distance=1.3cm] (plus) {$+$};
+  \node[block, right of=plus, node distance=1cm] (distinct) {$\distinct$};
+  \node[right of=distinct, node distance=1cm] (output) {\code{O}};
+  \draw[->] (i1) -| (plus);
+  \draw[->] (i2) -- (m);
+  \draw[->] (m) -| (plus);
+  \draw[->] (plus) -- (distinct);
+  \draw[->] (distinct) -- (output);
+\end{tikzpicture}
+&
+$\distinct$ removes rows with negative weights from the result.
+\\ \hline
+\end{tabular}
+\end{table*}
+
+The translation is fairly straightforward, but many operators require
+the application of a $\distinct$ \textbf{to produce sets}.
+For example, $a \cup b = \distinct(a + b)$, $a \setminus b =
+\distinct(a - b)$, $(a \times b)((x,y)) = a[x] \times b[y]$.
+%\paragraph{Correctness of the \dbsp implementations}\label{sec:correctness}
+%
+%A relational query $Q$ that transforms
+%a set $V$ into a set $U$ is implemented by a \dbsp computation $Q'$ on
+%\zrs.  The correctness of the implementation requires the following
+%diagram to commute:
+%
+%\begin{center}
+%\begin{tikzpicture}
+%  \node[] (V) {$V$};
+%  \node[below of=V] (VZ) {$VZ$};
+%  \node[right of=V, node distance=2cm] (U) {$U$};
+%  \node[below of=U] (UZ) {$UZ$};
+%  \draw[->] (V) -- node (f) [below] {$Q$} (U);
+%  \draw[->] (V) --  node (s) [left] {tozset}(VZ);
+%  \draw[->] (VZ) -- node (f) [above] {$Q'$} (UZ);
+%  \draw[->] (UZ) -- node (d) [right] {toset} (U);
+%\end{tikzpicture}
+%\end{center}
+%
+%(The correctness of
+%this implementation is predicated on $Q'$'s inputs being
+%sets, an invariant which needs to be maintained by the environment.)
+%The ``$\mbox{toset}$'' and ``$\mbox{tozset}$'' functions convert sets to \zrs and
+%vice-versa, in the expected way:
+%
+%$\mbox{toset}: \Z[A] \to 2^A$ is defined as $\mbox{toset}(m) \defn \cup_{x \in \distinct(m)} \{ x \}$.
+%
+%$\mbox{tozset}: 2^A \to \Z[A]$ is defined as $\mbox{tozset}(s) \defn \sum_{x \in s} 1 \cdot x$.
+%
+%All standard algebraic properties
+%of the relational operators can be used to optimize circuits
+%(they can even be applied to queries before building the circuits).
+%
+Notice that the use of the $\distinct$ operator allows \dbsp to model
+the \emph{full relational algebra}, including set difference (and not
+just the positive fragment).
+
+Prior work (e.g., Proposition 6.13 in~\cite{green-tcs11}) has shown
+how some invocations of $\distinct$ can be eliminated from query plans
+without changing the query semantics; we will see that the incremental
+version of $\distinct$ incurs significant space costs, so it is worth
+minimizing its use.
+
+\begin{proposition}\label{prop-distinct-delay}
+Let $Q$ be one of the following \zrs operators: filtering $\sigma$,
+join $\bowtie$, or Cartesian product $\times$.  Then we have $\forall
+i \in \Z[A]~.~\ispositive(i) \Rightarrow Q(\distinct(i)) =
+\distinct(Q(i))$.  (For binary operators, on the left of $=$ the
+$\distinct$ is applied to every input.)
+\end{proposition}
+
+\noindent
+\begin{tabular}{m{3.5cm}m{.1cm}m{3.5cm}}
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {$i$};
+  \node[block, right of=input, node distance=1.1cm] (distinct) {$\distinct$};
+  \node[block, right of=distinct, node distance=1.2cm] (q) {$Q$};
+  \node[right of=q] (output)  {$o$};
+  \draw[->] (input) -- (distinct);
+  \draw[->] (distinct) -- (q);
+  \draw[->] (q) -- (output);
+\end{tikzpicture}
+&
+$\cong$
+&
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {$i$};
+  \node[block, right of=input] (q) {$Q$};
+  \node[block, right of=q, node distance=1.2cm] (distinct1) {$\distinct$};
+  \node[right of=distinct1, node distance=1.2cm] (output)  {$o$};
+  \draw[->] (input) -- (q);
+  \draw[->] (q) -- (distinct1);
+  \draw[->] (distinct1) -- (output);
+\end{tikzpicture}
+\end{tabular}
+
+This rule allows us to delay the application of $\distinct$.
+
+\begin{proposition}\label{prop-distinct-once}
+Let $Q$ be one of the following \zrs operators: filtering $\sigma$,
+projection $\pi$, map($f$)\footnote{Technically, map (applying a user-defined
+function to each row) is not relational.},
+addition $+$, join $\bowtie$, or
+Cartesian product $\times$.
+Then we have \\
+$\ispositive(i) \Rightarrow \distinct(Q(\distinct(i))) = \distinct(Q(i))$.
+\end{proposition}
+
+\noindent
+\begin{tabular}{m{6.5cm}m{.5cm}}
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {$i$};
+  \node[block, right of=input, node distance=1.5cm] (distinct) {$\distinct$};
+  \node[block, right of=distinct, node distance=1.5cm] (q) {$Q$};
+  \node[block, right of=q, node distance=1.5cm] (distinct1) {$\distinct$};
+  \node[right of=distinct1, node distance=1.5cm] (output)  {$o$};
+  \draw[->] (input) -- (distinct);
+  \draw[->] (distinct) -- (q);
+  \draw[->] (q) -- (distinct1);
+  \draw[->] (distinct1) -- (output);
+\end{tikzpicture}
+&
+$\cong$ \\
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input) {$i$};
+  \node[block, right of=input] (q) {$Q$};
+  \node[block, right of=q, node distance=1.5cm] (distinct1) {$\distinct$};
+  \node[right of=distinct1, node distance=1.5cm] (output)  {$o$};
+  \draw[->] (input) -- (q);
+  \draw[->] (q) -- (distinct1);
+  \draw[->] (distinct1) -- (output);
+\end{tikzpicture}
+\end{tabular}
+
+These properties allow us to ``consolidate'' distinct operators by
+performing one $\distinct$ at the end of a chain of computations.
+This optimization is also used in traditional database optimizers.
+
+\vspace{-3ex}
+\subsection{Incremental view maintenance}\label{sec:ivm}
+
+Let us consider a relational query $Q$ defining a view $V$.  To create
+a circuit that maintains incrementally $V$ we apply the following
+mechanical steps:
+
+\begin{algorithm}[incremental view maintenance]
+  \label{algorithm-inc}\quad
+\begin{enumerate}[nosep, leftmargin=\parindent]
+    \item Translate $Q$ into a circuit using the rules in Table~\ref{tab:relational}.
+    \item Apply $\distinct$ elimination rules
+      (Propositions~\ref{prop-distinct-delay},
+      \ref{prop-distinct-once})\footnote{If the rules are applied
+      until convergence, the order in which the rules
+      are applied does not matter, since the algorithm is confluent:
+      it always produces the same final result.}.
+    \item Lift the whole circuit, by applying Proposition~\ref{prop:distributivity},
+    converting it to a circuit operating on streams.
+    \item Incrementalize the whole circuit ``surrounding'' it with $\I$ and $\D$.
+    \item Apply the chain rule from
+      Proposition~\ref{prop-inc-properties} on the circuit to optimize
+      the implementation.
+\end{enumerate}
+\end{algorithm}
+
+This algorithm is deterministic and its running time
+is given by the number of operators in the query.
+Step (2) generates an equivalent circuit, with possibly fewer
+$\distinct$ operators.  Step (3) yields a circuit that consumes a
+\emph{stream} of complete database snapshots and outputs a stream of
+complete view snapshots. Step (4) yields a circuit that consumes a
+stream of \emph{database changes} and outputs a stream of \emph{view
+changes}; however, the internal operation of the circuit is
+non-incremental, as it rebuilds the complete database using
+integration operators.  Step (5) incrementalizes the circuit by
+replacing each primitive operator with its incremental version.
+
+Most of the operators that appear in the circuits in
+Table~\ref{tab:relational} are linear, and thus have very efficient
+incremental versions (we discuss complexity in
+\refsec{sec:complexity}).  A notable exception is $\distinct$.  The
+next proposition shows that the incremental version of $\distinct$ is
+also efficient, and it can be computed by doing work proportional to
+the size of the input change:
+
+\begin{proposition}
+(incremental $\distinct$)
+\label{prop-inc_distinct} \\
+\noindent
+\begin{tabular}{m{3.4cm}m{0cm}m{5cm}}
+\begin{tikzpicture}[auto,node distance=1.4cm,>=latex]
+    \node[] (input) {$\Delta d$};
+    \node[block, right of=input] (d) {$\inc{(\lift{\distinct})}$};
+    \node[right of=d] (output) {$\Delta o$};
+    \draw[->>] (input) -- (d);
+    \draw[->>] (d) -- (output);
+\end{tikzpicture} &
+$\cong$ &
+\begin{tikzpicture}[>=latex]
+    \node[] (input) {$\Delta d$};
+    \node[block, right of=input] (I) {$\I$};
+    \node[block, right of=I] (z) {$\zm$};
+    \node[block, below of=z, node distance=.8cm] (H) {$\lift{H}$};
+    \node[right of=H] (output) {$\Delta o$};
+    \draw[->>] (input) -- node (mid) {} (I);
+    \draw[->>] (I) -- (z);
+    \draw[->>] (mid.center) |- (H);
+    \draw[->>] (z) -- node (i) [right] {} (H);
+    \draw[->>] (H) -- (output);
+\end{tikzpicture}
+\end{tabular}
+\noindent where $H: \Z[A] \times \Z[A] \to \Z[A]$ is defined as: \\
+$$
+H(i, d)[x] \defn
+\begin{cases}
+-1 & \mbox{if } i[x] > 0 \mbox{ and } (i + d)[x] \leq 0 \\
+1  & \mbox{if } i[x] \leq 0 \mbox{ and } (i + d)[x] > 0 \\
+0  & \mbox{otherwise} \\
+\end{cases}
+$$
+\end{proposition}
+
+This incremental implementation of $\distinct$ has been known for a
+long time; for example, it is called the $\exists$ operator
+in~\cite{nikolic-sigmod16}.  This implementation has several
+interesting features:
+
+\begin{itemize}
+  \item The implementation uses an integral operator $\I$ to
+    reconstitute the \emph{entire input set} of the distinct operator
+    from the set of changes.  This is the ``top'' input of the $H$
+    function.  The implementation needs to maintain the \emph{entire
+    input set} (similar to joins) in order to discover whether an item
+    is new or not.
+  \item Despite this fact, the result of $\distinct$ for an input
+    change can still be computed with work proportional to the size of
+    the change.  $H$ detects whether the weight of a row in the full
+    set is changing sign (from negative to positive on a row
+    insertion, and from positive to negative on a deletion) when the
+    row appears in a new change.  Only tuples that appear in
+    the input change $\Delta d$ can appear in the output change
+    $\Delta o$, so the work performed is $O(|\Delta d)|$.
+\end{itemize}
+
+The algorithm~\ref{algorithm-inc} reduces the problem of incremental
+execution of a query plan to the incremental execution of
+sub\-plans/primitive operators.  However, this algorithm can be
+applied even if we use a primitive $P$ for which no efficient
+incremental version is known: we can always use the inefficient
+``brute-force'' implementation given by $\inc{P} = \D \circ \lift{P}
+\circ \I$.
+
+\vspace{-3ex}
+%\input{example1}
+\subsection{Relational Query Example}\label{sec:relational-example}
+
+Let's apply the IVM algorithm to the following SQL query:
+\begin{lstlisting}[language=SQL,basicstyle=\small\ttfamily]
+CREATE VIEW v AS
+SELECT DISTINCT a.x, b.y FROM (
+     SELECT t1.x, t1.id FROM t1 WHERE t1.a > 2
+) a JOIN (
+     SELECT t2.id, t2.y FROM t2 WHERE t2.s > 5
+) b ON a.id = b.id
+\end{lstlisting}
+
+\vspace{-1.6ex}
+
+Step 1: Create a \dbsp circuit to represent this query using the rules
+in Table~\ref{tab:relational}; this circuit is essentially a dataflow
+implementation of the query.
+
+\noindent
+\begin{tikzpicture}[node distance=1.3cm,>=latex]
+    \node[] (t1) {\code{t1}};
+    \node[block, right of=t1, node distance=1cm] (s1) {$\sigma_{a > 2}$};
+    \node[block, right of=s1] (p1) {$\pi_{x, id}$};
+    \node[block, right of=p1] (d11) {$\distinct$};
+    \node[below of=t1, node distance=1cm] (t2) {\code{t2}};
+    \node[block, right of=t2, node distance=1cm] (s2) {$\sigma_{s > 5}$};
+    \node[block, right of=s2] (p2) {$\pi_{y, id}$};
+    \node[block, right of=p2] (d21) {$\distinct$};
+    \node[below of=d11, node distance=.5cm] (mid) {};
+    \node[block, right of=mid] (j) {$\bowtie_{id = id}$};
+    \node[block, right of=j, node distance=1.3cm] (p) {$\pi_{x, y}$};
+    \node[right of=p] (V) {\code{V}};
+    \draw[->] (t1) -- (s1);
+    \draw[->] (s1) -- (p1);
+    \draw[->] (p1) -- (d11);
+    \draw[->] (t2) -- (s2);
+    \draw[->] (s2) -- (p2);
+    \draw[->] (p2) -- (d21);
+    \draw[->] (d11) -| (j);
+    \draw[->] (d21) -| (j);
+    \draw[->] (j) -- (p);
+    \draw[->] (p) -- (V);
+\end{tikzpicture}
+
+Step 2: eliminate $\distinct$ operators, producing an equivalent
+circuit: (we omit the subscripts to save space):
+
+%\noindent
+%\begin{tikzpicture}[node distance=1.2cm,>=latex]
+%    \node[] (t1) {\code{t1}};
+%    \node[block, right of=t1, node distance=.9cm] (s1) {$\sigma_{a > 2}$};
+%    \node[block, right of=s1] (p1) {$\pi_{x, id}$};
+%    \node[block, right of=p1] (d11) {$\distinct$};
+%    \node[below of=t1, node distance=1cm] (t2) {\code{t2}};
+%    \node[block, right of=t2, node distance=.9cm] (s2) {$\sigma_{s > 5}$};
+%    \node[block, right of=s2] (p2) {$\pi_{y, id}$};
+%    \node[block, right of=p2] (d21) {$\distinct$};
+%    \node[below of=d11, node distance=.5cm] (mid) {};
+%    \node[block, right of=mid, node distance=.8cm] (j) {$\bowtie_{id = id}$};
+%    \node[block, right of=j] (p) {$\pi_{x, y}$};
+%    \node[block, right of=p] (d) {$\distinct$};
+%    \node[right of=d, node distance=1.2cm] (V) {\code{V}};
+%    \draw[->] (t1) -- (s1);
+%    \draw[->] (s1) -- (p1);
+%    \draw[->] (p1) -- (d11);
+%    \draw[->] (t2) -- (s2);
+%    \draw[->] (s2) -- (p2);
+%    \draw[->] (p2) -- (d21);
+%    \draw[->] (d11) -| (j);
+%    \draw[->] (d21) -| (j);
+%    \draw[->] (j) -- (p);
+%    \draw[->] (p) -- (d);
+%    \draw[->] (d) -- (V);
+%\end{tikzpicture}
+
+
+%\noindent
+%\begin{tikzpicture}[node distance=1.2cm,>=latex]
+%    \node[] (t1) {\code{t1}};
+%    \node[block, right of=t1, node distance=.9cm] (s1) {$\sigma$};
+%    \node[block, right of=s1] (p1) {$\pi$};
+%    \node[below of=t1, node distance=1cm] (t2) {\code{t2}};
+%    \node[block, right of=t2, node distance=.9cm] (s2) {$\sigma$};
+%    \node[block, right of=s2] (p2) {$\pi$};
+%    \node[below of=p1, node distance=.5cm] (mid) {};
+%    \node[block, right of=mid, node distance=.8cm] (j) {$\bowtie$};
+%    \node[block, right of=j] (d0) {$\distinct$};
+%    \node[block, right of=d0] (p) {$\pi$};
+%    \node[block, right of=p] (d) {$\distinct$};
+%    \node[right of=d, node distance=1.2cm] (V) {\code{V}};
+%    \draw[->] (t1) -- (s1);
+%    \draw[->] (s1) -- (p1);
+%    \draw[->] (t2) -- (s2);
+%    \draw[->] (s2) -- (p2);
+%    \draw[->] (p1) -| (j);
+%    \draw[->] (p2) -| (j);
+%    \draw[->] (j) -- (d0);
+%    \draw[->] (d0) -- (p);
+%    \draw[->] (p) -- (d);
+%    \draw[->] (d) -- (V);
+%\end{tikzpicture}
+%
+%\noindent And again~\ref{prop-distinct-once}:
+
+\noindent
+\begin{tikzpicture}[node distance=1cm,>=latex]
+  \node[] (t1) {\code{t1}};
+  \node[block, right of=t1, node distance=.9cm] (s1) {$\sigma$};
+  \node[block, right of=s1] (p1) {$\pi$};
+  \node[below of=t1, node distance=.8cm] (t2) {\code{t2}};
+  \node[block, right of=t2, node distance=.9cm] (s2) {$\sigma$};
+  \node[block, right of=s2] (p2) {$\pi$};
+  \node[below of=p1, node distance=.4cm] (mid) {};
+  \node[block, right of=mid, node distance=.8cm] (j) {$\bowtie$};
+  \node[block, right of=j] (p) {$\pi$};
+  \node[block, right of=p, node distance=1.3cm] (d) {$\distinct$};
+  \node[right of=d, node distance=1cm] (V) {\code{V}};
+  \draw[->] (t1) -- (s1);
+  \draw[->] (s1) -- (p1);
+  \draw[->] (t2) -- (s2);
+  \draw[->] (s2) -- (p2);
+  \draw[->] (p1) -| (j);
+  \draw[->] (p2) -| (j);
+  \draw[->] (j) -- (p);
+  \draw[->] (p) -- (d);
+  \draw[->] (d) -- (V);
+\end{tikzpicture}
+
+\noindent Note that some arrows that were sets in the original circuit
+may be multisets in the optimized circuit.
+
+Step 3: lift the circuit to compute over streams; all arrows are
+doubled and all functions are lifted:
+
+\noindent
+\begin{tikzpicture}[node distance=1cm,>=latex]
+    \node[] (t1) {\code{t1}};
+    \node[block, right of=t1, node distance=.9cm] (s1) {$\lift{\sigma}$};
+    \node[block, right of=s1] (p1) {$\lift{\pi}$};
+    \node[below of=t1, node distance=1.2cm] (t2) {\code{t2}};
+    \node[block, right of=t2, node distance=.9cm] (s2) {$\lift{\sigma}$};
+    \node[block, right of=s2] (p2) {$\lift{\pi}$};
+    \node[below of=p1, node distance=.6cm] (mid) {};
+    \node[block, right of=mid, node distance=.8cm] (j) {$\lift{\bowtie}$};
+    \node[block, right of=j] (p) {$\lift{\pi}$};
+    \node[block, right of=p, node distance=1.4cm] (d) {$\lift{\distinct}$};
+    \node[right of=d, node distance=1.3cm] (V) {\code{V}};
+    \draw[->>] (t1) -- (s1);
+    \draw[->>] (s1) -- (p1);
+    \draw[->>] (t2) -- (s2);
+    \draw[->>] (s2) -- (p2);
+    \draw[->>] (p1) -| (j);
+    \draw[->>] (p2) -| (j);
+    \draw[->>] (j) -- (p);
+    \draw[->>] (p) -- (d);
+    \draw[->>] (d) -- (V);
+\end{tikzpicture}
+
+Step 4: incrementalize circuit, obtaining a circuit that computes over changes;
+this circuit receives changes to relations \code{t1} and \code{t2} and for each
+such change it produces the corresponding change in the output view \code{V}:
+
+\noindent
+\begin{tikzpicture}[node distance=1cm,>=latex]
+    \node[] (t1) {$\Delta$\code{t1}};
+    \node[block, right of=t1, node distance=.8cm] (I1) {$\I$};
+    \node[block, right of=I1, node distance=.9cm] (s1) {$\lift{\sigma}$};
+    \node[block, right of=s1] (p1) {$\lift{\pi}$};
+    \node[below of=t1, node distance=1.2cm] (t2) {$\Delta$\code{t2}};
+    \node[block, right of=t2, node distance=.8cm] (I2) {$\I$};
+    \node[block, right of=I2, node distance=.9cm] (s2) {$\lift{\sigma}$};
+    \node[block, right of=s2] (p2) {$\lift{\pi}$};
+    \node[below of=p1, node distance=.6cm] (mid) {};
+    \node[block, right of=mid, node distance=.7cm] (j) {$\lift{\bowtie}$};
+    \node[block, right of=j] (p) {$\lift{\pi}$};
+    \node[block, right of=p, node distance=1.2cm] (d) {$\lift{\distinct}$};
+    \node[block, right of=d, node distance=1.2cm] (D) {$\D$};
+    \node[right of=D, node distance=1cm] (V) {$\Delta$\code{V}};
+    \draw[->>] (t1) -- (I1);
+    \draw[->>] (I1) -- (s1);
+    \draw[->>] (s1) -- (p1);
+    \draw[->>] (t2) -- (I2);
+    \draw[->>] (I2) -- (s2);
+    \draw[->>] (s2) -- (p2);
+    \draw[->>] (p1) -| (j);
+    \draw[->>] (p2) -| (j);
+    \draw[->>] (j) -- (p);
+    \draw[->>] (p) -- (d);
+    \draw[->>] (d) -- (D);
+    \draw[->>] (D) -- (V);
+\end{tikzpicture}
+
+Step 5: apply the chain rule to rewrite the circuit as a composition
+of incremental operators; notice the use of $\inc{.}$ for all
+operators:
+
+\noindent
+\begin{tikzpicture}[node distance=1.6cm,>=latex]
+    \node[] (t1) {$\Delta$\code{t1}};
+    \node[block, right of=t1, node distance=1.2cm] (s1) {$\inc{(\lift{\sigma})}$};
+    \node[block, right of=s1, node distance=1.4cm] (p1) {$\inc{(\lift{\pi})}$};
+    \node[below of=t1, node distance=1.2cm] (t2) {$\Delta$\code{t2}};
+    \node[block, right of=t2, node distance=1.2cm] (s2) {$\inc{(\lift{\sigma})}$};
+    \node[block, right of=s2, node distance=1.4cm] (p2) {$\inc{(\lift{\pi})}$};
+    \node[below of=p1, node distance=.6cm] (mid) {};
+    \node[block, right of=mid, node distance=.7cm] (j) {$\inc{(\lift{\bowtie})}$};
+    \node[block, right of=j,node distance=1.5cm] (p) {$\inc{(\lift{\pi})}$};
+    \node[block, right of=p,node distance=1.6cm] (d) {$\inc{(\lift{\distinct})}$};
+    \node[right of=d, node distance=1.4cm] (V) {$\Delta$\code{V}};
+    \draw[->>] (t1) -- (s1);
+    \draw[->>] (s1) -- (p1);
+    \draw[->>] (t2) -- (s2);
+    \draw[->>] (s2) -- (p2);
+    \draw[->>] (p1) -| (j);
+    \draw[->>] (p2) -| (j);
+    \draw[->>] (j) -- (p);
+    \draw[->>] (p) -- (d);
+    \draw[->>] (d) -- (V);
+\end{tikzpicture}
+
+Use the linearity of $\sigma$ and $\pi$ to simplify this circuit (notice that
+all linear operators no longer have a $\inc{\cdot}$):
+
+\noindent
+\begin{tikzpicture}[node distance=1cm,>=latex]
+    \node[] (t1) {$\Delta$\code{t1}};
+    \node[block, right of=t1, node distance=1cm] (s1) {$\lift{\sigma}$};
+    \node[block, right of=s1] (p1) {$\lift{\pi}$};
+    \node[below of=t1, node distance=1.2cm] (t2) {$\Delta$\code{t2}};
+    \node[block, right of=t2, node distance=1cm] (s2) {$\lift{\sigma}$};
+    \node[block, right of=s2] (p2) {$\lift{\pi}$};
+    \node[below of=p1, node distance=.6cm] (mid) {};
+    \node[block, right of=mid, node distance=.8cm] (j) {$\inc{(\lift{\bowtie})}$};
+    \node[block, right of=j, node distance=1.2cm] (p) {$\lift{\pi}$};
+    \node[block, right of=p, node distance=1.6cm] (d) {$\inc{(\lift{\distinct})}$};
+    \node[right of=d, node distance=1.6cm] (V) {$\Delta$\code{V}};
+    \draw[->>] (t1) -- (s1);
+    \draw[->>] (s1) -- (p1);
+    \draw[->>] (t2) -- (s2);
+    \draw[->>] (s2) -- (p2);
+    \draw[->>] (p1) -| (j);
+    \draw[->>] (p2) -| (j);
+    \draw[->>] (j) -- (p);
+    \draw[->>] (p) -- (d);
+    \draw[->>] (d) -- (V);
+\end{tikzpicture}
+
+Finally, replace the incremental join and the incremental $\distinct$,
+with their incremental implementations, obtaining the following
+circuit (we have used a slightly different expansion for the join than
+the one shown previously; this one only contains two integrators):
+
+\noindent
+\begin{tikzpicture}[node distance=.8cm,>=latex]
+    \node[] (t1) {$\Delta$\code{t1}};
+    \node[block, right of=t1] (s1) {$\lift{\sigma}$};
+    \node[block, right of=s1] (p1) {$\lift{\pi}$};
+    \node[below of=t1, node distance=.8cm] (t2) {$\Delta$\code{t2}};
+    \node[block, right of=t2] (s2) {$\lift{\sigma}$};
+    \node[block, right of=s2] (p2) {$\lift{\pi}$};
+
+    % join expansion
+      \node[block, right of=p1] (jI1) {$\I$};
+      \node[block, right of=p2] (jI2) {$\I$};
+      \draw[->>] (p1) -- (jI1);
+      \draw[->>] (p2) -- (jI2);
+      \node[block, right of=jI2] (ZI2) {$\zm$};
+      \draw[->>] (jI2) -- (ZI2);
+      \node[block, right of=jI1] (DI1) {$\lift\bowtie$};
+      \node[block, right of=ZI2, node distance=1cm] (DI2) {$\lift\bowtie$};
+      \draw[->>] (jI1) -- (DI1);
+      \draw[->>] (ZI2) -- (DI2);
+      \node[block, circle, above of=DI2, inner sep=0cm] (sum) {$+$};
+      \draw[->>] (DI1) -- (sum);
+      \draw[->>] (DI2) -- (sum);
+      \draw[->>] (p1) -- (DI2);
+      \draw[->>] (p2) -- (DI1);
+
+    \node[block, right of=sum] (p) {$\lift{\pi}$};
+    \draw[->>] (sum) -- (p);
+    \node[block, right of=p] (Id) {$\I$};
+    \node[block, right of=Id, node distance=1cm] (zd) {$\zm$};
+    \node[block, below of=zd] (H) {$\lift{H}$};
+    \node[right of=H, node distance=1cm] (V) {$\Delta$\code{V}};
+    \draw[->>] (t1) -- (s1);
+    \draw[->>] (s1) -- (p1);
+    \draw[->>] (t2) -- (s2);
+    \draw[->>] (s2) -- (p2);
+    \draw[->>] (p) -- node (tapp) {} (Id);
+    \draw[->>] (Id) -- (zd);
+    \draw[->>] (zd) -- (H);
+    \draw[->>] (tapp.center) |- (H);
+    \draw[->>] (H) -- (V);
+\end{tikzpicture}
+
+Notice that the resulting circuit contains three integration
+operations: two from the join, and one from the $\distinct$.  It also
+contains two join operators.  However, the work performed by each
+operator for each new input is proportional to the size of its input
+change.
+
+
+\vspace{-3ex}
+\subsection{Complexity of incremental circuits}\label{sec:complexity}
+
+Incremental circuits are efficient.  We evaluate the cost of a circuit
+while processing the $t$-th input change.  Even if $Q$ is a pure
+function, $\inc{Q}$ is actually a streaming system, with internal
+state.  This state is stored entirely in the delay operators $\zm$,
+some of which appear in $\I$ and $\D$ operators\footnote{For
+standard relational queries, after applying step 5 of the algorithm
+there will be no $\D$ operators left in the circuit.}.  The result
+produced by $\inc{Q}$ on the $t$-th input depends in general not only
+on the new $t$-th input, but also on all prior inputs it has received.
+
+We argue that each operator in the incremental version of a circuit is
+efficient in terms of work and space.  We make the standard IVM
+assumption that the input changes \emph{of each operator} are small:
+$|\Delta DB[t]| \ll |DB[t]| = |(\I(\Delta DB))[t]|$\footnote{One can
+write SQL programs where each output row can change even for very
+small input changes, so this assumption does not always hold in
+practice, but even in this case, the asymptotic work performed by the
+incremental query is not worse than the work of the original query.}.
+We omit the time-index $[t]$ for readability in the rest of the
+section when it is unambiguous; all formulas below hold for every time
+step.
+
+An unoptimized incremental operator $\inc{Q} = \D \circ Q \circ \I$
+evaluates query $Q$ on the whole database $DB$, the integral of the
+input stream: $DB = \I(\Delta DB)$; hence its time complexity is the
+same as that of the non-incremental evaluation of $Q$.  In addition,
+each of the $\I$ and $\D$ operators uses $O(|DB|)$ memory.
+
+Step (5) of the incrementalization algorithm applies the optimizations
+described in \secref{sec:incremental}; these reduce the time
+complexity of each unary operator to $O(|\Delta DB|)$.  Bilinear
+operators, including join, can be evaluated in time $O(|DB| \times
+|\Delta DB|)$; both of these are a factor of $|DB| / |\Delta DB|$
+better than full re-evaluation.  For example, Theorem~\ref{linear},
+allows evaluating $\inc{S}$, where $S$ is a linear operator, in time
+$O(|\Delta DB|)$.  The $\I$ operator can also be evaluated in
+$O(|\Delta DB|)$ time, because all values that appear in the output of
+$\I(\Delta DB)[t]$ must be present in current input change $\Delta
+DB[t]$\footnote{Assuming concatenation is constant-time; in our
+implementation the cost of $\I$ is $O(|\Delta DB| \log(|DB|))$ per
+time step.}.  Similarly, while the $\distinct$ operator is not linear,
+$\inc{(\lift{\distinct})}$ can also be evaluated in $O(|\Delta DB|)$
+according to Proposition~\ref{prop-inc_distinct}.
+
+The space complexity of linear operators is zero (O(1)), since they
+store no data persistently.  The space complexity of operators such as
+$\inc{(\lift{\distinct})}$, $\inc{(\lift{\bowtie})}$, $\I$, and $\D$
+is $O(|DB|)$.  They need to store their input or output relations in
+full (moreover, some of these are intermediate results, which may be
+even larger than the input database).
+
+%\input{recursion}
+\section{Recursive queries}\label{sec:recursion}
+
+Recursive queries are very useful in a many applications.
+For example, graph algorithms such as graph reachability
+or transitive closure are naturally expressed using recursive queries.
+
+We introduce two simple \dbsp stream operators that are used for
+expressing recursive query evaluation.  These operators allow us
+to build circuits implementing looping constructs, which
+are used to iterate computations until a fixed-point is reached.
+The following definition allows us to describe what a fixed point is
+in terms of streams:
+
+\begin{definition}[zero a.e.]\label{def:zae}
+We say that a stream $s \in \stream{A}$ is \defined{zero almost
+  everywhere} if it has a finite number of non-zero values, i.e.,
+there exists a time $t_0 \in \N$ s.t. $\forall t \geq t_0.s[t] = 0$.
+\noindent Denote the set of streams that are zero almost everywhere
+by $\streamf{A} \subset \stream{A}$.
+\end{definition}
+
+\begin{definition}[stream introduction]  The delta function (named from the
+Dirac delta function) $\delta : A \rightarrow \stream{A}$ produces a
+stream from a scalar value:
+$$\delta(v)[t] \defn \left\{
+\begin{array}{ll}
+  v & \mbox{if } t = 0 \\
+  0_A & \mbox{ otherwise}
+\end{array}
+\right.
+$$
+\end{definition}
+
+The input of $\delta$ has a single arrow, while the output has a
+double arrow.  For example:
+
+\begin{center}
+\begin{tikzpicture}[auto,node distance=1cm,>=latex]
+    \node[] (input) {\fbox{$x$}};
+    \node[block, right of=input] (delta) {$\delta$};
+    \node[right of=delta, node distance=2.2cm] (output) {\sv{x 0 0 0 0}};
+    \draw[->] (input) -- (delta);
+    \draw[->>] (delta) -- (output);
+\end{tikzpicture}
+\end{center}
+
+\begin{definition}[stream elimination]
+We define the function $\int : \streamf{A} \rightarrow A$, over
+streams that are zero almost everywhere, as $\int(s) \defn \sum_{t
+  \geq 0} s[t]$.
+\end{definition}
+
+$\int$ simply adds up all values in the input stream
+and produces a scalar result with the sum.  $\int$ is closely related
+to $\I$; if $\I$ is the indefinite (discrete) integral, $\int$ is the
+definite (discrete) integral on the interval $0 - \infty$.  For
+example, $\int(\sv{1 2 3 0 0}) = 6$.
+
+In circuits constructed for many classes of queries, including
+relational and Datalog queries given below, the $\int$ operator can be
+``approximated'' without loss of precision by integrating until it
+encounters the first 0.
+
+Notice that the input of $\int$ is a double arrow, while the output is
+a single arrow.  E.g.,:
+
+\begin{center}
+\begin{tikzpicture}[auto,node distance=1cm,>=latex]
+    \node[] (input) {$\sv{1 2 3 0 0}$};
+    \node[block, right of=input, node distance=2.2cm] (S) {$\int$};
+    \node[right of=S] (output) {$\fbox{6}$};
+    \draw[->>] (input) -- (S);
+    \draw[->] (S) -- (output);
+\end{tikzpicture}
+\end{center}
+
+%$\delta$ is the left inverse of $\int$, i.e.: $\int \circ \; \delta = \id_A$.
+\begin{proposition}
+$\delta$ and $\int$ are LTI.
+\end{proposition}
+
+\vspace{-3ex}
+\subsection{Nested time domains}
+
+So far we have used a tacit assumption that ``time'' is common for all
+streams in a program.  For example, when we add two streams, we assume
+that they use the same ``clock'' for the time dimension.  However, the
+$\delta$ operator creates a stream with a ``new'', independent time
+dimension.  We require \emph{well-formed circuits} to ``insulate''
+such nested time domains by ``bracketing'' them between a $\delta$ and
+an $\int$ operator:
+
+\begin{center}
+\begin{tikzpicture}[auto,node distance=1cm,>=latex]
+    \node[] (input) {$i$};
+    \node[block, right of=input] (delta) {$\delta$};
+    \node[block, right of=delta] (f) {$Q$};
+    \draw[->] (input) -- (delta);
+    \draw[->>] (delta) -- (f);
+
+    \node[block, right of=f] (S) {$\int$};
+    \node[right of=S] (output) {$o$};
+    \draw[->>] (f) -- (S);
+    \draw[->] (S) -- (output);
+\end{tikzpicture}
+\end{center}
+
+In the above circuit $Q$ is a streaming operator, but the entire
+circuit is a scalar function, shown by the single input and output
+arrows.  As we discuss briefly in Section~\ref{sec-turing}, \dbsp
+circuits are Turing-complete.  Thus, in general there exists no simple
+syntactic criterion to decide whether a query $Q$ returns a stream
+that is zero almost everywhere.  For a $Q$ that does \emph{not} return
+such a stream, the above circuit never terminates, since $\int$ never
+returns a value.
+
+Algorithm~\ref{algorithm-rec} below, which translates recursive queries to
+\dbsp circuits, always produces well-formed circuits.
+
+\vspace{-3ex}
+\subsection{Implementing recursive queries}\label{sec:datalog}
+
+We describe the implementation of recursive queries in \dbsp for
+stratified Datalog.
+In general, a recursive Datalog program defines a set of
+mutually recursive relations $O_1,..,O_n$ as an equation
+$(O_1,..,O_n)=R(I_1,..,I_m, O_1,..,O_n)$, where $I_1,..,I_m$ are
+input relations and $R$ is a non-recursive query.
+
+We describe here the algorithm for the simpler case of a single-input,
+single-output query\footnote{The general case for any number of
+mutually recursive relations is shown in the companion technical
+report~\cite{tr}, and is only slightly more involved.}.  The input of
+our algorithm is a Datalog query of the form $O = R(I, O)$, where $R$
+is a relational, non-recursive query, producing a set as a result, but
+whose output $O$ is also an input.  The output of the algorithm is a
+\dbsp circuit which evaluates this recursive query producing output
+$O$ when given the input $I$.  In this section we build a
+non-incremental circuit, which evaluates the Datalog query; in
+\refsec{sec:nested} we incrementalize this circuit.
+
+\begin{algorithm}[recursive queries]
+  \label{algorithm-rec}
+\noindent
+\begin{enumerate}[nosep, leftmargin=\parindent]
+\item Implement the non-recursive relational query $R$ as described in
+    \secref{sec:relational} and Table~\ref{tab:relational}; this produces
+    an acyclic circuit whose inputs and outputs are \zrs:
+    \begin{center}
+    \begin{tikzpicture}[auto,>=latex]
+      \node[] (I) {\code{I}};
+      \node[below of=I, node distance=.5cm] (O) {\code{O}};
+      \node[block, right of=I] (R) {$R$};
+      \node[right of=R] (o) {\code{O}};
+      \draw[->] (I) -- (R);
+      \draw[->] (O) -| (R);
+      \draw[->] (R) -- (o);
+    \end{tikzpicture}
+    \end{center}
+
+In all these diagrams we show input 0 of operator $R$ on the left, and
+input 1 on the bottom.
+
+\item Lift this circuit to operate on streams:
+    \begin{center}
+    \begin{tikzpicture}[auto,>=latex]
+      \node[] (I) {\code{I}};
+      \node[below of=I, node distance=.7cm] (O) {\code{O}};
+      \node[block, right of=I] (R) {$\lift R$};
+      \node[right of=R] (o) {$O$};
+      \draw[->>] (I) -- (R);
+      \draw[->>] (O) -| (R);
+      \draw[->>] (R) -- (o);
+    \end{tikzpicture}
+    \end{center}
+
+  We construct $\lift{R}$ by lifting each operator of the circuit individually
+  according to Proposition~\ref{prop:distributivity}.
+
+\item Build a cycle, connecting the output to the corresponding
+recursive input via a delay:
+
+ \begin{center}
+\begin{tikzpicture}[auto,>=latex, node distance=.8cm]
+  \node[] (I) {\code{I}};
+  \node[block, right of=I, node distance=1cm] (R) {$\lift R$};
+  \node[right of=R, node distance=1.5cm] (O) {\code{O}};
+  \node[block, below of=R, node distance=.8cm] (z) {$\zm$};
+  \draw[->>] (I) -- (R);
+  \draw[->>] (R) -- node(o) {} (O);
+  \draw[->>] (o) |- (z);
+  \draw[->>] (z) -- (R);
+ \end{tikzpicture}
+ \end{center}
+
+\item ``Bracket'' the circuit, first with $\I$ and $\D$ nodes, and
+  then with $\delta$ and $\int$:
+
+\begin{center}
+\begin{tikzpicture}[auto,>=latex, node distance=.8cm]
+  \node[] (Iinput) {\code{I}};
+  \node[block, right of=Iinput] (ID) {$\delta$};
+  \node[block, right of=ID] (II) {$\I$};
+  \node[block, right of=II, node distance=1cm] (f) {$\lift{R}$};
+  \node[block, right of=f, node distance=1.5cm] (D) {$\D$};
+  \node[block, right of=D] (S) {$\int$};
+  \node[right of=S] (output)  {\code{O}};
+  \draw[->] (Iinput) -- (ID);
+  \draw[->>] (ID) -- (II);
+  \draw[->>] (II) -- (f);
+  \draw[->>] (f) -- node (o) {$o$} (D);
+  \draw[->>] (D) -- (S);
+  \draw[->] (S) -- (output);
+  \node[block, below of=f, node distance=.8cm] (z) {$\zm$};
+  \draw[->>] (o) |- (z);
+  \draw[->>] (z) -- (f);
+\end{tikzpicture}
+    \vspace{-2ex}
+\end{center}
+\end{enumerate}
+\end{algorithm}
+
+We argue that the cycle inside this circuit computes iteratively the fixed point of $R$.
+The $\D$ operator yields the set of new Datalog facts (changes) computed by each iteration of the loop.
+When the set of new facts becomes empty, the fixed point has been reached:
+
+\begin{theorem}[recursion correctness]\label{theorem:recursion}
+If $\isset(\code{I})$, the output of the circuit above is
+the relation $\code{O}$ as defined by the Datalog semantics of given program
+$R$ as a function of the input relation \code{I}.
+\end{theorem}
+\begin{proof}\label{proof-recursion}
+Let us compute the contents of the $o$ stream, produced at the output
+of $R$.  We show that this stream contains increasing approximations of the value of \code{O}.
+
+Define the following one-argument function: $S(x) = \lambda x . R(\code{I}, x)$.
+Notice that the left input of the $\lift{R}$ block is a constant stream
+with the value \code{I}.  Due to the stratified nature of the language,
+we must have $\ispositive(S)$, so $\forall x~.~S(x) \geq 0$.
+We get the following system of equations:
+$$
+\begin{aligned}
+o[0] =& S(0) \\
+o[t] =& S(o[t-1]) \\
+\end{aligned}
+$$
+So, by induction on $t$ we have $o[t] = S^t(0)$, where by
+$S^t$ we mean $\underbrace{S \circ S \circ \ldots \circ S}_{t}$.
+If there is a time $k$ such that $S^k(0) = S^{k+1}(0)$, we have
+$\forall j~.~S^{k+j}(0) = S^k(0)$.  Applying a $\D$ to this stream
+will then produce a stream that is zero almost everywhere, and integrating
+this result will return the last distinct value in the stream $o$.
+
+This is essentially the definition of the semantics of a recursive Datalog relation:
+$\code{O} = \fix{x}{R(\code{I}, x)}$.\qed
+\end{proof}
+
+Note that if the query $R$ computes over unbounded data domains (e.g.,
+using integers with arithmetic), this construction does not guarantee
+that at runtime a fixed point is reached.  But if a program does converge, the
+above construction will find the least fixed point.
+
+In fact, this circuit implements the standard \defined{naive evaluation}
+algorithm (e.g., see Algorithm~1 in \cite{greco-sldm15}).
+Notice that the inner part of the circuit is the incremental
+form of another circuit, since it is sandwiched between $\I$ and $\D$ operators.
+Using the cycle rule of Proposition~\ref{prop-inc-properties} we can rewrite this circuit as:
+%
+\begin{center}
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (Iinput) {$x$};
+  \node[block, right of=Iinput] (Idelta) {$\delta$};
+  \node[block, right of=Idelta, node distance=1.3cm] (f) {$\inc{(\lift{R})}$};
+  \node[block, right of=f, node distance=1.5cm] (S) {$\int$};
+  \node[right of=S] (output)  {$O$};
+  \node[block, below of=f, node distance=.9cm] (z) {$\zm$};
+  \draw[->] (Iinput) -- (Idelta);
+  \draw[->] (f) -- node (o) {} (S);
+  \draw[->>] (S) -- (output);
+  \draw[->>] (o) |- (z);
+  \draw[->>] (z) -- (f);
+  \draw[->>] (Idelta) -- (f);
+\end{tikzpicture}
+\end{center}
+
+This circuit implements \defined{semi-naive evaluation}
+(Algorithm~2 from~\cite{greco-sldm15}).  We have just proven the
+correctness of semi-naive evaluation as an immediate consequence
+of the cycle rule!
+
+%In \refsec{sec:recursive-example} we show a concrete example, applying Algorithm~\ref{algorithm-rec}
+%to a recursive query computing the transitive closure of a graph.
+
+\vspace{-3ex}
+%\input{example2}
+\subsection{Example recursive query}\label{sec:recursive-example}
+
+Let us apply Algorithm~\ref{algorithm-rec} to a concrete Datalog
+program, which computes the transitive closure of a directed graph:
+
+\begin{lstlisting}[language=ddlog,basicstyle=\small\ttfamily]
+// Edge relation with head and tail
+input relation E(h: Node, t: Node)
+// Reach relation with source s and sink t
+output relation R(s: Node, t: Node)
+R(x, y) :- E(x, y).
+R(x, y) :- E(x, z), R(z, y).
+\end{lstlisting}
+
+Step 1: we ignore the fact that R is both an input and an output and we implement
+the \dbsp circuit corresponding to the body of the query.  This query could be expressed
+in SQL as:
+
+\begin{lstlisting}[language=SQL,basicstyle=\small\ttfamily]
+( SELECT * FROM E )
+UNION
+( SELECT E.h , R.t
+  FROM E JOIN R ON E.t = R.s )
+\end{lstlisting}
+
+\noindent Step 1:
+This generates a circuit with inputs \code{E} and \code{R}:
+
+\begin{tikzpicture}[>=latex, node distance=1.2cm]
+  \node[] (E) {\code{E}};
+  \node[above of=E, node distance=.6cm] (R1) {\code{R}};
+  \node[block, right of=R1] (j) {$\bowtie_{t=s}$};
+  \node[block, right of=j] (pj) {$\pi_{h, t}$};
+  \node[block, circle, below of=pj, inner sep=0cm, node distance=.6cm] (plus) {$+$};
+  \node[block, right of=plus] (d) {$\distinct$};
+  \node[right of=d] (R) {\code{R}};
+  \draw[->] (R1) -- (j);
+  \draw[->] (E) -- (j);
+  \draw[->] (j) -- (pj);
+  \draw[->] (E) -- (plus);
+  \draw[->] (pj) -- (plus);
+  \draw[->] (plus) -- (d);
+  \draw[->] (d) -- (R);
+\end{tikzpicture}
+
+\noindent Step 2: Lift the circuit by lifting each operator:
+
+\begin{tikzpicture}[>=latex, node distance=1.4cm]
+  \node[] (E) {\code{E}};
+  \node[above of=E, node distance=.6cm] (R1) {\code{R}};
+  \node[block, right of=R1] (j) {$\lift{\bowtie_{t=s}}$};
+  \node[block, right of=j] (pj) {$\lift{\pi_{h, t}}$};
+  \node[block, circle, below of=pj, node distance=.8cm, inner sep=0cm] (plus) {$+$};
+  \node[block, right of=plus] (d) {$\lift{\distinct}$};
+  \node[right of=d] (R) {\code{R}};
+  \draw[->>] (R1) -- (j);
+  \draw[->>] (E) -- (j);
+  \draw[->>] (j) -- (pj);
+  \draw[->>] (E) -- (plus);
+  \draw[->>] (pj) -- (plus);
+  \draw[->>] (plus) -- (d);
+  \draw[->>] (d) -- (R);
+\end{tikzpicture}
+
+\noindent Step 3: Connect the feedback loop implied by \code{R}:
+
+\begin{tikzpicture}[>=latex]
+  \node[] (E) {\code{E}};
+  \node[right of=E] (empty) {};
+  \node[block, above of=empty, node distance=.6cm] (j) {$\lift{\bowtie_{t=s}}$};
+  \node[block, right of=j, node distance=1.4cm] (pj) {$\lift{\pi_{h, t}}$};
+  \node[block, circle, below of=pj, node distance=.8cm, inner sep=0cm] (plus) {$+$};
+  \node[block, right of=plus, node distance=1.4cm] (d) {$\lift{\distinct}$};
+  \draw[->>] (E) -- (j);
+  \draw[->>] (j) -- (pj);
+  \draw[->>] (E) -- (plus);
+  \draw[->>] (pj) -- (plus);
+  \draw[->>] (plus) -- (d);
+
+  % generic part
+  \node[right of=d, node distance=1.3cm] (output)  {\code{R}};
+  \draw[->>] (d) -- node (o) {} (output);
+  \node[block, above of=j, node distance=.8cm] (z) {$\zm$};
+  \draw[->>] (o.center) |- (z);
+  \draw[->>] (z) -- (j);
+\end{tikzpicture}
+
+\noindent Step 4: ``bracket'' the circuit with $\I$-$\D$, and with $\delta$-$\int$:
+
+\noindent
+\begin{tikzpicture}[>=latex, node distance=1.3cm]
+  \node[] (Einput) {\code{E}};
+  % generic part
+  \node[block, right of=Einput, node distance=.8cm] (ID) {$\delta$};
+  \node[block, right of=ID, node distance=.8cm] (E) {$\I$};
+
+  % relational query
+  \node[block, above of=E, node distance=.8cm] (j) {$\lift{\bowtie_{t=s}}$};
+  \node[block, right of=j, node distance=1.4cm] (pj) {$\lift{\pi_{h, t}}$};
+  \node[block, circle, below of=pj, node distance=.8cm, inner sep=0cm] (plus) {$+$};
+  \node[block, right of=plus] (d) {$\lift{\distinct}$};
+  \draw[->>] (E) -- (j);
+  \draw[->>] (j) -- (pj);
+  \draw[->>] (E) -- (plus);
+  \draw[->>] (pj) -- (plus);
+  \draw[->>] (plus) -- (d);
+
+  % generic part
+  \node[block, right of=d, node distance=1.3cm] (D) {$\D$};
+  \node[block, right of=D, node distance=1cm] (S) {$\int$};
+  \node[right of=S, node distance=.8cm] (output)  {\code{R}};
+  \draw[->] (Einput) -- (ID);
+  \draw[->>] (ID) -- (E);
+  \draw[->>] (d) -- node (o) {} (D);
+  \draw[->>] (D) -- (S);
+  \draw[->] (S) -- (output);
+  \node[block, above of=j, node distance=.8cm] (z) {$\zm$};
+  \draw[->>] (o.center) |- (z);
+  \draw[->>] (z) -- (j);
+\end{tikzpicture}
+
+The above circuit is a complete implementation of the non-streaming
+recursive query; given an input relation \code{E} it will produce
+its transitive closure \code{R} as output.
+
+Now we use cycle rule to convert this circuit to semi-naive evaluation
+(to save space we omit indices):
+
+\noindent
+\begin{tikzpicture}[>=latex, node distance=1.4cm]
+  \node[] (Einput) {\code{E}};
+  % generic part
+  \node[block, right of=Einput, node distance=.8cm] (E) {$\delta$};
+
+  % relational query
+  \node[block, above of=E, node distance=.8cm] (j) {$\inc{(\lift{\bowtie})}$};
+  \node[block, right of=j, node distance=1.5cm] (pj) {$\inc{(\lift{\pi})}$};
+  \node[block, circle, below of=pj, node distance=.8cm, inner sep=0cm] (plus) {$+$};
+  \node[block, right of=plus] (d) {$\inc{(\lift{\distinct})}$};
+  \draw[->>] (E) -- (j);
+  \draw[->>] (j) -- (pj);
+  \draw[->>] (E) -- (plus);
+  \draw[->>] (pj) -- (plus);
+  \draw[->>] (plus) -- (d);
+
+  % generic part
+  \node[block, right of=d, node distance=1.5cm] (S) {$\int$};
+  \node[right of=S, node distance=.8cm] (output)  {\code{R}};
+  \draw[->] (Einput) -- (E);
+  \draw[->>] (d) -- node (o) {} (S);
+  \draw[->] (S) -- (output);
+  \node[block, above of=j, node distance=.9cm] (z) {$\zm$};
+  \draw[->>] (o.center) |- (z);
+  \draw[->>] (z) -- (j);
+\end{tikzpicture}
+
+Using the linearity of $\lift\pi$, this can be rewritten as:
+
+\noindent
+\begin{tikzpicture}[>=latex, node distance=1.5cm]
+  \node[] (Einput) {\code{E}};
+  % generic part
+  \node[block, right of=Einput, node distance=.8cm] (E) {$\delta$};
+
+  % relational query
+  \node[block, above of=E, node distance=.8cm] (j) {$\inc{(\lift{\bowtie})}$};
+  \node[block, right of=j] (pj) {$\lift{\pi}$};
+  \node[block, circle, below of=pj, node distance=.8cm, inner sep=0cm] (plus) {$+$};
+  \node[block, right of=plus] (d) {$\inc{(\lift{\distinct})}$};
+  \draw[->>] (E) -- (j);
+  \draw[->>] (j) -- (pj);
+  \draw[->>] (E) -- (plus);
+  \draw[->>] (pj) -- (plus);
+  \draw[->>] (plus) -- (d);
+
+  % generic part
+  \node[block, right of=d] (S) {$\int$};
+  \node[right of=S, node distance=.8cm] (output)  {\code{R}};
+  \draw[->] (Einput) -- (E);
+  \draw[->>] (d) -- node (o) {} (S);
+  \draw[->] (S) -- (output);
+  \node[block, above of=j, node distance=.8cm] (z) {$\zm$};
+  \draw[->>] (o.center) |- (z);
+  \draw[->>] (z) -- (j);
+\end{tikzpicture}
+
+This circuit contains two lifted incremental operators, a join and a
+distinct; these can be further expanded into simpler primitives as in
+the final step in Section~\ref{sec:relational-example}.  This
+implementation matches the efficiency of Datalog semi-naive evaluation
+engines, but does not yet handle incremental updates.  These are the
+subject of the next section.
+
+
+%\input{nested}
+\section{Incremental recursive programs}\label{sec:nested}
+
+In \secref{sec:streams}--\ref{sec:relational}
+we showed how to incrementalize a relational query by
+compiling it into a circuit, lifting the circuit to compute on streams, and
+applying the $\inc{\cdot}$ operator.  In \secref{sec:recursion} we showed
+how to compile a recursive query into a circuit using incremental
+computation internally (using semi-naive evaluation), to compute the fixed point.
+Here we combine these results to construct a circuit that evaluates a \emph{recursive
+query incrementally}.  The circuit receives a stream of updates to input
+relations, and for every update recomputes the fixed point.  To do this
+incrementally, it preserves the stream of changes to recursive relations
+produced by the iterative fixed point computation, and adjusts this stream to
+account for the modified inputs.  Thus, every element of the input stream yields
+a stream of adjustments to the fixed point computation, using
+\emph{nested streams}.
+
+\subsection{Nested streams}
+
+\newcommand{\ssa}[1]{
+  \small
+\setsepchar{ }
+\readlist\arg{#1}
+\begin{bmatrix}
+   \begin{array}{ccccccc}
+        {[} & \arg[1] & \arg[2] & \arg[3] & \arg[4] & \cdots & {]} \\
+        {[} & \arg[5] & \arg[6] & \arg[7] & \arg[8] & \cdots & {]} \\
+        {[} & \arg[9] & \arg[10] & \arg[11] & \arg[12] & \cdots & {]} \\
+        {[} & \arg[13] & \arg[14] & \arg[15] & \arg[16] & \cdots & {]} \\
+        \multicolumn{7}{c}{\cdots}
+   \end{array}
+\end{bmatrix}
+}
+
+Nested streams, or streams of streams, $\stream{\stream{A}} = \N
+\rightarrow (\N \rightarrow A)$, are well defined, since streams form
+an Abelian group.  Equivalently, a nested stream is a value in $\N
+\times \N \to A$, i.e., a matrix with an infinite number of rows,
+indexed by two-dimensional time $(t_0, t_1)$, where each row is a
+stream.  For example, here is the nested stream $i \in
+\stream{\stream{\N}}$ defined by $i[t_0][t_1] = t_0 + 2 t_1$:
+$$ i = \ssa{0 1 2 3 2 3 4 5 4 5 6 7 6 7 8 9} $$
+
+The same way we lift functions to produce stream operators, we can
+lift stream operators to produce operators on streams of streams.
+
+Lifting a stream operator $S: \stream{A} \to \stream{B}$ yields an operator over
+nested streams $\lift{S}: \stream{\stream{A}} \to \stream{\stream{B}}$, such
+that $(\lift{S})(s) = S \circ s$, or, pointwise: $(\lift{S}(s))[t_0][t_1] =
+S(s[t_0])[t_1], \forall t_0, t_1 \in \N$.  In particular, a scalar function $f:
+A \rightarrow B$ can be lifted twice to produce an operator between streams of
+streams: $\lift{\lift{f}}: \stream{\stream{A}} \rightarrow \stream{\stream{B}}$.
+$$(\lift{\lift{(x \mapsto x \bmod 2)}})(i) =
+  \ssa{0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1}$$
+
+$\zm$ delays the rows of the matrix:
+$$\zm(i) = \ssa{0 0 0 0 0 1 2 3 2 3 4 5 4 5 6 7}$$
+
+\noindent while its lifted version delays each column:
+$$(\lift{\zm})(i) = \ssa{0 0 1 2 0 2 3 4 0 4 5 6 0 6 7 8}$$
+
+We show nested streams with \emph{triple} arrows:
+
+\begin{center}
+\begin{tikzpicture}[>=latex, node distance=1.2cm]
+  \node[] (input) {$i$}; \node[block, right of=input] (I)
+       {$\lift{\lift{{f}}}$}; \node[right of=I] (output) {$o$};
+       \draw[->>>] (input) -- (I); \draw[->>>] (I) -- (output);
+\end{tikzpicture}
+\end{center}
+
+To define recursive nested queries, we need a slightly different
+definition of strictness.  If we think of a nested stream $F:
+\stream{\stream{A}} \to \stream{\stream{B}}$ as a function of
+timestamps $(i, j)$, then the prior definition of strictness
+corresponds to strictness in the first dimension $i$, which we extend
+here to allow $F$ to be strict in its second dimension $j$: for any
+$s, s' \in \stream{\stream{A}}$ and all times $t \in \N$, $\forall i,
+j < t~.~s[i][j] = s'[i][j]$ implies $F(s)[i][t] = F(s')[i][t]$.
+Proposition~\ref{prop-unique-fix} holds for this extended notion of
+strictness, i.e., the fixed point operator $\fix{\alpha}{F(\alpha)}$
+is well defined for a strict operator $F$.
+
+\begin{proposition}\label{prop-liftz}
+The operator $\lift{\zm}: \stream{\stream{A}} \to \stream{\stream{A}}$ is strict (in its second dimension).
+\end{proposition}
+
+The $\I$ operator on $\stream{\stream{A}}$ operates on rows of the
+matrix, treating each row as a single value.  Lifting a stream
+operator computing on $\stream{A}$, such as $\I: \stream{A} \to
+\stream{A}$, also produces an operator on nested streams, but
+computing on the columns of the matrix $\lift{\I}: \stream{\stream{A}}
+\to \stream{\stream{A}}.$
+
+\begin{proposition}[lifting cycles]
+\label{prop-lift-cycle}
+For a binary, causal $T$ we have: $\lift{(\lambda
+  s. \fix{\alpha}{T(s,\zm(\alpha)}))} = \\ \lambda
+s. \fix{\alpha}{(\lift{T})(s,(\lift{\zm})(\alpha))}$
+\noindent i.e., lifting a circuit containing a cycle can be
+accomplished by lifting all operators independently, including the
+$\zm$ back-edge.
+\end{proposition}
+
+This means that lifting a \dbsp stream operator can be expressed within \dbsp
+itself.  For example, we have:
+
+\begin{tabular}{m{2cm}m{.5cm}m{4cm}}
+\begin{tikzpicture}[>=latex]
+  \node[] (input) {$i$};
+  \node[block, right of=input] (I) {$\lift{\I}$};
+  \node[right of=I] (output)  {$o$};
+  \draw[->>>] (input) -- (I);
+  \draw[->>>] (I) -- (output);
+\end{tikzpicture}
+& $\cong$ &
+\begin{tikzpicture}[>=latex]
+  \node[] (input) {$i$};
+  \node[block, circle, right of=input, inner sep=0cm] (p) {$+$};
+  \node[right of=p, node distance=1.8cm] (output)  {$o$};
+  \node[block, below of=p, node distance=1cm] (z) {$\lift{\zm}$};
+  \draw[->>>] (input) -- (p);
+  \draw[->>>] (p) -- node (mid) {} (output);
+  \draw[->>>] (z) -- (p);
+  \draw[->>>] (mid.center) |- (z);
+\end{tikzpicture}
+\end{tabular}
+
+This proposition gives the ability to lift entire circuits, including
+circuits with feedback edges, producing well-defined results, due to
+Proposition~\ref{prop-liftz}.
+
+\subsection{Programs on nested streams}
+
+With this machinery we can now apply Algorithm~\ref{algorithm-inc} to arbitrary
+circuits, even circuits built for recursively-defined relations.
+
+\noindent Step 1: Start with the ``semi-naive'' circuit:
+\begin{center}
+\begin{tikzpicture}[>=latex]
+  \node[] (Iinput) {$x$};
+  \node[block, right of=Iinput] (Idelta) {$\delta_0$};
+  \node[block, right of=Idelta, node distance=1.2cm] (f) {$\inc{(\lift{R})}$};
+  \node[block, right of=f, node distance=1.5cm] (S) {$\int$};
+  \node[right of=S] (output)  {$O$};
+  \draw[->>] (f) -- node (o) {} (S);
+  \node[block, below of=o, node distance=.7cm] (z) {$\zm$};
+  \draw[->] (Iinput) -- (Idelta);
+  \draw[->] (S) -- (output);
+  \draw[->>] (o.center) -- (z);
+  \draw[->>] (z) -| (f);
+  \draw[->>] (Idelta) -- (f);
+\end{tikzpicture}
+\end{center}
+\vspace{-1ex}
+\noindent Step 2: nothing to do for $\distinct$. \\
+\noindent Steps 3 and 4: Lift the circuit and incrementalize:
+\begin{center}
+\begin{tikzpicture}[>=latex]
+  \node[] (Iinput) {$\Delta x$};
+  \node[block, right of=Iinput] (I) {$\I$};
+  \node[block, right of=I] (Idelta) {$\lift{\delta_0}$};
+  \node[block, right of=Idelta, node distance=1.5cm] (f) {$\lift{\inc{(\lift{R})}}$};
+  \node[block, right of=f, node distance=1.5cm] (S) {$\lift{\int}$};
+  \node[block, right of=S] (D) {$\D$};
+  \node[right of=D] (output)  {$\Delta O$};
+  \draw[->>>] (f) -- node (o) {} (S);
+  \node[block, below of=o, node distance=.9cm] (z) {$\lift{\zm}$};
+  \draw[->>] (Iinput) -- (I);
+  \draw[->>>] (I) -- (Idelta);
+  \draw[->>>] (S) -- (D);
+  \draw[->>] (D) -- (output);
+  \draw[->>>] (o.center) -- (z);
+  \draw[->>>] (z) -| (f);
+  \draw[->>>] (Idelta) -- (f);
+\end{tikzpicture}
+\end{center}
+\vspace{-1ex}
+\noindent Step 5: use the chain rule and linearity of
+$\lift{\delta_0}$ and $\lift{\int}$:
+
+\begin{tikzpicture}[>=latex]
+  \node[] (Iinput) {$\Delta x$};
+  \node[block, right of=Iinput] (Idelta) {$\lift{\delta_0}$};
+  \node[block, right of=Idelta, node distance=1.8cm] (f) {$\inc{(\lift{\inc{(\lift{R})}})}$};
+  \node[block, right of=f, node distance=2cm] (S) {$\lift{\int}$};
+  \node[right of=S] (output)  {$\Delta O$};
+  \draw[->>>] (f) -- node (o) {} (S);
+  \node[block, below of=o, node distance=.9cm] (z) {$\lift{\zm}$};
+  \draw[->>] (Iinput) -- (Idelta);
+  \draw[->>] (S) -- (output);
+  \draw[->>>] (o.center) -- (z);
+  \draw[->>>] (z) -| (f);
+  \draw[->>>] (Idelta) -- (f);
+\end{tikzpicture}
+
+\noindent This is the incremental version of a recursive query!
+
+%\input{example3}
+\subsection{Example incrementalized recursive query}\label{sec:recursive-incremental-example}
+
+The discussion above is very abstract, so let's see a concrete example.
+We take the \dbsp circuit for the transitive closure of a graph
+generated in \refsec{sec:recursive-example} and convert it to an
+incremental circuit using algorithm~\ref{algorithm-inc}.  The
+resulting circuit maintains the transitive closure as edges are
+inserted or removed.
+
+First we lift the circuit entirely, using Proposition~\ref{prop-lift-cycle}:
+
+\noindent
+\begin{tikzpicture}[>=latex, node distance=1.5cm]
+  \node[] (Einput) {\code{E}};
+  % generic part
+  \node[block, right of=Einput, node distance=.8cm] (E) {$\lift{\delta}$};
+
+  % relational query
+  \node[block, above of=E, node distance=1cm] (j) {$\lift{\inc{(\lift{\bowtie})}}$};
+  \node[block, right of=j] (pj) {$\lift{\lift{\pi}}$};
+  \node[block, circle, below of=pj, node distance=1cm, inner sep=0cm] (plus) {$+$};
+  \node[block, right of=plus, node distance=1.8cm] (d) {$\lift{\inc{(\lift{\distinct})}}$};
+  \draw[->>>] (E) -- (j);
+  \draw[->>>] (j) -- (pj);
+  \draw[->>>] (E) -- (plus);
+  \draw[->>>] (pj) -- (plus);
+  \draw[->>>] (plus) -- (d);
+
+  % generic part
+  \node[block, right of=d, node distance=2cm] (S) {$\lift{\int}$};
+  \node[right of=S, node distance=.8cm] (output)  {\code{R}};
+  \draw[->>] (Einput) -- (E);
+  \draw[->>>] (d) -- node (o) {} (S);
+  \draw[->>] (S) -- (output);
+  \node[block, above of=j, node distance=1cm] (z) {$\lift{\zm}$};
+  \draw[->>>] (o.center) |- (z);
+  \draw[->>>] (z) -- (j);
+\end{tikzpicture}
+
+We convert this circuit into an incremental circuit, which receives in
+each transaction the changes to relation \code{E} and produces the
+corresponding changes to \code{R}:
+
+\noindent
+\begin{tikzpicture}[>=latex, node distance=1.6cm]
+  \node[] (DE) {$\Delta$\code{E}};
+  \node[block, right of=DE, node distance=.8cm] (Einput) {$\I$};
+  \draw[->>] (DE) -- (Einput);
+  % generic part
+  \node[block, right of=Einput, node distance=.8cm] (E) {$\lift{\delta}$};
+
+  % relational query
+  \node[block, above of=E, node distance=1cm] (j) {$\lift{\inc{(\lift{\bowtie})}}$};
+  \node[block, right of=j, node distance=1.8cm] (pj) {$\lift{\lift{\pi}}$};
+  \node[block, circle, right of=E, node distance=1cm, inner sep=0cm] (plus) {$+$};
+  \node[block, right of=plus, node distance=1.4cm] (d) {$\lift{\inc{(\lift{\distinct})}}$};
+  \draw[->>>] (E) -- (j);
+  \draw[->>>] (j) -- (pj);
+  \draw[->>>] (E) -- (plus);
+  \draw[->>>] (pj) -- (plus);
+  \draw[->>>] (plus) -- (d);
+
+  % generic part
+  \node[block, right of=d, node distance=1.6cm] (S) {$\lift{\int}$};
+  \node[block, right of=S, node distance=1cm] (OD) {$\D$};
+  \node[right of=OD, node distance=1cm] (output)  {$\Delta$\code{R}};
+  \draw[->>] (Einput) -- (E);
+  \draw[->>>] (d) -- node (o) {} (S);
+  \draw[->>>] (S) -- (OD);
+  \draw[->>] (OD) -- (output);
+  \node[block, above of=j, node distance=1cm] (z) {$\lift{\zm}$};
+  \draw[->>>] (o.center) |- (z);
+  \draw[->>>] (z) -- (j);
+\end{tikzpicture}
+
+Apply the chain and cycle rules:
+
+\noindent
+\begin{tikzpicture}[>=latex, node distance=1.6cm]
+  \node[] (Einput) {$\Delta$\code{E}};
+  % generic part
+  \node[block, right of=Einput, node distance=1.1cm] (E) {$\inc{(\lift{\delta})}$};
+
+  % relational query
+  \node[block, above of=E, node distance=1cm] (j) {$\inc{(\lift{\inc{(\lift{\bowtie})}})}$};
+  \node[block, right of=j, node distance=2.1cm] (pj) {$\inc{(\lift{\lift{\pi}})}$};
+  \node[block, circle, right of=E, node distance=1.2cm, inner sep=0cm] (plus) {$+$};
+  \node[block, right of=plus, node distance=2cm] (d) {$\inc{(\lift{\inc{(\lift{\distinct})}})}$};
+  \draw[->>>] (E) -- (j);
+  \draw[->>>] (j) -- (pj);
+  \draw[->>>] (E) -- (plus);
+  \draw[->>>] (pj) -- (plus);
+  \draw[->>>] (plus) -- (d);
+
+  % generic part
+  \node[block, right of=d, node distance=2.1cm] (S) {$\inc{(\lift{\int})}$};
+  \node[right of=S, node distance=1.2cm] (output)  {$\Delta$\code{R}};
+  \draw[->>] (Einput) -- (E);
+  \draw[->>>] (d) -- node (o) {} (S);
+  \draw[->>] (S) -- (output);
+  \node[block, above of=j, node distance=1cm] (z) {$\inc{(\lift{\zm})}$};
+  \draw[->>>] (o.center) |- (z);
+  \draw[->>>] (z) -- (j);
+\end{tikzpicture}
+
+Use the linearity of $\lift\delta$, $\lift\int$,
+$\lift\zm$, and $\lift\lift\pi$ to simplify the circuit
+by removing some $\inc{\cdot}$ invocations:
+
+\noindent
+\begin{tikzpicture}[>=latex, node distance=1.3cm]
+  \node[] (Einput) {$\Delta$\code{E}};
+  % generic part
+  \node[block, right of=Einput, node distance=1cm] (E) {$\lift{\delta}$};
+
+  % relational query
+  \node[block, above of=E, node distance=1cm] (j) {$\inc{(\lift{\inc{(\lift{\bowtie})}})}$};
+  \node[block, right of=j, node distance=1.8cm] (pj) {$\lift{\lift{\pi}}$};
+  \node[block, circle, below of=pj, node distance=1cm, inner sep=0cm] (plus) {$+$};
+  \node[block, right of=plus, node distance=1.7cm] (d) {$\inc{(\lift{\inc{(\lift{\distinct})}})}$};
+  \draw[->>>] (E) -- (j);
+  \draw[->>>] (j) -- (pj);
+  \draw[->>>] (E) -- (plus);
+  \draw[->>>] (pj) -- (plus);
+  \draw[->>>] (plus) -- (d);
+
+  % generic part
+  \node[block, right of=d, node distance=1.9cm] (S) {$\lift{\int}$};
+  \node[right of=S, node distance=1cm] (output)  {$\Delta$\code{R}};
+  \draw[->>] (Einput) -- (E);
+  \draw[->>>] (d) -- node (o) {} (S);
+  \draw[->>] (S) -- (output);
+  \node[block, above of=j, node distance=1cm] (z) {$\lift{\zm}$};
+  \draw[->>>] (o.center) |- (z);
+  \draw[->>>] (z) -- (j);
+\end{tikzpicture}
+
+There are two applications of $\inc{\cdot}$ remaining in this circuit: $\inc{(\lift{\inc{(\lift{\bowtie})}})}$
+and $\inc{(\lift{\inc{(\lift\distinct)}})}$.  We expand their implementations separately,
+and we stitch them into the global circuit at the end.  This ability to reason about
+sub-circuits highlights the modularity of \dbsp.
+
+The join is expanded twice, using the bilinearity
+of $\lift\bowtie$ and $\lift\lift\bowtie$.  Let's start with the inner circuit,
+implementing $\inc{(\lift{\bowtie})}$, given by Theorem~\ref{bilinear}:
+
+\noindent
+\begin{tabular}{m{2cm}m{.2cm}m{4.5cm}}
+\begin{tikzpicture}[auto,>=latex]
+    \node[] (a) {$a$};
+    \node[below of=a, node distance=.7cm] (midway) {};
+    \node[below of=midway, node distance=.7cm] (b) {$b$};
+    \node[block, right of=midway] (q) {$\inc{(\lift{\bowtie})}$};
+    \node[right of=q, node distance=1.1cm] (output) {$o$};
+    \draw[->>] (a) -| (q);
+    \draw[->>] (b) -| (q);
+    \draw[->>] (q) -- (output);
+\end{tikzpicture} &
+$\cong$ &
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input1) {$a$};
+  \node[below of=input1, node distance=1cm] (input2) {$b$};
+  \node[block, right of=input1, node distance=.7cm] (I1) {$\I$};
+  \node[block, right of=input2, node distance=.7cm] (I2) {$\I$};
+  \draw[->>] (input1) -- (I1);
+  \draw[->>] (input2) -- (I2);
+  \node[block, right of=I2] (ZI2) {$\zm$};
+  \draw[->>] (I2) -- (ZI2);
+  \node[block, right of=I1] (DI1) {$\lift{\bowtie}$};
+  \node[block, right of=ZI2, node distance=1.2cm] (DI2) {$\lift{\bowtie}$};
+  \draw[->>] (I1) -- (DI1);
+  \draw[->>] (ZI2) -- (DI2);
+  \node[block, circle, right of=DI1, inner sep=0cm, node distance=1.2cm] (sum) {$+$};
+  \draw[->>] (DI1) -- (sum);
+  \draw[->>] (DI2) -- (sum);
+  \node[right of=sum, node distance=.9cm] (output) {$o$};
+  \draw[->>] (sum) -- (output);
+  \draw[->>] (input1) -- (DI2);
+  \draw[->>] (input2) -- (DI1);
+\end{tikzpicture}
+\end{tabular}
+
+\noindent
+Lift and incrementalize to get the circuit for $\inc{(\lift{\inc{(\lift{\bowtie})}})}$:
+
+\begin{center}
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (input1) {$a$};
+  \node[below of=input1, node distance=1cm] (input2) {$b$};
+  \node[block, right of=input1, node distance=1cm] (II1) {$\I$};
+  \node[block, right of=input2, node distance=1cm] (II2) {$\I$};
+  \node[block, right of=II1, node distance=1.2cm] (I1) {$\lift{\I}$};
+  \node[block, right of=II2, node distance=1.2cm] (I2) {$\lift{\I}$};
+  \draw[->>>] (input1) -- (II1);
+  \draw[->>>] (II1) -- (I1);
+  \draw[->>>] (input2) -- (II2);
+  \draw[->>>] (II2) -- (I2);
+  \node[block, right of=I2, node distance=1.2cm] (ZI2) {$\lift{\zm}$};
+  \draw[->>>] (I2) -- (ZI2);
+  \node[block, right of=I1, node distance=1.2cm] (DI1) {$\lift{\lift{\bowtie}}$};
+  \node[block, right of=ZI2, node distance=1.4cm] (DI2) {$\lift{\lift{\bowtie}}$};
+  \draw[->>>] (I1) -- (DI1);
+  \draw[->>>] (ZI2) -- (DI2);
+  \node[block, circle, right of=DI1, inner sep=0cm] (sum) {$+$};
+  \draw[->>>] (DI1) -- (sum);
+  \draw[->>>] (DI2) -- (sum);
+  \node[block, right of=sum, node distance=1cm] (D) {$\D$};
+  \node[right of=D, node distance=1cm] (output) {$o$};
+  \draw[->>>] (sum) -- (D);
+  \draw[->>>] (D) -- (output);
+  \draw[->>>] (II1) -- (DI2);
+  \draw[->>>] (II2) -- (DI1);
+\end{tikzpicture}
+\end{center}
+
+Using the chain rule and linearity of $\lift\I$ and $\lift\zm$:
+
+\begin{center}
+\begin{tikzpicture}[auto,>=latex, node distance=1.3cm]
+  \node[] (input1) {$a$};
+  \node[below of=input1, node distance=1cm] (input2) {$b$};
+  \node[block, right of=input1, node distance=1cm] (I1) {$\lift{\I}$};
+  \node[block, right of=input2, node distance=1cm] (I2) {$\lift{\I}$};
+  \draw[->>>] (input1) -- (I1);
+  \draw[->>>] (input2) -- (I2);
+  \node[block, right of=I2] (ZI2) {$\lift{\zm}$};
+  \draw[->>>] (I2) -- (ZI2);
+  \node[block, right of=I1, node distance=1.6cm] (DI1) {$\inc{(\lift{\lift{\bowtie}})}$};
+  \node[block, right of=ZI2, node distance=1.6cm] (DI2) {$\inc{(\lift{\lift{\bowtie}})}$};
+  \draw[->>>] (I1) -- (DI1);
+  \draw[->>>] (ZI2) -- (DI2);
+  \node[block, circle, right of=DI1, inner sep=0cm] (sum) {$+$};
+  \draw[->>>] (DI1) -- (sum);
+  \draw[->>>] (DI2) -- (sum);
+  \node[right of=sum, node distance=1cm] (output) {$o$};
+  \draw[->>>] (sum) -- (output);
+  \draw[->>>] (input1) -- (DI2);
+  \draw[->>>] (input2) -- (DI1);
+\end{tikzpicture}
+\end{center}
+
+We now have two applications of $\inc{(\lift\lift\bowtie)}$.  Each of
+these is the incremental form of a bilinear operator, so it in the end
+we will have $2\times2 = 4$ applications of $\lift\lift\bowtie$.  Here
+is the final form of the expanded join circuit:
+
+\begin{equation}\label{join-expansion}
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (a) {$a$};
+  \node[below of=a, node distance=.8cm] (b) {$b$};
+
+  \node[block, right of=a] (LIa) {$\lift{\I}$};
+  \node[block, above of=LIa, node distance=.8cm] (Ia) {$\I$};
+  \node[block, right of=LIa] (IIa) {$\I$};
+  \node[block, right of=Ia] (zIa) {$\zm$};
+  \draw[->>>] (a) -- (LIa);
+  \draw[->>>] (a) -- (Ia);
+  \draw[->>>] (Ia) -- (zIa);
+  \draw[->>>] (LIa) -- (IIa);
+
+  \node[block, right of=b] (Ib) {$\I$};
+  \node[block, below of=Ib, node distance=.8cm] (LIb) {$\lift\I$};
+  \node[block, right of=Ib] (zb) {$\zm$};
+  \node[block, right of=LIb] (IIb) {$\I$};
+  \node[block, right of=IIb, node distance=1.2cm] (zIIb) {$\lift\zm$};
+  \node[block, below of=IIb, node distance=.8cm] (zIb) {$\lift\zm$};
+  \draw[->>>] (b) -- (Ib);
+  \draw[->>>] (b) -- (LIb);
+  \draw[->>>] (Ib) -- (zb);
+  \draw[->>>] (LIb) -- (IIb);
+  \draw[->>>] (IIb) -- (zIIb);
+  \draw[->>>] (LIb) -- (zIb);
+
+  \node[block, right of=zIIb, node distance=1.4cm] (j1) {$\lift\lift\bowtie$};
+  \node[block, above of=j1, node distance=.8cm]   (j2) {$\lift\lift\bowtie$};
+  \node[block, above of=j2, node distance=.8cm]   (j3) {$\lift\lift\bowtie$};
+  \node[block, above of=j3, node distance=.8cm]   (j4) {$\lift\lift\bowtie$};
+  \draw[->>>] (zIIb) -- (j1);
+  \draw[->>>] (a) -- (j1);
+  \draw[->>>] (zb) -- (j2);
+  \draw[->>>] (LIa) -- (j2);
+  \draw[->>>] (IIa) -- (j3);
+  \draw[->>>] (b) -- (j3);
+  \draw[->>>] (zIa) -- (j4);
+  \draw[->>>] (zIb) -- (j4);
+
+  \node[block, right of=j3, circle, inner sep=0cm] (plus) {$+$};
+  \draw[->>>] (j1) -- (plus);
+  \draw[->>>] (j2) -- (plus);
+  \draw[->>>] (j3) -- (plus);
+  \draw[->>>] (j4) -- (plus);
+  \node[right of=plus, node distance=.8cm] (o) {$o$};
+  \draw[->>>] (plus) -- (o);
+\end{tikzpicture}
+\end{equation}
+
+Returning to $\inc{(\lift{\inc{(\lift\distinct)}})}$, we can compute its circuit by expanding
+once using Proposition~\ref{prop-inc_distinct}:
+
+\noindent
+\begin{tabular}{m{5cm}m{0cm}}
+\begin{tikzpicture}[>=latex]
+\node[] (input) {$i$};
+\node[block, right of=input, node distance=1.6cm] (d) {$\inc{(\lift{\inc{(\lift{\distinct})}})}$};
+\node[right of=d, node distance=1.6cm] (output) {$o$};
+\draw[->>>] (input) -- (d);
+\draw[->>>] (d) -- (output);
+\end{tikzpicture}
+& $\cong$ \\
+\begin{tikzpicture}[>=latex]
+    \node[] (input) {$i$};
+    \node[block, right of=input] (I) {$\I$};
+    \node[block, right of=I] (LI) {$\lift{\I}$};
+    \node[block, right of=LI, node distance=1.3cm] (z) {$\lift{\zm}$};
+    \node[block, below of=z, node distance=1cm] (H) {$\lift{\lift{H}}$};
+    \node[block, right of=H, node distance=1.2cm] (D) {$\D$};
+    \node[right of=D] (output) {$o$};
+    \draw[->>>] (input) -- (I);
+    \draw[->>>] (I) -- node (mid) {} (LI);
+    \draw[->>>] (LI) -- (z);
+    \draw[->>>] (mid.center) |- (H);
+    \draw[->>>] (z) -- (H);
+    \draw[->>>] (H) -- (D);
+    \draw[->>>] (D) -- (output);
+\end{tikzpicture}
+\end{tabular}
+
+Finally, stitching all these pieces together we get the final circuit
+shown in Figure~\ref{fig:recursive-example}.
+
+\begin{figure*}[h]
+  \begin{center}
+\begin{tikzpicture}[>=latex]
+  \node[] (Einput) {$\Delta$\code{E}};
+  % generic part
+  \node[block, right of=Einput, node distance=1cm] (dE) {$\lift{\delta}$};
+  \draw[->>] (Einput) -- (dE);
+  \node[right of=dE] (empty) {};
+
+  % join(a,b)
+  \node[block, above of=dE, node distance=2.2cm] (b) { };
+  \node[block, above of=b, node distance=.8cm] (a) { };
+  \draw[->>>] (dE) -- (b);
+
+  \node[block, right of=a] (LIa) {$\lift{\I}$};
+  \node[block, above of=LIa, node distance=.8cm] (Ia) {$\I$};
+  \node[block, right of=LIa] (IIa) {$\I$};
+  \node[block, right of=Ia] (zIa) {$\zm$};
+  \draw[->>>] (a) -- (LIa);
+  \draw[->>>] (a) -- (Ia);
+  \draw[->>>] (Ia) -- (zIa);
+  \draw[->>>] (LIa) -- (IIa);
+
+  \node[block, right of=b] (Ib) {$\I$};
+  \node[block, below of=Ib, node distance=.8cm] (LIb) {$\lift\I$};
+  \node[block, right of=Ib] (zb) {$\zm$};
+  \node[block, right of=LIb] (IIb) {$\I$};
+  \node[block, right of=IIb, node distance=1.2cm] (zIIb) {$\lift\zm$};
+  \node[block, below of=IIb, node distance=.8cm] (zIb) {$\lift\zm$};
+  \draw[->>>] (b) -- (Ib);
+  \draw[->>>] (b) -- (LIb);
+  \draw[->>>] (Ib) -- (zb);
+  \draw[->>>] (LIb) -- (IIb);
+  \draw[->>>] (IIb) -- (zIIb);
+  \draw[->>>] (LIb) -- (zIb);
+
+  \node[block, right of=zIIb, node distance=1.4cm] (j1) {$\lift\lift\bowtie$};
+  \node[block, above of=j1, node distance=.8cm]   (j2) {$\lift\lift\bowtie$};
+  \node[block, above of=j2, node distance=.8cm]   (j3) {$\lift\lift\bowtie$};
+  \node[block, above of=j3, node distance=.8cm]   (j4) {$\lift\lift\bowtie$};
+  \draw[->>>] (zIIb) -- (j1);
+  \draw[->>>] (a) -- (j1);
+  \draw[->>>] (zb) -- (j2);
+  \draw[->>>] (LIa) -- (j2);
+  \draw[->>>] (IIa) -- (j3);
+  \draw[->>>] (b) -- (j3);
+  \draw[->>>] (zIa) -- (j4);
+  \draw[->>>] (zIb) -- (j4);
+
+  \node[block, right of=j3, circle, inner sep=0cm] (plus) {$+$};
+  \draw[->>>] (j1) -- (plus);
+  \draw[->>>] (j2) -- (plus);
+  \draw[->>>] (j3) -- (plus);
+  \draw[->>>] (j4) -- (plus);
+
+  % relational query
+  \node[block, right of=plus, node distance=1.1cm] (pj) {$\lift{\lift{\pi}}$};
+  \node[below of=pj, node distance=.6cm] (mid) {};
+  \node[block, circle, right of=empty, inner sep=0cm, node distance=5.5cm] (relplus) {$+$};
+
+  \draw[->>>] (plus) -- (pj);
+  \draw[->>>] (dE) -- (relplus);
+  \draw[->>>] (pj) -- (relplus);
+
+    % distinct
+    \node[block, right of=relplus, node distance=1cm] (distI) {$\I$};
+    \node[block, right of=distI, node distance=1.2cm] (distLI) {$\lift{\I}$};
+    \node[block, right of=distLI, node distance=1.2cm] (distz) {$\lift{\zm}$};
+    \node[block, above of=distz, node distance=1cm] (distH) {$\lift{\lift{H}}$};
+    \node[block, right of=distH, node distance=1.2cm] (distD) {$\D$};
+    \draw[->>>] (relplus) -- (distI);
+    \draw[->>>] (distI) -- node (distmid) {} (distLI);
+    \draw[->>>] (distLI) -- (distz);
+    \draw[->>>] (distmid.center) |- (distH);
+    \draw[->>>] (distz) -- (distH);
+    \draw[->>>] (distH) -- (distD);
+
+  % generic part
+  \node[block, right of=distD] (S) {$\lift{\int}$};
+  \node[right of=S, node distance=1.2cm] (output)  {$\Delta$\code{R}};
+  \draw[->>>] (distD) -- node (o) {} (S);
+  \draw[->>] (S) -- (output);
+  \node[block, above of=a, node distance=1.2cm] (z) {$\lift{\zm}$};
+  \draw[->>>] (o.center) |- (z);
+  \draw[->>>] (z) -- (a);
+\end{tikzpicture}
+\caption{Final form of circuit from
+  \refsec{sec:recursive-example}\label{fig:recursive-example} which is
+  incrementally maintaining the transitive closure of a graph.}
+  \end{center}
+\end{figure*}
+
+
+
+\subsection{Cost of incremental recursive queries}
+
+\paragraph{Time complexity.}
+The time complexity of an incremental recursive query can be estimated
+as a product of the number of fixed point iterations and the
+complexity of each iteration. The incrementalized circuit never
+performs more iterations than the non-incremental circuit: once the
+non-incremental circuit reaches the fixed point, its output is
+constant, and the derivative of corresponding value in the
+incrementalized circuit is 0.
+
+Moreover, the work performed by each operator in the incremental
+circuit is asymptotically less than the non-incremental one.  A
+detailed analysis can be found in our companion report~\cite{tr}.
+
+%As a concrete example, consider a join in a recursive circuit.
+%A non-incremental implementation is shown in the Appendix in
+%example~\ref{recursive-join}.  The incremental implementation
+%of the same circuit is in circuit~\ref{join-expansion}, and contains
+%4 join operators.  The work performed by the non-incremental join is $O(|DB|^2)$ for
+%each iteration.  The size of the inputs of each of the joins in the incremental
+%circuit is shown in \ref{sec:work}.  We notice that the four join operators
+%perform work $O(|\Delta DB|^2)$, $O(|DB| |\Delta DB|)$, $(O|DB| |\Delta DB|)$,
+%and $O(|DB|, 0)$ \leonid{strange notation} respectively (the last operator performs work only in the first iteration),
+%so each of them is asymptotically better than the non-incremental version.
+
+\paragraph{Space complexity.} Integration ($\I$) and differentiation ($\D$) of a
+stream $\Delta s \in \stream{\stream{A}}$ use memory proportional to
+$\sum_{t_2}\sum_{t_1}|s[t_1][t_2]|$, i.e., the total size of changes
+aggregated over columns of the matrix.  The unoptimized circuit integrates
+and differentiates respectively inputs and outputs of the recursive program
+fragment.  As we move $\I$ and $\D$ inside the circuit using the chain rule, we
+additionally store changes to intermediate streams.  Effectively we cache results of
+fixed point iterations from earlier timestamps to update them efficiently as new input changes arrive.
+Notice that space usage is proportional to the \emph{number of iterations of the inner loop}
+that computes the fixed-point.
+Fortunately, many recursive algorithms converge in a relatively small number of steps
+(for example, transitive closure performs log(graph diameter) steps.
+
+%\input{expressivity}
+\section{\dbsp expressivity}\label{sec:expressivity}
+
+\subsection{Formal verification}
+
+We have formalized and verified all the definitions, lemmas,
+propositions, theorems, and examples in this paper using the Lean
+theorem prover; we make these proofs available at~\cite{dbsp-theory}.
+The formalization builds on mathlib~\cite{mathlib2020}, which provides
+support for groups and functions with finite support (modeling
+\zrs). We believe the simplicity of \dbsp enabled completing these
+proofs in relatively few lines of Lean code (5K) and keeping a close
+correspondence between the paper proofs in~\cite{tr} and Lean.  The
+existence of the proofs bolsters our confidence in the correctness of
+our implementation.
+
+\vspace{-3ex}
+\subsection{Beyond relational queries}\label{sec-turing}
+
+\dbsp can express programs that go beyond Datalog, SQL, or incremental
+versions of these: see the non-monotonic semantics for Datalog$^\neg$
+and Datalog$^{\neg\neg}$\cite{Abiteboul-book95}.  \dbsp can model many
+classes of streaming operators and stateful streaming computations.
+
+For example, to illustrate the Turing-completeness of \dbsp, we
+implement the following \emph{while} program, where $Q$ is an
+arbitrary query: {\small
+\begin{lstlisting}[language=Pascal]
+x := i;
+while (x changes)
+    x := Q(x);
+\end{lstlisting}}
+The \dbsp implementation of this program is:
+
+%$$\lambda i. \int[\D[\fix{\xi}{Q(\delta(i)+\zm(\xi))}]]$$
+\begin{center}
+\begin{tikzpicture}[>=latex]
+  \node[] (input) {$i$};
+  \node[block, right of=input] (delta) {$\delta$};
+  \node[block, circle, right of=delta, inner sep=0cm] (p) {$+$};
+  \node[block, right of=p] (Q) {$\lift Q$};
+  \node[block, right of=Q] (D) {$\D$};
+  \node[block, right of=D] (S) {$\int$};
+  \node[right of=S] (output)  {$x$};
+  \node[block, below of=p, node distance=.8cm] (z) {$\zm$};
+  \draw[->] (input) -- (delta);
+  \draw[->>] (delta) -- (p);
+  \draw[->>] (p) -- (Q);
+  \draw[->>] (Q) -- node (mid) {} (D);
+  \draw[->>] (D) -- (S);
+  \draw[->>] (mid.center) |- (z);
+  \draw[->] (S) -- (output);
+  \draw[->>] (z) -- (p);
+\end{tikzpicture}
+\end{center}
+
+This circuit can be converted to a streaming circuit that computes a stream of values $i$
+by lifting it; it can be incrementalized using Algorithm~\ref{algorithm-inc} to compute on changes of $i$:
+
+\noindent
+\begin{center}
+\begin{tikzpicture}[>=latex]
+  \node[] (input) {$\Delta i$};
+  \node[block, right of=input] (delta) {$\lift{\delta}$};
+  \node[block, circle, right of=delta, inner sep=0cm] (p) {$+$};
+  \node[block, right of=p, node distance=1.3cm] (Q) {$\inc{(\lift{\lift{Q}})}$};
+  \node[block, right of=Q, node distance=1.5cm] (D) {$\lift{\D}$};
+  \node[block, right of=D, node distance=1.1cm] (S) {$\lift{\int}$};
+  \node[right of=S, node distance=1.2cm] (output)  {$\Delta x$};
+  \node[block, below of=p, node distance=.9cm] (z) {$\lift{\zm}$};
+  \draw[->>] (input) -- (delta);
+  \draw[->>>] (delta) -- (p);
+  \draw[->>>] (p) -- (Q);
+  \draw[->>>] (Q) -- node (mid) {} (D);
+  \draw[->>>] (D) -- (S);
+  \draw[->>>] (mid.center) |- (z);
+  \draw[->>] (S) -- (output);
+  \draw[->>>] (z) -- (p);
+\end{tikzpicture}
+\end{center}
+
+At runtime the execution of this circuit is not guaranteed to terminate;
+however, if the circuit does terminate, it will produce the correct
+output, i.e., the least fixpoint of $Q$ that includes~$i$.
+
+\subsection{Supporting SQL}\label{sec:sql}
+
+In \secref{sec:relational} we have shown how to implement the
+relational algebra using \dbsp.  However, the SQL language is
+significantly richer than the relational algebra.
+
+\paragraph{Multisets.} SQL operates on \emph{multisets} (or bags), e.g.,
+\code{UNION ALL}.  Since \zrs generalize bags, they can model all SQL
+operations. Many queries on multisets can be implemented by just
+omitting $\distinct$ operators.
+
+\paragraph{NULLs.} \dbsp says nothing about the data types
+and the functions that are executed by the operators in each node.  In
+our Rust SQL runtime (described in Section~\refsec{sec:runtime})
+nullable types are represented using Rust \texttt{Option<>} types, and
+SQL \code{NULL} is the value \code{None}.  Some care is required in
+implementing the unusual semantics of \code{NULL} (e.g., in SQL two
+\code{NULL} values are neither equal, nor different).
+
+\paragraph{Primary keys.} A primary key changes a table's behavior on insertion:
+inserting a tuple can cause another tuple to be deleted.  This
+behavior looks roughly like a modified $\distinct$ operator, and can
+be implemented incrementally similarly:
+
+\begin{center}
+\begin{tikzpicture}[>=latex]
+    \node[] (input) {$\Delta d$};
+    \node[block, right of=input] (I) {$\I$};
+    \node[block, right of=I] (z) {$\zm$};
+    \node[block, below of=z, node distance=.8cm] (H) {\texttt{UPSERT}};
+    \node[right of=H, node distance=1.3cm] (output) {$\Delta o$};
+    \draw[->>] (input) -- node (mid) {} (I);
+    \draw[->>] (I) -- (z);
+    \draw[->>] (mid.center) |- (H);
+    \draw[->>] (z) -- node (i) [right] {} (H);
+    \draw[->>] (H) -- (output);
+\end{tikzpicture}
+\end{center}
+
+\noindent The \code{UPSERT} operator converts a \zr describing an
+insertion with key $k$: $\{ (k, v) \mapsto 1 \}$ to a \zr $\{ (k, v)
+\mapsto 1, (k, v') \mapsto -1 \}$, where $(k, v')$ is the previous
+value of the record, obtained from the $\I$ operator.
+
+\paragraph{Constant values.}  One can write in SQL queries that have
+constant outputs, e.g., \code{SELECT 2}.  Technically an operator that
+produces a constant result is not TI.  However, constants can be
+accommodated easily by modeling them mathematically as constant input
+streams.
+
+\subsubsection{Grouping and indexed \zrs}\label{sec:grouping}
+
+Let $K$ be a set of ``key'' values.  The finite maps from $K$ to \zrs
+are functions $K \to \Z[A] = \Z[A][K]$.  We call values $i$ of this
+type \defined{indexed \zrs}: for each key $k \in K$, $i[k]$ is a \zr.
+Because the codomain $\Z[A]$ is an Abelian group, this structure is
+itself an Abelian group.  Here is an example indexed \zr:
+
+\begin{center}
+  \includegraphics[trim={0 4.2in 7.5in 0},clip,scale=.34]{indexed.pdf}
+\end{center}
+
+This structure is used to implement the SQL \texttt{GROUP BY} operator
+in \dbsp.  Consider a \defined{partitioning function} $p: A \to K$
+that assigns a key to any value in $A$.  We define the grouping
+function $G_p: \Z[A] \to \Z[A][K]$ as $G_p(a)[k] \defn \sum_{x \in
+  a.p(x)=k}\{ x \mapsto a[x] \}$ (just map each element of the input
+$a$ to the \zr grouping corresponding to its key).  When applied to a
+\zr this function returns an indexed \zr: each key $k$ maps to a \zr
+containing all elements of the group (as in SQL, each group is a
+multiset).  Consider our example \zr $R$ from \refsec{sec:relational},
+and a key function $p(s)$ that returns the first letter of the string
+$s$.  The resulting indexed \zr is shown in the previous diagram.
+
+The operation building an indexed \zr from a \zr is linear for any key
+function!  It follows that group-by is incremental: each row changed
+in the input relation produces a row changed in a group, obtained by
+applying the partitioning function.
+
+Notice that, unlike SQL, \dbsp can express naturally computations on
+indexed \zrs, they are just an instance of a group structure.  In
+\dbsp one does not need to follow grouping by aggregation, and \dbsp
+can represent nested groupings of arbitrary depth.  Indeed, our
+compiler can recognize classes of such computations expressed using
+SQL windows (e.g., TopK for each group), and can generate efficient
+incremental code.
+
+%Please note that our definition of incremental computation is only
+%concerned with incrementality in the \emph{outermost} structures.  We
+%leave it to future work to explore an appropriate definition of
+%incremental computation on the \emph{inner} relations.
+
+%\subsubsection{\texttt{UNNEST} (flatmap)}
+
+A useful operation on indexed \zrs is \defined{flatmap} (or
+\code{UNNEST} in SQL), which one can view as the inverse of grouping,
+converting an indexed \zr into a \zr.  This operation is also a linear
+\dbsp operator.
+
+\subsubsection{Aggregation}\label{sec:aggregation}
+
+Aggregation in SQL applies a function $a$ to a set of values of type
+$A$ producing a ``scalar'' result with some result type $B$.  In \dbsp
+an aggregation function has a signature $a: \Z[A] \to B$.  When
+operating on \zrs, most aggregation functions have to multiply the
+contribution of each value by its associated weight (but not
+aggregates such as \code{MAX}).  \texttt{DISTINCT} aggregates have to
+first apply a \texttt{DISTINCT} operator.
+
+Distributive (e.g. \code{SUM}) and some algebraic aggregation
+(\code{AVG}) functions can be implemented by a pair of linear
+functions between \zrs and the target group: the actual aggregation
+and the post-processing (e.g., dividing the sum by the counter for
+average).  Since these are linear functions, it would seem that they
+can be implemented using linear operators in \dbsp.  However, this is
+not true!
+
+The subtle point is that in SQL the result of these aggregation must
+be a (singleton) \textbf{set} containing an element of $B$, and not a
+value with type $B$.  Thus an aggregate based on a linear function is
+decomposed into a linear \dbsp operator, followed by additional
+operators, which are needed to convert the values of $B$ into values
+of $\Z[B]$.  The later operators are \emph{not} linear.  Consider the
+following query: \code{SELECT COUNT(*) FROM I}.  The lifted
+incremental version of this query is the following circuit, where
+$a_\texttt{COUNT}$ is a linear operator implementing the ``count''
+aggregation function, which just sums up the weights of the input
+values:
+
+\begin{tikzpicture}[>=latex, node distance=1.2cm]
+  \node[] (in) {$\Delta$\code{I}};
+  \node[block, right of=in] (pi) {$\pi_\texttt{C}$};
+  \node[block, right of=pi] (a) {$a_\texttt{COUNT}$};
+  \node[block, right of=a] (inc) {$\mathit{inc}$};
+  \node[block, below of=inc, node distance=.7cm] (IN) {$\I$};
+
+  \node[block, right of=inc] (I) {$\I$};
+  \node[block, right of=I] (z) {$\zm$};
+  \node[block, below of=z, node distance=.8cm] (H) {\texttt{UPSERT}};
+  \node[right of=H, node distance=1.3cm] (output) {$\Delta o$};
+  \draw[->>] (in) -- (pi);
+  \draw[->>] (pi) -- (a);
+  \draw[->>] (a) |- (IN);
+  \draw[->>] (IN) -- (inc);
+  \draw[->>] (a) -- (inc);
+  \draw[->>] (I) -- (z);
+  \draw[->>] (z) -- (H);
+  \draw[->>] (H) -- (output);
+  \draw[->>] (inc) -- node (mm) {} (I);
+  \draw[->>] (mm.center) |- (H);
+\end{tikzpicture}
+
+Let's say the input table \code{I} has 2 elements, and thus the
+previous aggregation result was 2.  When adding a new row, the
+$\mathit{inc}$ increments the previous aggregation result (obtained
+from $\I$) result with the current increment, and then the
+\code{UPSERT} converts the insertion of the tuple $\{3 \mapsto 1\}$
+into the \zr $\{3 \mapsto 1, 2 \mapsto -1 \}$, since the output set no
+longer contains the value 2.  The $\mathit{inc}$, $\I$ and $\makeset$
+operators only do work proportional to the size of the change, and
+they only store $O(1)$ state.
+
+%An aggregation function such as \texttt{AVG} can be written as the composition of
+%a linear function that computes a pair of values using
+%\texttt{SUM} and \texttt{COUNT}, followed by a division and a call to \makeset.
+
+%\begin{lstlisting}[language=SQL]
+%SELECT AVG(c) FROM I
+%\end{lstlisting}
+%
+%\begin{tikzpicture}[auto,>=latex]
+%  \node[] (I) {\code{I}};
+%  \node[block, right of=I] (pi) {$\pi_\texttt{C}$};
+%  \node[block, right of=pi, node distance=1.4cm] (sc) {$(a_\texttt{SUM}, a_\texttt{COUNT})$};
+%  \draw[->] (I) -- (pi);
+%  \draw[->] (pi) -- (sc);
+%  \node[block, right of=sc, node distance=1.8cm] (m) {$\makeset$};
+%  \node[block, right of=m, node distance=1.2cm] (div) {$\sigma_/$};
+%  \node[right of=div] (O) {\code{O}};
+%  \draw[->] (sc) -- (m);
+%  \draw[->] (m) -- (div);
+%  \draw[->] (div) -- (O);
+%\end{tikzpicture}
+
+Aggregate functions, such as \code{MIN}, are \emph{not} linear in the
+presence of deletions.  The incremental form of such aggregates needs
+to maintain the entire input collection, using an $\I$ operator,
+similar to the $\distinct$ operator.  They can be implemented
+efficiently by keeping the data organized as a priority heap sorted by
+the value compared.
+
+In SQL, \code{NULL} values do not participate in aggregation, so one
+needs to insert two extra operators for collections of nullable
+values:
+\begin{itemize}
+  \item an operator that counts the number of rows aggregated (as
+    described by Mumick~\cite{mumick-sigmod97}), which is used to
+    detect empty groups
+  \item a filtering operator (linear), which eliminates \code{NULL}s
+    prior to aggregation
+\end{itemize}
+
+For many SQL aggregation functions aggregating over an empty set
+should produce a \code{NULL} result.  All aggregation circuits
+described so far will return an empty \zr for an empty input.  Let $z$
+be the result expected for the empty input (e.g., \code{NULL}).  The
+following circuit, applied after aggregation, will produce the result
+expected by SQL:
+
+\begin{center}
+\begin{tikzpicture}[auto,>=latex]
+  \node[] (agg) {\code{agg}};
+  \node[right of=agg] (dummy) {};
+  \node[block, above of=dummy, node distance=.7cm] (map) {$\code{map}(\lambda x . z)$};
+  \node[block, right of=map, shape=circle, inner sep=0in, node distance=1.5cm] (minus) {$-$};
+  \node[block, below of=minus, node distance=1.4cm] (zero) {$z$};
+  \node[block, right of=agg, node distance=3cm, shape=circle, inner sep=0in] (plus) {$+$};
+  \node[right of=plus] (out) {$out$};
+  \draw[->] (agg) -- (map);
+  \draw[->] (map) -- (minus);
+  \draw[->] (minus) -- (plus);
+  \draw[->] (zero) -- (plus);
+  \draw[->] (agg) -- (plus);
+  \draw[->] (plus) -- (out);
+\end{tikzpicture}
+\end{center}
+
+\noindent When \code{agg} is the empty \zr, the ``map'' node produces
+an empty \zr, and the final result is just $z$.  When \code{agg} is
+non-empty, the top and bottom branches of the adder cancel each other,
+and the result is \code{agg}.  This scheme is also implemented by
+Materialize Inc.'s IVM engine.
+
+\subsubsection{\texttt{GROUP BY-AGGREGATE}}
+
+Grouping in SQL is always followed by aggregation.  This can be
+modeled by the composition of our solutions for grouping and
+aggregation described above.  In this case, the \code{UPSERT} operator
+indexes data using the group key.  For linear aggregates this operator
+needs to maintain state proportional to the number of groups.  For
+aggregates based on non-linear functions, this maintains state
+proportional to the entire input collection.
+
+%If we use an aggregation function $a: K \times Z[A]$ that is linear in its
+%second argument, then the aggregation operator $Agg_a$ is linear, and
+%thus fully incremental.  As a consequence, $\mbox{flatmap}$ is linear.
+%However, many practical aggregation functions for nested relations are in fact
+%not linear; an example is the $count$ function above, which is not linear
+%since it uses the $\makeset$ non-linear function.  Nevertheless, while
+%the incremental evaluation of such functions is not fully incremental,
+%it is at least partly incremental: when applying a change to groupings, the aggregation
+%function only needs to be re-evaluated \emph{for groupings that have changed}.
+
+%\subsection{Antijoin}\label{sec:antijoin}\index{antijoin}
+%
+%Antijoins arise in the implementation of Datalog programs with stratified negation.
+%Consider the following program:
+%
+%\begin{lstlisting}[language=ddlog,basicstyle=\small]
+%O(v, z) :- I1(v, z), not I2(v).
+%\end{lstlisting}
+%
+%The semantics of such a rule is defined in terms of joins and set difference.
+%This rule is equivalent with the following pair of rules:
+%
+%\begin{lstlisting}[language=ddlog,basicstyle=\small]
+%C(v, z) :- I1(v, z), I2(v).
+%O(v, z) :- I1(v, z), not C(v, z).
+%\end{lstlisting}
+%
+%This transformation reduces an antijoin to a join
+%followed by a set difference.  This produces the following \dbsp circuit:
+%
+%\begin{tikzpicture}[auto,>=latex]
+%  \node[] (i1) {\code{I1}};
+%  \node[below of=i1, node distance=.5cm] (i2) {\code{I2}};
+%  \node[block, right of=i1, node distance=1.5cm] (join) {$\bowtie$};
+%  \node[block, shape=circle, inner sep=0in, right of=join] (m) {---};
+%  \node[block, above of=m, shape=circle, inner sep=0in, node distance=.6cm] (plus) {$+$};
+%  \node[block, right of=plus, node distance=1cm] (distinct) {$\distinct$};
+%  \node[right of=distinct, node distance=1cm] (output) {\code{O}};
+%  \draw[->] (i1) -- node (tap) {} (join);
+%  \draw[->] (i2) -| (join);
+%  \draw[->] (join) -- (m);
+%  \draw[->] (m) -- (plus);
+%  \draw[->] (tap.south) |- (plus);
+%  \draw[->] (plus) -- (distinct);
+%  \draw[->] (distinct) -- (output);
+%\end{tikzpicture}
+%
+
+\subsubsection{Other operations on SQL groups}
+
+SQL constructs such as \code{PARTITION BY/OVER} make it possible to
+write queries over groups, e.g., TOP-K.  These can be implemented in
+\dbsp naturally as functions over indexed \zrs.  Moreover, many such
+functions (\code{LAG}, \code{RANGE}) can be implemented using highly
+efficient incremental \dbsp operators, which perform work proportional
+to the size of the change.
+
+\subsubsection{Recursive SQL queries}
+
+SQL recursion is severely restricted by design~\cite{hirn-cidr23} and
+has a strange semantics.  Instead of supporting standard SQL
+recursion, in our implementation we have extended the SQL syntax to
+support mutually recursive views by adding a statement to declare
+recursive views prior to their use; the syntax is similar to SQL table
+declarations: \code{DECLARE RECURSIVE VIEW V(col TYPE, ...)}. \\ We find
+this syntax much easier to use and understand than the standard syntax
+using common-table expressions.  There are essentially no restrictions
+on the queries that can be used to define mutually recursive views;
+such queries do not have to be monotone.  With this change, SQL
+essentially includes Datalog as a sub-language.
+
+
+%\input{implementation}
+\section{Implementation}\label{sec:implementation}
+
+In this section we describe an implementation of a SQL compiler and
+runtime based on \dbsp.
+
+\subsection{The \dbsp Rust runtime}\label{sec:runtime}
+
+We have built an implementation of \dbsp as part of an
+open-source~\cite{dbsp-repo} project with an MIT
+license~\cite{dbsp-crate}.  The implementation consists of a Rust
+library for building circuits and a runtime that executes these
+circuits using a pool of worker threads.
+
+The library provides APIs for basic algebraic data types: such as
+groups, finite maps, \zrs, indexed \zrs.  The core data structure of
+the library for representing processed data is the ``time-indexed,
+indexed \zr''.  This is the most general data structure needed in
+recursive circuits.  It represents a vector (indexed by time) of
+indexed \zrs.  Simple indexed \zrs are represented by a vector with a
+single element, while \zrs are represented as indexed \zrs with an
+empty value.\footnote{Rust is very efficient at eliding empty data
+structures.}  The starting point of this implementation was the
+differential dataflow trace data structure~\cite{dd-crate}.
+
+A circuit construction API allows users to create \dbsp circuits by
+inserting operator nodes --- boxes in our diagrams --- and connecting
+them with streams --- the arrows in our diagrams.  The library
+provides more than 70 pre-built generic operators for integration,
+differentiation, delay, nested integration and differentiation, and
+basic \zr incremental operators, corresponding to plus, negation,
+grouping, joining, semi-joins, anti-joins, temporal joins, primitive
+aggregates, generic aggregates (fold), $\distinct$, flatmap, window
+aggregates, indexing, upsert, etc.  Some operators only exist in a
+pure incremental form (e.g., they only operate correctly when fed
+deltas), and thus, when used in a non-incremental circuit, have to be
+``inverted'' using the inversion property from
+Proposition~\ref{prop-inc-properties}.
+
+For iterative computations the library provides the $\delta$ operator
+and an operator that generalizes $\int$ by terminating iteration when
+\emph{all} the operators in the corresponding circuit cycle have
+reached a fixed point, which is detected when neither outputs or state
+change in an execution step.  The low level library allows users to
+construct incremental circuits manually by stitching together
+incremental and non-incremental versions of primitive operators.
+
+The library also provides many ``helper'' operators that are used by
+the code generator in the implementation of some streaming queries,
+e.g., for state garbage-collection (a subject not discussed in this
+paper).
+
+\subsubsection{Parallelization and Scale-out}
+
+Besides computing on streams, \dbsp circuits look very much like other
+dataflow query engines.  As such, all standard parallelization
+algorithms described in the literature~\cite{Graefe-sigmod90} can be
+applied.  Our core circuits library automatically parallelizes each
+circuit by sharding each operators to execute using a specified number
+of worker threads (all operators use the same number of threads, which
+is statically-defined).  The library automatically inserts exchange
+operators to re-shard data when necessary (e.g., shard on the common
+key in an equi-join).  The same scheme can be used to implement
+scale-out solutions across multiple machines, but this part of the
+runtime is still under development.
+
+\subsubsection{State management}\label{sec:state-management}
+
+Incremental computation is not free.  It is in fact a trade-off
+between time and space.  While many incremental query primitives are
+``stateless'', some important classes of database operations,
+including joins, $\distinct$, and group-by-aggregate use $\I$
+operators in their incremental expansion.  This state is kept in
+\emph{indexes}.  (In the \dbsp theoretical model the state is stored
+in delay operators $\zm$ and $\lift{\zm}$, but these are always inside
+integrators $\I$.)  All other operators are stateless.
+
+The size of these indexes is proportional to the size of the total
+input data of these operators --- and thus the total state of a
+circuit can even exceed the size of the original database.  (Many
+traditional IVM schemes opt to recompute this state on demand, rather
+than store it permanently; \dbsp can model this strategy.)
+
+At runtime, linear operators are essentially free.  The performance of
+a \dbsp program is given by the cost of maintaining and
+accessing the indexes.
+
+Indexes provide two essential operations:
+\begin{description}
+\item[Write:] Merging an existing (large) index with a new (small) change.
+\item[Read:] Looking up a (small) set of values.
+\end{description}
+
+Our implementation of indexes performs both these operations in
+amortized time $O(k \log n)$, where $k$ is the size of the changes,
+and $n$ is the size of the index.  The implementation of indexes is
+essentially a Log-Structured Merge (LSM) Tree~\cite{oneil-ai96}.
+
+The data structure used for indexes, (called a \emph{trace} in the
+code), is shown in Figure~\ref{fig:trace}.  Each index is represented
+as a sequence of sorted immutable lists (called \emph{batches}), of
+exponentially increasing sizes (1, 2, 4, 8, etc.) --- a generalization
+of binary signed digits~\cite{signed-digits}.  Any batch is sorted
+lexicographically, first on the index, then on the value.  Each batch
+is a \zr, and a trace represents the \zr that is the sum of all
+component batches.  The same tuple can appear in different batches
+with different weights, but appears at most once in each batch.  Since
+addition is commutative and associative, parts can be added in any
+order.
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[trim={0 2.9in 2.1in 0},clip,scale=.27]{trace.pdf}
+    \caption{\label{fig:trace}Index representation and access.}
+  \end{center}
+\end{figure}
+
+A change added to an index is represented as a single batch, sorted
+using the same order as the index.  When the index ingests a new
+change (left side of Figure~\ref{fig:trace}), the new batch is simply
+appended.  As the index grows, batches of similar size are lazily
+merged.  Merges are performed by background compaction threads; each
+merge may span multiple circuit steps.  The result of merging 2
+batches with \(n_1\) and \(n_2\) tuples has \(n_1 + n_2\) or fewer
+tuples, and can even be empty if all weights add to 0.
+
+Exponential search~\cite{bentley-ipl76} is used to lookup the tuples
+of a change inside an index (right side of Figure~\ref{fig:trace}) .
+When the same tuple is found in multiple lists, the corresponding
+weights are added.
+
+\subsection{Secondary storage}
+
+Since indexes can be very large, in many applications they need to be
+spilled to disk.  Persistent storage also helps for fault tolerance.
+
+Initially we considered reusing an existing storage engine for
+persisting state.  Using RocksDB~\cite{dong-ats21} seemed a great
+choice due to its architectural similarities to the way we manage state
+in-memory.  RocksDB is mature, widely used, and well-maintained
+software.
+
+RocksDB is a generic key-value store that can represent multiple
+indexes using its column family feature, with distinct namespaces for
+keys. It also offers all the APIs we needed: quick value retrieval for
+a given key and iteration over keys and values (both forward and
+backward) from a starting point.  RocksDB is also based on an
+LSM-Tree.
+
+The mature RocksDB Rust library provides all need\-ed operations,
+including custom comparators for keys, zero-copy get operations, bulk
+inserts, and control over merging of entries with the same key during
+compaction.
+
+Integrating RocksDB into our system was straightforward.  We
+implemented the trace API described in the previous section.
+Unfortunately, we encountered several critical issues:
+
+\paragraph{Lack of Scaling.} Our implementation utilizes multiple threads
+effectively by sharding data, allowing the system to scale well across
+many CPUs.  To avoid contention, we placed each persistent index in a
+separate column family in RocksDB. However, we discovered that RocksDB
+doesn't scale well beyond a few threads. In fact, with RocksDB, our
+pipelines performed best with a single thread.
+
+Figure~\ref{fig:rocksdb} illustrates the severity of the issue (note
+the log-scale on the y-axis). It shows the performance for a subset of
+the Nexmark queries that use indexes, comparing RocksDB with a single
+thread against RocksDB with eight threads. For reference, we also
+include the performance of our system configured to keep everything in
+DRAM data structures (which, as expected, performs much better).
+
+\begin{figure}[h]
+  \begin{center}
+  \includegraphics[scale=.43]{rocksdb}
+  \caption{Query throughput using RocksDB as a storage layer; higher
+    is better.  Note the logarithmic Y axis\label{fig:rocksdb}.}
+  \end{center}
+\end{figure}
+
+\paragraph{Unable to Leverage Zero-Copy Deserialization.} Besides the
+scalability limitations, we also observed significant overheads even
+when running on a single thread. This was primarily due to the cost of
+deserializing keys and values from RocksDB (which stores data as byte
+arrays) into the corresponding Rust types.
+
+\begin{comment}
+\paragraph{Overwhelming Configuration Complexity.}
+
+RocksDB offers an overwhelming number of configuration options, making
+it nearly impossible for non-experts to ensure optimal settings. The
+complexity is so significant that~\cite{thakkar-hotstorage24} resorted
+to training a large language model (LLM) to identify good
+configurations.
+
+Our attempts did not result in substantial improvements in performance
+or scalability. The most effective adjustment was enabling BlobDB,
+which increased throughput by approximately 20\%.
+\end{comment}
+
+\paragraph{Slow Tests Due to Column Families.} Our core engine is tested
+using property-based testing, and therefore runs the same unit-tests
+with thousands of different inputs.  When these tests required an
+index, RocksDB would quickly generate thousands of short-lived column
+families (one for each instantiated test).  This caused our test suite
+to slow down significantly, extending the total run time from around 2
+minutes to approximately 30 minutes.  We traced this issue to a known
+performance degradation in RocksDB when creating many column families,
+which is unresolved since 2019.
+
+Since we could not find a suitable pre-existing storage system, the
+remaining option was to build our own. Building a key-value embedded
+database is a substantial endeavor, so we did not make this choice
+lightly.
+
+For this purpose, we implemented our own
+SStable-like~\cite{chang-tcs08} file format. The traces write each
+batch that is large enough to an individual file.  Batches are always
+created in sorted order, which allowed us to write these files
+sequentially without any seeks and with minimal in-memory buffering.
+Because batches are never modified in-place, the file format and the
+code that implements it does not need to make allowances for adding,
+removing, or modifying data.
+
+Moreover, the implementation of storage extends the in-memory
+shared-nothing architecture: each worker thread processes an
+independent stream of data, so the storage layer can be per-thread as
+well.
+
+\subsubsection{Checkpointing and fault-tolerance}
+
+The state in delay $\zm$ operators is the only piece of information
+that needs to be persisted, checkpointed, or migrated to make \dbsp
+computations fault-tolerant.  Since \dbsp circuits operate
+synchronously in steps, by checkpointing the state between two
+execution steps one obtains a consistent snapshot of the circuit's
+state.  There is no need for a complicated synchronization protocol.
+Since the index data structures are immutable, taking a snapshot can
+be done atomically using copy-on-write.  To complete a checkpoint we
+just need to ensure that each snapshot is written on secondary
+storage.
+
+\subsection{Compiling SQL to \dbsp}
+
+\begin{figure}[t]
+  \begin{center}
+    \includegraphics[trim={0 0in 10in 0},clip,scale=.45]{tools.pdf}
+    \caption{\label{fig:tools}Architecture of the SQL compiler.}
+  \end{center}
+\end{figure}
+
+We have built a compiler that accepts SQL programs and generates Rust
+programs targeting the \dbsp library.  The architecture of the
+compiler is shown in Figure~\ref{fig:tools}.  The implementation
+follows Algorithm~\ref{algorithm-inc} very closely.  The input of the
+algorithm is a non-incremental query plan, produced by a query
+planner.  The algorithm produces an incremental plan that is
+``similar'' to the input plan.
+
+The compiler front-end, including the parser, validator, and the plan
+generator, are based on the Apache Calcite~\cite{begoli-icmd18}
+infrastructure.  Because the incrementalization algorithm starts from
+a standard, non-incremental query plan, it can reuse in principle any
+existing planner.  We rely on Calcite to decorrelate queries into
+joins, for optimizing join ordering and performing a host of
+traditional optimizations.
+
+A relational algebra query can be implemented by multiple plans, each
+with a different data-dependent cost.  Standard query planners use
+cost-based heuristics and data statistics to optimize plans.  A
+generic IVM planner many not have this luxury, since the plan
+sometimes must be generated \emph{before} (most) data has been fed
+to the query.  Nevertheless, all standard query optimization
+techniques, perhaps based on historical statistics, can be used to
+generate the initial query plan.
+
+The compiler can compile any number of views; each view can depend on
+any number of tables or other views.  Given a query $Q$, the compiler
+can generate both incremental and non-incremental circuits ($Q$ and
+$\inc{Q}$).  The non-incremental circuits are used for validating the
+compiler, because they must have the same semantics as a standard
+ad-hoc SQL query.
+
+The compiler supports ``standard'' SQL and is mature enough to pass
+5+ million SQL Logic Tests~\cite{sqllogictest}.
+\begin{itemize}
+\item \textbf{types:} \code{NULL}s using the standard SQL ternary
+  logic, all standard SQL datatypes (including
+  \code{DATE}/\code{TIME}/\\\code{TIMESTAMP}), structured and
+  semi-structured types, such as arrays, maps, JSON, multisets,
+  \code{UUID}, user-defined types.
+\item \textbf{operators:} \code{SELECT}, \code{WHERE}, \code{FILTER},
+  \code{HAVING}, \code{ORDER} \code{BY}, \code{LIMIT},
+  \code{DISTINCT}, \code{EXCEPT}, \code{INTERSECT}, \code{UNION},
+  \code{GROUP BY}, aggregation, inner and outer \code{JOIN}s,
+  \code{PIVOT}, \code{ROLLUP}, \code{CUBE}, temporal \code{ASOF JOIN},
+  windows \\ (\code{PARTITION BY ... OVER}), \code{UNNEST}, table
+  functions, common table expressions, correlated subqueries, and some
+  streaming extensions, like tumbling and hopping windows, etc.
+\item A large assortment of SQL functions, including user-defined
+  functions that can be written in either SQL or Rust.
+\item Currently, mutually recursive views support all query operators
+  except \code{OVER}.  They are incrementally evaluated using
+  Algorithm~\ref{algorithm-rec}.
+\end{itemize}
+
+SQL has many constructs that may cause runtime exceptions, such as
+arithmetic overflows; in a traditional ad-hoc query system these
+would surface as queries that terminate with an error.  Currently
+these would also cause a running pipeline to fail completely, but this
+solution is unacceptable for a platform for long-running computations.
+We are exploring alternative solutions, where a runtime crash would
+block the pipeline, giving a chance to the operators to remove
+incorrect input data that causes issues.
+
+\subsection{Interacting with the outside world}
+
+\begin{figure}[h]
+  \begin{center}
+  \includegraphics[trim={0 2.2inin 3.7in 0},clip,scale=.33]{adapters.pdf}
+  \caption{\label{fig:adapters}Communicating with external data
+    sources and sinks.}
+  \end{center}
+\end{figure}
+
+As noticed many years ago~\cite{labio-vldb00}, database systems are
+not designed to interact well with external IVM systems.  We provide a
+variety of adapters for interacting with external data sources, both
+as inputs and outputs (e.g., Kafka~\cite{kreps-netdb11}, Amazon
+S3~\cite{palankar-dadc08}, Google Pub/Sub~\cite{pubsub},
+DataFrames~\cite{pandas12}, Delta Lake~\cite{armbrust-vldb20},
+database CDC streams via Debezium~\cite{debezium}, HTTP, etc., with
+more added every day), and using many data formats (CSV, JSON, Arrow,
+Avro, Parquet, etc.).  Figure~\ref{fig:adapters} shows how a circuit
+uses adapters to communicate with the outside world.  The input
+adapters receive data from external sources, buffer it, convert it
+into \zrs, and feed it to the circuits.  The output adapters receive
+data from the circuit outputs in the form of \zrs, and send it to a
+downstream consumer in a suitable format.
+
+\begin{figure}[h]
+  \begin{center}
+  \includegraphics[trim={0 2.4in 4.3in 0},clip,scale=.44]{services.pdf}
+  \caption{\label{fig:service}Feldera Service architecture.}
+  \end{center}
+\end{figure}
+
+\url{Feldera.com} is a start-up that builds a series of software
+products around the \dbsp infrastructure.  One of the products is
+IVM-as-a-service.  A version of the service-oriented architecture of
+the company's cloud offering is shown in Figure~\ref{fig:service}.
+The pipeline manager is the centralized control plane, which is
+responsible for managing the entire life-cycle of the IVM programs.
+These programs are deployed as \emph{pipelines} that run in isolated
+Docker containers.  Feldera also offers a cloud form factor, which
+distributes the pipeline manager across several communicating services
+and uses Kubernetes to run the pipelines.
+
+
+%\input{experiments}
+\section{Experimental Evaluation}\label{sec:experiments}
+
+\newcommand{\query}[1]{\textsf{#1}}
+
+In this section we quantify some aspects of our implementation.
+Looking at Figure~\ref{fig:adapters}, it is clear that data crosses
+many layers.  In this section we evaluate only the performance of
+the central block, the \dbsp query engine.  However, in most real-life
+application performance will be limited by the adapters and network.
+
+\subsection{Cost of incremental updates}
+
+Here we validate our claim that updates in \dbsp have a cost
+proportional to the size of the change.
+
+We ran TPC-H on a desktop computer, with a scale factor 100, meaning
+that the input data is about 100 GB, consisting of about 1.6 billion
+records.  We divided the largest tables, \emph{orders} and
+\emph{lineitem}, which in total contain about half the input records,
+into 10 equal-sized batches, each comprising about 75,000,000 records.
+Because \emph{orders} records refer to \emph{lineitem} records, we
+ensured that if an \emph{order} record was in a batch, so were its
+\emph{lineitem} records.  Then, for each batch in turn, we inserted
+its records.
+
+We ran this computation using two database systems: (1) using a
+popular open-source database\footnote{Because it's hard to make a fair
+comparison, we won’t specify the database.}, by rerunning the query
+after each insertion, and (2) using our incremental implementation,
+where we declare the query as a view.
+
+We show results for TPC-H query 5, which is a 6-way join that we
+selected as representative of the set of TPC-H queries.  We did not
+use indexes with the database, because we found that they made the
+overall computation slower.
+
+Figure~\ref{fig:tpch} shows the time taken to process each batch.  As
+expected, ignoring the absolute performance, and looking just at
+trends, the data shows that re-executing queries on an increasing
+dataset slows down as the total data size increases, whereas
+incremental computation performance remains steady.
+
+\begin{figure}[t]
+  \begin{center}
+  \includegraphics[scale=.4]{tpch}
+  \caption{Incremental versus batch performance on TPC-H
+    Q5\label{fig:tpch}.}
+  \end{center}
+\end{figure}
+
+\vspace{-3ex}
+\subsection{Latency, throughput, and input change size}
+
+Latency is the time between submitting a change and obtaining a
+result.  Observed latency is a function of both query complexity and
+the size of the internal state, so latency will change as system
+state grows.
+
+For relatively simple queries, as described in
+Section~\refsec{sec:macrobenchmarks}, while running in steady state,
+the latency of a transaction changing a single input row is in the
+order of tens to hundreds of microseconds, proving that our engine can
+be used for very low latency applications.
+
+Throughput is the number of records that can be processed in a time
+unit.  \dbsp is synchronous and blocking: for every input
+change, the pipeline does not accept any other inputs until it has
+produced the output for all views.  This suggests that latency is the
+inverse of throughput.
+
+There is an additional degree of freedom: the size of an input
+transaction.  In several scenarios there is a choice: (1) when a
+pipeline is started and is ingesting the initial state of a large
+database (\emph{backfilling}), or (2) when processing data from
+streaming sources, without clear transaction boundaries.
+
+As Nikolic has observed before~\cite{nikolic-sigmod16}, there is a
+relatively tight relationship between the latency of updating a view,
+the throughput, and the size of the input changes.  Nikolic finds that
+in DBToaster the optimal value is somewhere between 1K and 10K tuples.
+Our experiments confirm this.  The exact optimum value depends on the
+query and data distribution.  Figure~\ref{fig:batchsize} shows some
+typical measurements for Nexmark query \query{q5}.  Latency grows
+monotonically with input batch size, but the optimum throughput is
+obtained for batches of 2K-20K records.
+
+\begin{figure}[h]
+  \includegraphics[width=.90\columnwidth]{batchsize}
+  \caption{Latency and throughput as a function of the input batch
+    size.  Notice the logarithmic X axis.\label{fig:batchsize}}
+\end{figure}
+
+\vspace{-3ex}
+\subsection{Macrobenchmarks}\label{sec:macrobenchmarks}
+
+\begin{figure*}
+  \includegraphics[width=.95\textwidth]{throughput} \hspace{-3ex}
+  (a) \\
+  \includegraphics[width=.95\textwidth]{memory} \hspace{-3ex}
+  (b) \\
+  \caption{(a) Average normalized throughput with respect to Flink
+    (higher is better), and (b) peak memory consumption (lower is
+    better), in GiB (\(2^{30}\) bytes).  The workload comprises the
+    Nexmark queries that \dbsp and Flink support in common, over
+    100,000,000 events.  There are no measurements for q11 for
+    \dbsp.\label{fig:macrobenchmark}}
+\end{figure*}
+
+There are no standard benchmark suites for IVM.  In this section we
+use an atypical benchmark suite, Nexmark~\cite{tucker2008nexmark},
+which was designed for benchmarking streaming systems.  The benchmark
+is driven by a synthetic data generator, modeling an online
+auction site along with a suite of queries against the streams.
+Nexmark is already implemented for other streaming database systems,
+notably for Flink~\cite{carbone-ieee15,nexmark-flink}, a widely used
+stream processing system.  Nexmark is an unusual benchmark, since the
+data is append-only, and thus grows unbounded.  The required internal
+state would also grow unbounded if the input is assumed to be
+arbitrary.  However, given some weak assumptions about the ordering of
+the inputs, these queries \emph{can} be implemented using finite state
+using a garbage-collection mechanism that deletes internal state which
+cannot influence any future outputs.  We leave this subject for a
+future paper.  This kind of benchmarks can only be implemented using a
+\dbsp-like model of computation, where the output is a stream of
+changes (and not the full views, which would also grow unbounded).
+
+We compare \dbsp against Flink on the Nexmark benchmark, which
+consists of 23 queries.  We show results for the queries that Flink
+and \dbsp both support.  We omitted \query{q6} because there was no
+Flink implementation, and \query{q10} because we could not make
+Flink's implementation for it work.  \dbsp does not support
+\query{q11} because \dbsp does not yet support session windows.
+
+We ran both the Flink and \dbsp implementations on the same machine,
+which has a 64-core, 128-thread Threadripper~3990X CPU and 256~GB RAM,
+with Fedora Core~40 as the operating system. We present results for
+100~million Nexmark events (input records), which is a moderate
+number.
+
+\dbsp runs as a single process with 16~worker threads, and otherwise
+with default settings, matching the number of workers used for Flink.
+We ran \dbsp both with storage disabled, where \dbsp keeps all state
+in RAM, and with storage enabled, where \dbsp flushes large batches to
+secondary storage (see~\ref{sec:state-management}).  Enabling storage
+allows \dbsp to work with more state with less memory use, at some
+cost in throughput.
+
+We configured the Flink implementation of Nexmark with the settings
+recommended by the upstream project, running 8~Flink task manager
+containers, each allocated 2~cores, and one Flink job manager
+container.  We tried adjusting Flink and Nexmark settings, but none of
+these changes improved Flink performance in a significant and
+reproducible way.
+
+\dbsp and Flink support reading input from multiple kinds of data
+sources.  For these measurements, we configured both of them to use
+their own integrated Nexmark event generators, rather than pulling
+them from Kafka or HTTP or another source.  This eliminated network
+service performance and configuration as a possible source of
+variability.
+
+Figure~\ref{fig:macrobenchmark} reports our measurements.  We show 3
+bars for \dbsp: the first (blue) is using hand-written Rust code based
+on the \dbsp runtime, running in memory; the second (orange) bar is
+written in SQL and runs in memory, while the third (red) bar shows the
+SQL program using secondary storage.
+
+\paragraph{Throughput.}
+
+\newcommand{\x}{\(\times\)}
+
+Figure~\ref{fig:macrobenchmark}(a) shows the normalized throughput of
+\dbsp versus Flink (which is always 1).  With storage disabled, \dbsp
+is up to 17\x{} faster than Flink, with a geometric mean of 2.2\x{}
+faster on average.  As queries get more complicated, \dbsp's advantage
+over Flink grows by a much larger factor.  We also notice that there
+is still a roughly $2\times{}$ gap to cover between the performance of
+hand-written \dbsp programs and the code generated by the SQL
+compiler.
+
+\query{q13} is an outlier that performs slightly slower in our system
+than Flink; with storage enabled, it is slower than Flink.  We are
+investigating this behavior.  With \query{q13} excluded, every
+remaining query runs at least 1.4\x{} faster in \dbsp (with or without
+storage).
+
+Storage generally has a small impact on our throughput, except for
+\query{q13}, where it has about a 4\x{} penalty.  \query{q0} and other
+very simple queries are about 1.5\x{} faster.
+
+\paragraph{Peak memory.}
+
+Figure~\ref{fig:macrobenchmark}(b) shows peak memory consumption, as
+reported as the operating system resident set size (RSS), for the
+Flink or \dbsp processes.  In our case this is a single process; for
+Flink, it is the sum of the RSS in the 8 task manager containers.  In
+the measurements we did not include the cost incurred by the control
+plane in either case (in Feldera's system, the pipeline manager; in
+Flink, the job manager).
+
+\dbsp uses between 0.03\x{} and 2.6\x{} as much memory of Flink, with a
+geometric mean of 0.24\x{}.
+
+\query{q0} and several other queries use 2~GiB or less memory with our
+implementation, but over 17~GiB with Flink.  These queries are linear,
+and do not require any state, or only minimal state, so \dbsp does not
+allocate much memory.  Flink runs under the Java Virtual Machine,
+which might cause it to allocate a high minimum amount of memory.
+
+Most queries use less memory in our system than in Flink.  \query{q9}
+and \query{q13} use substantially more, and \query{q18} and
+\query{q19} use somewhat more, and storage reduces the RAM use
+significantly.
+
+%\input{related}
+\section{Related work}\label{sec:related}
+
+Incremental view
+maintenance~\cite{buneman-actd79,blakeley-sigmod86,gupta-sigmod93,chaudhuri-icde95,gupta-idb95,chirkova-book12}
+is a much studied problem in databases.  A survey of results for
+Datalog queries is present in~\cite{motik-ai19}.  The standard
+approach is as follows: given a query $Q$, discover a ``delta query'',
+a ``differential'' version $\Delta Q$ that satisfies the equation:
+$Q(d+\Delta d)=Q(d)+\Delta Q(d,\Delta d)$, and which can be used to
+compute the change for a new input reusing the previous output.
+DBToaster introduced recursive
+IVM~\cite{ahmad-vldb09,koch-pods10,nikolic-sigmod16}, where the
+incrementalization process is repeated for the delta query.  Our
+definition of IVM is subtly different from the above one, as IVM is
+defined as a stream computation, which is well-defined and can be
+computed for any query.
+
+\cite{bello-vldb98} describes an early implementation in Oracle~8,
+which handles a limited set of queries.  Many custom algorithms were
+published for various classes of queries:
+e.g. \cite{griffin-sigmod98,larson-icde07} for various classes of
+joins, \cite{koch-pods16} for positive nested relational calculus,
+\cite{gupta-infsys06} for relational and aggregate operators;
+\cite{kara-tds20} is optimized for triangle queries;
+DYN~\cite{idris-sigmod17,idris-vldb18,idris-sigmod19} focuses on
+acyclic conjunctive queries: instead of keeping the output view
+materialized they build data structures that allow efficiently
+querying the output views.  PAI maps~\cite{abeysinghe-sigmod22} are
+specially designed for queries with correlated aggregations.
+q-hierarchical que\-ries~\cite{berkholz-pods17} admit very efficient
+update algorithms.  \cite{palpanas-vldb02} discusses non-distributive
+aggregate functions.  \cite{katsis-sigmod15} uses primary key
+information to compress the representation of the deltas, and using an
+``update'' operator that is similar to our ``upsert'' operator.
+AJU~\cite{wang-sigmod20} and \cite{svingos-amd23} focus on using
+foreign key information to optimize query plan generation.  These
+techniques are only sound in the absence of deletions and updates; our
+implementation uses these optimizations as well.  Some algorithms
+apply to sets, some work for multisets~\cite{griffin-sigmod95}.  Many
+of these formalisms look very complicated because they deal with
+``insertions'', ``deletions'', and ``update'' changes separately.
+\zrs are a much more compact tool for describing such algorithms.  In
+some sense the \dbsp theory, through the chain rule, enables us to
+reuse all of these results (and any future schemes designed for
+particular classes of subqueries): given a good implementation
+strategy for a particular query plan it can be reused as a subplan in
+any query which uses that particular plan.
+
+\dbsp as described implies an ``eager'' execution model: it constantly
+maintains the entire contents of any number of views, even if no one
+really wants to inspect the views.  In contrast, ``lazy''
+models~\cite{hanson-sigmod87} only build part of the views when the
+views are inspected.  Such models have the potential to be more
+efficient.  A simple way to implement a ``lazy'' model using \dbsp is
+to essentially accumulate all input changes as \zrs and apply the
+incremental algorithm only when the output view is queried.  Between
+``lazy'' and ``eager'' one can place ``snapshot'' views, which are
+updated periodically~\cite{colby-sigmod97}.  Snowflake offers all
+these models~\cite{akidau-amd23}.
+
+\dbsp is a bottom-up system, which always produces eagerly the
+\emph{changes} to the output views.  Instead of maintaining the output
+view entirely, \dbsp proposes generating deltas as the output of the
+computation (similar to the kSQL~\cite{jafarpour-edbt19} \texttt{EMIT
+  CHANGES} queries).  The idea that both inputs and outputs to an IVM
+system are streams of changes seems trivial, but this is key to the
+symmetry of our solution: both in our definition of
+IVM~(\ref{def:inc}), and the fundamental reason that the chain rule
+exists --- the chain rule is the one that makes our structural
+induction IVM algorithm possible.
+
+Several IVM algorithms for Datalog-like languages use counting based
+approaches~\cite{Dewan-iis92,motik-aaai15} that maintain the number of
+derivations of each output fact: DRed~\cite{gupta-sigmod93} and its
+variants~\cite{Ceri-VLDB91,Wolfson-sigmod91,Staudt-vldb96,Kotowski-rr11,Lu-sigmod95,Apt-sigmod87},
+the backward-for\-ward algorithm and
+variants~\cite{motik-aaai15,Harrison-wdd92,motik-ai19}.  \dbsp is more
+general, and our incrementalization algorithm handles arbitrary
+recursive queries and generates more efficient plans for recursive
+queries in the presence of arbitrary updates (especially deletions,
+where competing ap\-proach\-es may over-delete).  Interestingly, the \zrs
+weights in \dbsp are related to the counting-number-of-derivations
+approaches, but our use of the $\distinct$ operator shows that precise
+counting is not necessary.
+
+Picallo et al.~\cite{picallo-scop19} provide a general solution to IVM
+for rich languages.  Unlike their proposal, \dbsp requires a group
+structure on the values operated on; this assumption has two major
+practical benefits: it simplifies the mathematics considerably (e.g.,
+Picallo uses monoid actions to model changes), and it provides a
+general, simple algorithm for incrementalizing arbitrary programs.
+The downside of \dbsp is that one has to find a suitable group
+structure (e.g., \zrs for sets) to ``embed'' the computation.
+Picallo's notion of ``derivative'' is not unique: they need creativity
+to choose the right derivative definition, we need creativity to find
+the right group structure.
+
+Finding a suitable group structure has proven easy for relations
+(both~\cite{koch-pods10} and~\cite{green-tcs11} use \zrs to uniformly
+model data and insertions/deletions), but it is not obvious how to do
+it for other data types, such as sorted collections, or tree-shaped
+collections (e.g., XML or JSON documents)~\cite{foster-planx08}.  An
+intriguing question is ``what other interesting group structures could
+this be applied to besides \zrs?''  Papers such
+as~\cite{nikolic-icmd18} explore other possibilities, such as matrix
+algebra, linear ML models, or conjunctive queries.
+
+\dbsp can also model window and stream database
+queries~\cite{arasu-tr02,aurora} such as CQL queries.
+\cite{begoli-sigmod19} proposes using SQL to express both standard
+database queries and streaming queries; it also proposes some
+extensions to SQL specific to streaming systems.  The \dbsp theory
+allows us to more precisely understand the classes of queries that
+\emph{cannot} be expressed in SQL.  A SQL query is a function of the
+state of the database; in other words, a SQL query cannot provide
+different results based on the order of insertions of tuples in a
+table.  Streaming systems however can.  \dbsp also enables us to
+generalize and simplify the architecture of existing streaming
+systems; for example, we believe that the ``timestamps'' attached by
+streaming systems to ``events'' do not need any special treatment.
+
+\cite{bonifati-iclp2018} implemented a verified IVM algorithm for a
+particular class of graph queries called Regular Datalog, with an
+implementation machine-checked in the Coq proof assistant. Their focus
+is on a particular algorithm and the approach does not consider other
+SQL operators, general recursion, or custom operators (although it is
+modular in the sense that it works on any query by incrementalizing it
+recursively). Furthermore, for all queries a deletion in the input
+change stream requires running the non-incremental query to recover.
+We formally verify the theorems in our paper, which are much broader
+in scope, but not our implementations.
+
+\dbsp is also related to Differential Dataflow
+(DD)~\cite{mcsherry-cidr13,murray-sosp13,chothia-vldb16} and its
+theoretical foundations~\cite{abadi-fossacs15}.  DD's computational
+model is more powerful than \dbsp, since it models time values as part
+of an arbitrary lattice.  In fact, DD is the only other framework
+which we are aware of that can incrementalize recursive queries as
+efficiently as \dbsp does.  In contrast, our model uses either
+``linear'' times, or nested time dimensions via the modular lifting
+transformer ($\lift{}$).  \dbsp can express both incremental and
+non-incremental computations.  Most importantly, \dbsp comes with
+Algorithm~\ref{algorithm-inc}, a syntax-directed translation that can
+convert any expressible query into an incremental version --- in DD
+users have to assemble incremental queries manually using incremental
+operators.  materialize.com offers a product that automates
+incrementalization for Postgres SQL queries based on DD.  The
+Differential Datalog~\cite{ryzhyk-datalog19} project compiles Datalog
+to DD.  Unlike DD, \dbsp is a modular theory, which easily
+accommodates the addition of new operators: as long as we can express
+a new operator as a \dbsp circuit, we can (1) define its incremental
+version, (2) apply the incrementalization algorithm to obtain an
+efficient incremental implementation, and (3) be confident that it
+composes with any other operators.
+
+Many custom streaming systems have been implemented:
+Storm~\cite{toshnival-sigmod14}, Spark
+Streaming~\cite{zaharia-sosp13}, Flink~\cite{carbone-ieee15},
+Samza~\cite{noghabi-vldb17}, Beam~\cite{akidau-vldb15}, Kafka
+Streams~\cite{wang-sigmod21}, and many have adopted SQL dialects,
+e.g., Spark Structured Streaming~\cite{armbrust-sigmod18}, Spark SQL,
+KSQL~\cite{jafarpour-edbt19}.  These systems usually sacrifice some of
+the nice properties of database systems in order to compute
+efficiently over unbounded streams.  These systems may only support
+restricted classes of queries.  We believe that in the future
+databases will incorporate the best features of streaming systems, and
+that \dbsp shows one way this can be achieved.
+
+\cite{akidau-amd23,akidau-debs24} describe the Snowflake incremental
+and streaming capabilities.  In Snowflake ``streams'' are database
+table that store the history of changes to a table.  Dynamic tables
+are views which are periodically refreshed, at user-specified
+intervals.  These can be updated either incrementally or using batch
+recomputation; the system chooses a strategy based on the refresh
+period.  The views provide snapshot isolation, which is similar to the
+DBSP consistency model.
+
+The \code{pg\_ivm}~\cite{pgivm} project offers an open-source Postgres
+module which adds IVM capabilities.  The supported set of queries has
+some significant restrictions.
+
+The \dbsp model is simple enough so it can be implemented in a few
+hundred lines of Python~\cite{dbsp-python}.
+
+%\input{conclusions}
+\section{Conclusions}\label{sec:conclusions}%\label{sec:ddlog}
+
+\subsection{Adoption}
+
+Traditional databases could in principle be retrofitted to use the
+algorithms in this paper, but the existing query engines are not built
+around structures that can represent negative changes (like \zrs), so
+this effort will require a significant redesign.
+
+Moreover, we argue that databases should not only compute views
+incrementally, but should use ``changes'' as the fundamental data
+structure to communicate with their environment: a database service
+should offer the following API: users register to receive
+notifications for changes in one or more views.  Then, for any
+transaction committed, each user receives a notification containing
+the list of changes for the all the views they registered.  Databases
+today do not have convenient mechanism for reporting changes to the
+outside world.  In fact, entire industries have sprung up around the
+concept of Change Data Capture~\cite{cdc}, which is building ad-hoc
+solutions for extracting changes from databases, usually by inspecting
+the write-ahead transaction log.
+
+\subsection{Summary}
+
+We have introduced \dbsp, a model of computation based on infinite
+streams over commutative groups.  In this model streams are used for 3
+different purposes: (1) to model consecutive snapshots of a database,
+(2) to model consecutive changes (deltas, or transactions) applied to
+a database and changes of a maintained view, (3) to model consecutive
+values of loop-carried variables in recursive computations.
+
+We have defined an abstract notion of incremental computation over
+streams, and defined the incrementalization operator $\inc{\cdot}$,
+which transforms an \emph{arbitrary} stream computation $Q$ into its
+incremental version $\inc{Q}$.  The incrementalization operator has
+some very nice algebraic properties, which gave us a general algorithm
+for incrementalizing many classes of complex queries, including
+arbitrary recursive queries.
+
+We believe that \dbsp can form a solid foundation for a theory and
+practice of streaming incremental computation.  As a proof, we have
+built a SQL compiler that can essentially incrementalize arbitrary
+queries.
+
 
 \bibliographystyle{plain}
 \bibliography{main}
-
-%\appendix
-%\input{appendix}
 
 \end{document}
